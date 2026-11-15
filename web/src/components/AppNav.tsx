@@ -14,6 +14,7 @@ interface Props {
 const MAIN = [
   { href: '/', label: 'Home', match: (p: string) => p === '/' },
   { href: '/community', label: 'Community', match: (p: string) => p.startsWith('/community') },
+  { href: '/feed', label: 'Feed', match: (p: string) => p === '/feed' },
   { href: '/leaderboards', label: 'Leaderboards', match: (p: string) => p.startsWith('/leaderboards') },
 ];
 

@@ -5,6 +5,7 @@ import { seedCommunity } from '../routes/community.js';
 import { pool } from './client.js';
 import { seedFanHub } from './seed-fanhub.js';
 import { seed as seedPlayers } from './seed-yao.js';
+import { seedJoe } from './seed-joe.js';
 
 // §7.5 demo login picker accounts that aren't owned by a feature seed.
 const FANS = [
@@ -39,6 +40,7 @@ try {
   await seedCommunity(pool); // Dahiya: boards + sourced demo discussions
   await seedFanHub(pool); // V3: backdated threads, comments and votes across every board
   // Joe:    await seedClips(pool);
+  await seedJoe(pool); // Joe: top-20 leaderboard fans + meme/anime profile pictures (web/public/avatars)
   await refreshAggregates();
   console.log('✓ seed complete');
 } catch (e) {

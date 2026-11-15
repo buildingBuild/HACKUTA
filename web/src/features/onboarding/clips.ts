@@ -41,7 +41,7 @@ const PLAYS: Record<ClipCategory, string[]> = {
   content: ['Stream highlight', 'Montage', 'Crosshair guide', 'Utility lineups', 'Ranked VOD'],
 };
 
-const MAPS: DemoClip['map'][] = [
+export const MAPS: DemoClip['map'][] = [
   ['Mirage', '#3b3227', '#c8a46a'],
   ['Inferno', '#3a2219', '#d2733a'],
   ['Nuke', '#1d2730', '#7f9db5'],

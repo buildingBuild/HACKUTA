@@ -3,8 +3,10 @@
 // Joe: replace freely, just keep these routes/response fields compatible.
 //   POST /api/clips       register an already-uploaded clip { blob_url, map, side, title, ... }
 //   GET  /api/clips       ?userId= optional
+//   GET  /api/clips/external  FaZe YouTube + Reddit (lib/social), cached with snapshot fallback
 //   GET  /api/clips/:id
 import { Router } from 'express';
+import { getExternal } from '../lib/social/feeds.js';
 import type { YaoDeps } from '../lib/yao-deps.js';
 
 const COLS = `c.id, c.user_id, c.blob_url, c.thumbnail_url, c.game, c.map, c.side, c.title, c.social_post_url,
@@ -13,6 +15,15 @@ const COLS = `c.id, c.user_id, c.blob_url, c.thumbnail_url, c.game, c.map, c.sid
 export function createClipsRouter({ db, auth }: YaoDeps): Router {
   const r = Router();
   r.use(auth.identify);
+
+  // warm the external cache at boot so the first feed load doesn't wait on YouTube/Reddit
+  void getExternal().catch(() => {});
+
+  // must be registered before '/:id'
+  r.get('/external', async (_req, res) => {
+    const out = await getExternal();
+    res.set('Cache-Control', 'public, max-age=120').json(out);
+  });
 
   r.get('/', async (req, res) => {
     const userId = typeof req.query.userId === 'string' ? req.query.userId : null;

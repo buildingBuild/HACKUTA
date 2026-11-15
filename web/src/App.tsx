@@ -3,6 +3,7 @@
 //   /                       Home (Lionsgate-style showcase)          public
 //   /join                   onboarding flow (creates an account)     public
 //   /community/*            Community (Dahiya)                       public, writes need sign-in
+//   /feed                   FaZe Feed, experimental masonry (Joe)    public
 //   /leaderboards           public leaderboards (Omar)               public
 //   /u/:handle, /me         fan profile (Omar)                       public
 //   /hud /rgb /guessr /wall Phase 2 features (branded placeholders)  public
@@ -19,6 +20,7 @@ import { useSessionUser } from './components/session';
 import { Loading, Page } from './components/ui';
 import { AdminPage } from './features/admin/AdminPage';
 import { CommunityRoute } from './features/community/CommunityRoute';
+import { FeedPage } from './features/feed/FeedPage';
 import { HomePage } from './features/home/HomePage';
 import { OnboardingFlow } from './features/onboarding/OnboardingFlow';
 import { LeaderboardsPage, ProfilePage } from './features/profile';
@@ -49,6 +51,7 @@ export function App() {
     if (!loading) window.location.replace(user ? `/u/${encodeURIComponent(user.handle)}` : '/join');
     page = <Page><Loading /></Page>;
   } else if (path === '/community' || path.startsWith('/community/')) page = loading ? null : <CommunityRoute user={user} />;
+  else if (path === '/feed') page = loading ? null : <FeedPage user={user} />;
   else if (path === '/leaderboards') page = <LeaderboardsPage highlightHandle={user?.handle} />;
   else if (feature) page = <ComingSoon feature={feature} />;
   else if (path === '/recruiter') {
