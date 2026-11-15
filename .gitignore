@@ -9,3 +9,6 @@ dist/
 server/.cache/
 server/demo-clips/*
 !server/demo-clips/README.md
+
+# superpowers execution scratch
+.superpowers/

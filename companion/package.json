@@ -1,0 +1,21 @@
+{
+  "name": "fazehq-companion",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "FaZe HQ local companion: drives the ASUS Aura laptop keyboard for RGB Sync.",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "test": "tsx --test src/*.test.ts",
+    "test-fx": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "node-hid": "^3.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
