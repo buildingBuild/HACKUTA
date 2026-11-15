@@ -24,13 +24,14 @@ import { homeFor, useSessionUser } from './components/session';
 import { Loading, Page } from './components/ui';
 import { AdminPage } from './features/admin/AdminPage';
 import { CommunityRoute } from './features/community/CommunityRoute';
+import { HQPage } from './features/hq/HQPage';
 import { FeedPage } from './features/feed/FeedPage';
 import { HomePage } from './features/home/HomePage';
 import { OnboardingFlow } from './features/onboarding/OnboardingFlow';
-import { LeaderboardsPage, ProfilePage } from './features/profile';
+import { LeaderboardsPage } from './features/profile';
 import { RecruitingPage } from './features/recruiting/RecruitingPage';
 import { RgbPage } from './features/rgb/RgbPage';
-import { TimelinePage, TimelineTeaser } from './features/timeline';
+import { TimelinePage } from './features/timeline';
 import { RewardsPage } from './features/rewards';
 
 const match = (path: string, pattern: RegExp) => path.match(pattern)?.[1];
@@ -56,21 +57,14 @@ export function App() {
     // Home is your own profile. Signed out -> onboarding; staff -> their workspace.
     if (loading) page = <Page><Loading /></Page>;
     else if (user && user.role === 'user')
-      page = (
-        <>
-          <ProfilePage handle={user.handle} />
-          {/* Omar's FaZe history teaser (was on the old showcase Home) */}
-          <div className="home-teaser">
-            <TimelineTeaser />
-          </div>
-        </>
-      );
+      page = <HQPage handle={user.handle} />; // one profile everywhere (features/hq)
     else {
       window.location.replace(user ? homeFor(user) : '/join');
       page = null;
     }
   } else if (path === '/old-home') page = <HomePage user={user} />; // archived showcase home, not in the nav
-  else if (handle) page = <ProfilePage handle={decodeURIComponent(handle)} />;
+  else if (handle)
+    page = <HQPage handle={decodeURIComponent(handle)} />;
   else if (path === '/me') {
     if (!loading) window.location.replace(user ? `/u/${encodeURIComponent(user.handle)}` : '/join');
     page = <Page><Loading /></Page>;

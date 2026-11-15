@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { platformOf, type RealClip } from '../clips/api';
+import { REAL_TABS, RealClipCard, type RealTab } from '../clips/ClipReel';
+import type { RealClip } from '../clips/api';
 import { ClipFrame } from './ClipFrame';
 import { CATEGORIES, handleFor, linkedSources, makeClips, type ClipCategory } from './clips';
 import { GAMES, type OnboardingData } from './types';
@@ -13,7 +14,7 @@ import './profile-preview.css';
 
 type Tab = 'all' | ClipCategory;
 
-const WEEKS = 20;
+export const WEEKS = 20;
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 /**
@@ -21,7 +22,7 @@ const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 
  * Mocked from the gamertag like the rest of the preview: busier on weekends, ramping up lately,
  * and today is always lit (they just joined). Replace with real clip dates once ingestion lands.
  */
-function activityGrid(seed: string) {
+export function activityGrid(seed: string) {
   let s = [...seed].reduce((a, c) => a + c.charCodeAt(0), 11) || 1;
   const r = () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646;
   const n = WEEKS * 7;
@@ -55,42 +56,6 @@ interface Props {
   saveError?: string | null;
   /** analyzed clips from the pipeline (replaces the demo clips when present) */
   real?: RealClip[] | null;
-}
-
-type RealTab = 'all' | 'pro' | 'funny' | 'content';
-const REAL_TABS: { id: RealTab; label: string }[] = [
-  { id: 'all', label: 'All clips' },
-  { id: 'pro', label: 'Pro plays' },
-  { id: 'funny', label: 'Funny moments' },
-  { id: 'content', label: 'Content' },
-];
-const SRC = {
-  twitch: { icon: '/brand/social/twitch.svg', label: 'Twitch' },
-  youtube: { icon: '/brand/social/youtube.svg', label: 'YouTube' },
-  folder: { icon: '/brand/social/folder.svg', label: 'Your folder' },
-};
-
-/** One analyzed clip: plays muted on loop, AI category/score/reason, link to the exact moment. */
-function RealClipCard({ clip, i }: { clip: RealClip; i: number }) {
-  const src = SRC[platformOf(clip)];
-  return (
-    <article className="rc rise" style={{ ['--i' as string]: Math.min(i, 8) }}>
-      <div className="rc__media">
-        <video src={clip.blob_url} poster={clip.thumbnail_url ?? undefined} muted loop autoPlay playsInline preload="metadata" />
-        <span className={`rc__cat rc__cat--${clip.category}`}>{clip.category}</span>
-        <span className="rc__score">{clip.ai_score}</span>
-      </div>
-      <div className="rc__body">
-        <h3>{clip.title}</h3>
-        <p>{clip.ai_reason}</p>
-        <footer>
-          <span className="rc__src"><img src={src.icon} alt="" /> {src.label}</span>
-          {clip.social_post_url && <a href={clip.social_post_url} target="_blank" rel="noopener noreferrer">Original moment ↗</a>}
-        </footer>
-        {clip.ai_rules?.length ? <div className="rc__rules">{clip.ai_rules.map((r) => <span key={r}>{r.replace('_', ' ')}</span>)}</div> : null}
-      </div>
-    </article>
-  );
 }
 
 export function ProfilePreview({ data, onEdit, profileUrl, saveError, real }: Props) {

@@ -1,0 +1,32 @@
+/* real analyzed clips */
+.rc-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.rc { display: grid; grid-template-rows: auto 1fr; background: #fff; border: 1px solid var(--line); overflow: hidden; }
+.rc__media { position: relative; aspect-ratio: 16 / 9; background: #000; }
+.rc__media video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rc__cat { position: absolute; left: 10px; top: 10px; padding: 3px 8px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #fff; background: var(--ink); }
+.rc__cat--pro { background: var(--faze-red); }
+.rc__cat--funny { background: #ff9f1a; color: var(--ink); }
+.rc__cat--content { background: #3a6df0; }
+.rc__score { position: absolute; right: 10px; top: 10px; min-width: 34px; padding: 2px 6px; text-align: center; background: var(--paper); color: var(--ink); font-family: var(--font-display); font-weight: 900; font-size: 20px; }
+.rc__body { display: grid; align-content: start; gap: 8px; padding: 12px 14px 14px; }
+.rc__body h3 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 20px; line-height: 1.05; text-transform: uppercase; }
+.rc__body p { margin: 0; font-size: 13px; line-height: 1.45; color: var(--ink-2); }
+.rc__body footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); }
+.rc__src { display: inline-flex; align-items: center; gap: 6px; }
+.rc__src img { width: 13px; height: 13px; }
+.rc__body footer a { color: var(--faze-red); text-decoration: none; }
+.rc__rules { display: flex; flex-wrap: wrap; gap: 4px; }
+.rc__rules span { padding: 2px 6px; background: rgba(10, 10, 10, 0.05); font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); }
+@media (max-width: 1000px) { .rc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* reel section under profiles */
+.reel { width: min(1200px, 100%); margin: 0 auto; padding: 8px 24px 40px; }
+.reel__head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1.5px solid var(--ink); }
+.reel__kicker { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.reel__kicker span { width: 22px; height: 2px; background: var(--faze-red); }
+.reel__head h2 { margin: 0; font-family: var(--font-display); font-weight: 900; font-size: 44px; line-height: 0.9; text-transform: uppercase; }
+.reel__tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.reel__tabs button { display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; border: 1.5px solid var(--line); background: #fff; font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-2); cursor: pointer; }
+.reel__tabs button span { font-family: var(--font-mono); font-size: 10px; padding: 2px 6px; background: rgba(10, 10, 10, 0.06); }
+.reel__tabs button.is-on { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.reel__tabs button.is-on span { background: var(--faze-red); color: var(--paper); }

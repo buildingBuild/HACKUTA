@@ -71,10 +71,12 @@ export function createClipsRouter({ db, auth }: YaoDeps): Router {
 
   r.get('/', async (req, res) => {
     const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
+    const handle = typeof req.query.handle === 'string' ? req.query.handle : null;
     const category = typeof req.query.category === 'string' ? req.query.category : null;
     const where: string[] = [];
     const params: unknown[] = [];
     if (userId) where.push(`c.user_id = $${params.push(userId)}`);
+    if (handle) where.push(`lower(u.handle) = lower($${params.push(handle)})`);
     if (category) where.push(`c.category = $${params.push(category)}`);
     try {
       const q = await db.query(

@@ -85,6 +85,3 @@
   .tl-teaser__stats div + div { padding-left: 14px; }
   .tl-teaser__card::after { right: 8%; }
 }
-
-/* placement under the profile on Home (App.tsx) */
-.home-teaser { width: min(1200px, 100%); margin: 0 auto; padding: 0 24px 64px; }

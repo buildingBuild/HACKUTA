@@ -102,7 +102,14 @@ export function OnboardingFlow() {
     else goTo(index + 1);
   };
 
+  // after the HQ sequence: saved players land on their real HQ (Home); if saving failed, show the local preview
+  const playerRef = useRef(player);
+  playerRef.current = player;
   const finishBuilding = useCallback(() => {
+    if (playerRef.current) {
+      window.location.assign('/');
+      return;
+    }
     setBuilding(false);
     setIndex(STEPS.length);
     window.scrollTo({ top: 0 });
