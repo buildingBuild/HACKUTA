@@ -297,3 +297,13 @@ BEGIN
   END IF;
 END $$;
 ALTER TABLE clip_jobs ADD COLUMN IF NOT EXISTS requested text; -- what the user typed (channel/video/folder), for the result cache
+-- Human mentorship requests: pending only, without payments or scheduling.
+CREATE TABLE IF NOT EXISTS mentorship_requests (
+ id uuid PRIMARY KEY,
+ user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ request_key uuid NOT NULL,
+ payload jsonb NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT now(),
+ UNIQUE(user_id,request_key)
+);
+CREATE INDEX IF NOT EXISTS mentorship_requests_user_time ON mentorship_requests(user_id,created_at DESC);

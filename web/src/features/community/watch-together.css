@@ -1,0 +1,99 @@
+/* Watch Together only: shared Community tokens, display type and cut-corner CTA. */
+.cq-layout:has(.cq-room),.cq-layout:has(.cq-watch-home){grid-template-columns:minmax(0,1fr)}
+.cq-layout:has(.cq-room)>.cq-sidebar,.cq-layout:has(.cq-watch-home)>.cq-sidebar{display:none}
+.cq .cq-watch-home{padding-top:2px}
+.cq .cq-watch-filters{margin:0 0 20px;padding:0 0 14px;gap:6px}
+.cq .cq-watch-filters button{font-size:12px;padding:8px 12px}
+.cq .cq-watch-hero{display:grid;grid-template-columns:minmax(0,1.8fr) minmax(240px,1fr);background:var(--ink);color:var(--paper);margin-bottom:30px;overflow:hidden}
+.cq .cq-watch-hero-image{display:block;position:relative;aspect-ratio:16/9;overflow:hidden;background:#111}
+.cq .cq-watch-hero-image img,.cq .cq-watch-poster img{width:100%;height:100%;object-fit:cover;transition:transform .35s ease,opacity .25s}
+.cq .cq-watch-hero-image:hover img,.cq .cq-watch-poster:hover img{transform:scale(1.025);opacity:1}
+.cq .cq-watch-play{position:absolute;left:20px;bottom:20px;display:grid;place-items:center;width:48px;height:48px;background:var(--cq-red);color:white;font:18px var(--font-body);pointer-events:none}
+.cq .cq-watch-hero-copy{padding:28px;align-self:center;min-width:0}
+.cq .cq-watch-status{font:11px var(--font-mono);letter-spacing:.08em;text-transform:uppercase}
+.cq .cq-watch-hero-copy>.cq-watch-status{color:#fda4b5}
+.cq .cq-watch-hero h2{font:800 clamp(28px,3vw,43px)/1.04 var(--font-display);margin:16px 0 12px;letter-spacing:-.015em}
+.cq .cq-watch-hero h2 a{color:inherit;text-decoration:none}
+.cq .cq-watch-hero p{font-size:13px;line-height:1.6;color:#c5c5c5;margin:0 0 22px}
+.cq .cq-watch-hero time{display:block;font-size:12px;margin-bottom:16px}
+.cq .cq-watch-hero .cq-primary{background:var(--cq-red);color:#fff;font-size:16px;padding:13px 18px;display:inline-flex;gap:24px}
+.cq .cq-watch-discovery{grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+.cq .cq-watch-tile{padding-bottom:16px;border-bottom:1px solid var(--cq-line)}
+.cq .cq-watch-poster{aspect-ratio:16/9;margin-bottom:12px}
+.cq .cq-watch-poster img{opacity:1}
+.cq .cq-watch-poster>span{top:10px;bottom:auto;left:10px;font-size:10px}
+.cq .cq-watch-poster .cq-watch-play{width:32px;height:32px;left:auto;right:12px;bottom:12px;font-size:12px;background:#000b}
+.cq .cq-watch-card-meta{font:11px var(--font-mono);color:var(--cq-red);margin-bottom:6px}
+.cq .cq-watch-tile h3{margin:0 0 6px;line-height:1.15}
+.cq .cq-watch-tile h3 a{font-size:24px;transition:color .15s}
+.cq .cq-watch-tile h3 a:hover{color:var(--cq-red)}
+.cq .cq-watch-tile small,.cq .cq-watch-tile time{font-size:12px;color:var(--cq-muted);display:block}
+.cq .cq-room>.cq-back{margin-bottom:8px}
+.cq .cq-room-heading{display:flex;justify-content:space-between;align-items:center;gap:20px;margin:8px 0 20px}
+.cq .cq-room-heading>div{min-width:0}
+.cq .cq-room-heading h2{font:800 clamp(26px,3vw,39px)/1.08 var(--font-display);margin:8px 0 0;letter-spacing:-.01em;overflow-wrap:anywhere}
+.cq .cq-room-source{display:flex;align-items:center;flex-wrap:wrap;gap:5px 14px;color:var(--cq-muted);font:11px/1.5 var(--font-mono)}
+.cq .cq-room-source .cq-watch-status{color:var(--cq-red)}
+.cq .cq-room-share{flex-shrink:0;font:12px var(--font-mono);border-bottom:1px solid var(--cq-line);padding:9px 0}
+.cq .cq-room-share:hover{color:var(--cq-red)}
+.cq .cq-room-notice{font-size:12px;color:var(--cq-red);overflow-wrap:anywhere;margin-bottom:12px}
+.cq .cq-room-layout{grid-template-columns:minmax(0,2.8fr) minmax(260px,1fr);gap:0;align-items:stretch}
+.cq .cq-room-viewer{min-width:0}
+.cq .cq-player{aspect-ratio:16/9;background:#090909;margin:0;overflow:hidden}
+.cq .cq-player-fallback{background:radial-gradient(ellipse at 30% 20%,#252529,#090909 75%);gap:10px}
+.cq .cq-player-fallback>span{color:var(--cq-red);font-size:30px;margin-bottom:8px}
+.cq .cq-player-fallback h3{font-size:28px;line-height:1.1;margin:0;color:#fff}
+.cq .cq-player-fallback p{margin:0;font-size:13px;line-height:1.5}
+.cq .cq-chat-slot{position:relative;min-width:0}
+.cq .cq-room-conversation{position:absolute;inset:0;display:flex;flex-direction:column;border:1px solid var(--cq-line);border-top:2px solid var(--cq-red);padding:0;margin:0;background:var(--paper)}
+.cq .cq-room-conversation>header{padding:14px 16px 12px;border-bottom:1px solid var(--cq-line);display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.cq .cq-room-conversation h3{font-size:20px;margin:0;line-height:1}
+.cq .cq-room-conversation>header>span{font:10px var(--font-mono);color:var(--cq-muted)}
+.cq .cq-room-messages{flex:1;min-height:0;max-height:none;overflow-y:auto;overscroll-behavior:contain;margin:0;padding:8px 16px;scrollbar-width:thin}
+.cq .cq-room-messages article{padding:8px 0;border:0}
+.cq .cq-chat-meta{display:flex;align-items:baseline;gap:12px;justify-content:space-between;margin-bottom:3px}
+.cq .cq-chat-meta strong{font:600 11px var(--font-mono);color:var(--ink)}
+.cq .cq-chat-meta time{font:10px var(--font-mono);color:var(--cq-muted)}
+.cq .cq-room-messages article p{font-size:13px;line-height:1.55;margin:0;color:var(--ink-2);white-space:pre-wrap;overflow-wrap:anywhere}
+.cq .cq-chat-empty{display:flex;flex-direction:column;justify-content:center;min-height:100%;padding:18px 4px;text-align:center}
+.cq .cq-chat-empty strong{font:600 17px var(--font-display);color:var(--ink)}
+.cq .cq-chat-empty p{font-size:12px;line-height:1.6;color:var(--cq-muted);margin:6px 0}
+.cq .cq-room-composer{flex-shrink:0;padding:12px;border-top:1px solid var(--cq-line);background:var(--paper)}
+.cq .cq-room-composer textarea{width:100%;min-height:55px;max-height:120px;resize:vertical;font-size:13px;padding:9px;background:transparent}
+.cq .cq-room-composer>div{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+.cq .cq-room-composer small{font:10px var(--font-mono);overflow-wrap:anywhere}
+.cq .cq-room-composer .cq-primary{font-size:13px;padding:9px 12px;display:flex;gap:14px;white-space:nowrap}
+.cq .cq-room-secondary{width:calc((100% - 260px));max-width:73.685%;margin-top:12px}
+.cq .cq-room-source-actions{display:flex;gap:10px 20px;align-items:center;flex-wrap:wrap;font:11px var(--font-mono);color:var(--cq-muted);margin-bottom:22px}
+.cq .cq-room-source-actions a{color:var(--ink);text-decoration:none}
+.cq .cq-room-source-actions button{font:inherit;padding:0;color:inherit}
+.cq .cq-room-source-actions>span{margin-left:auto;font-size:10px}
+.cq .cq-room-tabs{display:flex;border-bottom:1px solid var(--cq-line);gap:22px}
+.cq .cq-room-tabs button{font:600 14px var(--font-body);padding:12px 0;color:var(--cq-muted);border-radius:0;position:relative}
+.cq .cq-room-tabs button[aria-selected=true]{color:var(--ink);box-shadow:inset 0 -2px var(--cq-red)}
+.cq .cq-room-tabs button>span{font:10px var(--font-mono);margin-left:8px;color:var(--cq-red)}
+.cq .cq-room-tab-content{padding:20px 0;min-height:130px}
+.cq .cq-room-poll,.cq .cq-room-questions{border:0;padding:0;margin:0}
+.cq .cq-room-tab-content h3{font-size:25px;line-height:1.2;margin:0 0 16px}
+.cq .cq-poll-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.cq .cq-poll-options>button{padding:14px;text-align:left;border:1px solid var(--cq-line);border-radius:0;display:flex;flex-direction:column;justify-content:space-between;gap:18px;font-size:13px;line-height:1.4}
+.cq .cq-poll-options>button strong{font:700 26px var(--font-display)}
+.cq .cq-poll-options>button[aria-pressed=true]{border-color:var(--cq-red);background:var(--faze-red-soft);color:var(--cq-red)}
+.cq .cq-room-secondary small{font-size:11px;color:var(--cq-muted);line-height:1.6}
+.cq .cq-room-questions .cq-form{display:flex;align-items:flex-end;gap:12px;margin:16px 0}
+.cq .cq-room-questions textarea{flex:1;min-width:0;resize:vertical}
+.cq .cq-room-questions .cq-primary{font-size:14px;padding:12px 16px;white-space:nowrap}
+.cq .cq-question-intro h3{margin-bottom:5px}
+.cq .cq-room-questions article{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 0}
+.cq .cq-room-questions article p{margin:0 0 5px}
+.cq .cq-room-questions article>button{flex-shrink:0;font:12px var(--font-mono)}
+.cq .cq-room-questions article>button[aria-pressed=true]{color:var(--cq-red)}
+.cq .cq-question-empty{font-size:13px;color:var(--cq-muted)}
+.cq .cq-room-discussion p{font-size:14px;line-height:1.7;color:var(--cq-muted);max-width:65ch;margin:0 0 12px}
+.cq .cq-room-discussion small,.cq .cq-room-discussion a{display:block}
+.cq .cq-room-thread-link{font:12px var(--font-mono);color:var(--cq-red);text-decoration:none;display:inline-block;margin:0 0 22px}
+.cq .cq-room button:focus-visible,.cq .cq-watch-home a:focus-visible{outline:2px solid var(--cq-red);outline-offset:4px}
+@media(max-width:1050px){.cq .cq-room-layout{grid-template-columns:minmax(0,2.3fr) minmax(240px,1fr)}.cq .cq-room-secondary{width:calc(100% - 240px);max-width:69.7%}.cq .cq-room-conversation>header>span{display:none}.cq .cq-room-composer textarea{min-height:44px}.cq .cq-watch-hero-copy{padding:20px}.cq .cq-watch-hero h2{font-size:32px}}
+@media(max-width:760px){.cq .cq-room-layout{grid-template-columns:1fr}.cq .cq-chat-slot{height:360px}.cq .cq-room-secondary{width:100%;max-width:none}.cq .cq-room-conversation>header>span{display:block}.cq .cq-room-heading{align-items:flex-start;gap:12px}.cq .cq-room-source{font-size:10px;gap:4px 10px}.cq .cq-room-share{font-size:11px;white-space:nowrap}.cq .cq-watch-hero{grid-template-columns:1fr}.cq .cq-watch-hero-copy{padding:22px}.cq .cq-watch-hero h2{font-size:34px}.cq .cq-watch-discovery{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 16px}.cq .cq-poll-options{grid-template-columns:1fr}.cq .cq-poll-options>button{flex-direction:row;align-items:center;gap:12px;padding:12px}.cq .cq-room-source-actions{margin-bottom:12px}.cq .cq-room-source-actions>span{margin-left:0}.cq .cq-room-questions .cq-form{flex-direction:column;align-items:stretch}.cq .cq-room-composer textarea,.cq .cq-room-questions textarea{font-size:16px}}
+@media(max-width:440px){.cq .cq-watch-discovery{grid-template-columns:1fr}.cq .cq-room-heading{flex-wrap:wrap}.cq .cq-room-share{padding:4px 0}.cq .cq-room-heading h2{font-size:28px}.cq .cq-watch-filters button{padding:7px 9px;font-size:11px}.cq .cq-room-tabs{gap:20px}.cq .cq-room-tabs button{font-size:13px}}
+@media(prefers-reduced-motion:reduce){.cq .cq-watch-hero-image img,.cq .cq-watch-poster img{transition:none}}

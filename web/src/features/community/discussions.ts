@@ -13,3 +13,6 @@ export function sortThreads(threads: Thread[], sort: Sort, now = Date.now()): Th
   const hot = (t: Thread) => t.score / Math.pow(2 + Math.max(0, (now - Date.parse(t.created_at)) / 3600000), 1.5);
   return [...threads].sort((a,b) => (sort === 'new' ? 0 : sort === 'top' ? b.score-a.score : hot(b)-hot(a)) || Date.parse(b.created_at)-Date.parse(a.created_at) || a.id.localeCompare(b.id));
 }
+
+/** Display stored topic metadata once; retain the original body for API/storage. */
+export const discussionText = (body: string) => body.replace(/^#[^\n]+\n\n/, '').replace(/^DEMO (?:DISCUSSION|EVENT|CHALLENGE) · /, '');

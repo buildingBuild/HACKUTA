@@ -32,6 +32,7 @@ import { LeaderboardsPage } from './features/profile';
 import { RecruitingPage } from './features/recruiting/RecruitingPage';
 import { RgbPage } from './features/rgb/RgbPage';
 import { TimelinePage } from './features/timeline';
+import { MentorshipPage } from './features/mentorship/MentorshipPage';
 import { RewardsPage } from './features/rewards';
 
 const match = (path: string, pattern: RegExp) => path.match(pattern)?.[1];
@@ -70,6 +71,7 @@ export function App() {
     page = <Page><Loading /></Page>;
   } else if (path === '/community' || path.startsWith('/community/')) page = loading ? null : <CommunityRoute user={user} />;
   else if (path === '/feed') page = loading ? null : <FeedPage user={user} />;
+  else if (path === '/coaching') page = loading ? null : <MentorshipPage user={user} />;
   else if (path === '/leaderboards') page = <LeaderboardsPage highlightHandle={user?.handle} />;
   else if (path === '/rgb') page = <RgbPage />;
   else if (path === '/timeline') page = <TimelinePage />;
