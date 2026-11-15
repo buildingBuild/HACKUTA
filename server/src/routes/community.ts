@@ -15,7 +15,7 @@ export interface CommunityOptions {
   /** Hook for a future shared moderation inbox; no schema changes required. */
   report?: (report: Row) => Promise<void>;
   blockedWords?: string[];
-  /** Test/offline override; default reuses the shared Gemini generator when configured. */
+  /** Optional injected curator; defaults to a deterministic recap without external AI dependencies. */
   pulseGenerate?: false | ((prompt: string) => Promise<string>);
 }
 export const WATCH_ROOMS = [
@@ -128,6 +128,46 @@ export function createCommunityRouter(options: CommunityOptions = {}) {
   const decorate = (row: Row, target: 'thread' | 'comment', uid?: string) => ({ ...row, author: users.find(u => u.id === row.user_id), clip: clips.find(c => c.id === row.clip_id) ?? null, viewer_vote: votes.get(`${uid}:${target}:${row.id}`) ?? 0, ...(target === 'thread' ? { comment_count: comments.filter(c => c.thread_id === row.id && !c.body.startsWith(BALLOT)).length } : {}) });
   const select = (table: 'threads' | 'comments') => `SELECT t.*, json_build_object('id',u.id,'handle',u.handle,'display_name',u.display_name,'avatar_url',u.avatar_url) AS author, CASE WHEN c.id IS NULL THEN NULL ELSE row_to_json(c) END AS clip, COALESCE(v.value,0) AS viewer_vote ${table === 'threads' ? ", (SELECT count(*)::int FROM comments WHERE thread_id = t.id AND left(body,15)<>'[watch-ballot] ') AS comment_count" : ''} FROM ${table} t JOIN users u ON u.id=t.user_id LEFT JOIN clips c ON c.id=t.clip_id LEFT JOIN votes v ON v.target_id=t.id AND v.target_type='${table === 'threads' ? 'thread' : 'comment'}' AND v.user_id::text=$1`;
   const send = (res: Response, data: unknown, status = 200) => res.status(status).json({ data, mode });
+  // Canonical social conversation for an existing shared clip; no new tables or clip storage.
+  router.get('/community/clip-threads', wrap(async (req,res) => {
+    const ids = typeof req.query.ids === 'string' ? [...new Set(req.query.ids.split(',').filter(Boolean).map(id))] : [];
+    if(ids.length>100) fail(400,'Request at most 100 clips');
+    if(!ids.length) return send(res,[]);
+    const rows = options.db ? await query(`${select('threads')} WHERE t.clip_id::text=ANY($2::text[]) AND t.type='post' ORDER BY t.created_at,t.id`,[viewer(req)??null,ids]) : threads.filter(t=>ids.includes(t.clip_id)&&t.type==='post').sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at)||a.id.localeCompare(b.id)).map(t=>decorate(t,'thread',viewer(req)));
+    const seen=new Set<string>();
+    return send(res,rows.filter(t=>{if(seen.has(t.clip_id))return false;seen.add(t.clip_id);return true;}));
+  }));
+  router.post('/community/clips/:clipId/discussion', wrap(async (req,res) => {
+    const uid=await userId(req), clip=await lookup('clips',id(req.params.clipId));
+    if(clip.game!=='cs2')fail(400,'Only CS2 clips can be shared');
+    let tid:string; let created=false;
+    if(options.db){
+      const client=await options.db.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query('SELECT id FROM clips WHERE id=$1 FOR UPDATE',[clip.id]);
+        const existing=(await client.query("SELECT id FROM threads WHERE clip_id=$1 AND type='post' ORDER BY created_at,id LIMIT 1",[clip.id])).rows[0];
+        if(existing)tid=existing.id;
+        else {
+          if(clip.user_id!==uid)fail(403,'The creator needs to share this clip first');
+          const board=(await client.query("SELECT id FROM communities WHERE slug='clips'")).rows[0];
+          if(!board)fail(503,'Clips community is not seeded');
+          tid=randomUUID();
+          await client.query("INSERT INTO threads (id,community_id,user_id,type,title,body,clip_id,score) VALUES ($1,$2,$3,'post',$4,$5,$6,0)",[tid,board.id,uid,text(String(clip.title||'CS2 clip').slice(0,180),'Title',180),'#Trickshots\n\n'+text(String(clip.title||'CS2 clip').slice(0,180),'Title',180),clip.id]);
+          created=true;
+        }
+        await client.query('COMMIT');
+      }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
+      return send(res,(await query(`${select('threads')} WHERE t.id=$2`,[uid,tid!]))[0],created?201:200);
+    }
+    const existing=threads.filter(t=>t.clip_id===clip.id&&t.type==='post').sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at)||a.id.localeCompare(b.id))[0];
+    if(existing)return send(res,decorate(existing,'thread',uid));
+    if(clip.user_id!==uid)fail(403,'The creator needs to share this clip first');
+    const board=communities.find(c=>c.slug==='clips')!;
+    const title=text(String(clip.title||'CS2 clip').slice(0,180),'Title',180);
+    const row={id:randomUUID(),community_id:board.id,user_id:uid,type:'post',title,body:'#Trickshots\n\n'+title,clip_id:clip.id,score:0,created_at:new Date().toISOString()};
+    threads.push(row);return send(res,decorate(row,'thread',uid),201);
+  }));
   router.get('/communities', wrap(async (_req, res) => send(res, options.db ? await query('SELECT * FROM communities ORDER BY name') : communities)));
   router.get('/communities/:slug/threads', wrap(async (req, res) => {
     const sort = req.query.sort ?? 'hot';

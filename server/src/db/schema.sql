@@ -255,3 +255,55 @@ BEGIN
     RAISE NOTICE 'TimescaleDB not available: time-series tables stay plain (leaderboards.sql will be skipped)';
   END IF;
 END $$;
+
+-- ---------- Clip analysis pipeline (Joe): Gemini + ElevenLabs, see server/src/lib/media ----------
+ALTER TABLE clips ADD COLUMN IF NOT EXISTS job_id     uuid;
+ALTER TABLE clips ADD COLUMN IF NOT EXISTS source_url text;          -- original video, deep-linked to the moment
+ALTER TABLE clips ADD COLUMN IF NOT EXISTS start_s    real;          -- position in the original video
+ALTER TABLE clips ADD COLUMN IF NOT EXISTS end_s      real;
+ALTER TABLE clips ADD COLUMN IF NOT EXISTS category   text;          -- pro | funny | content
+ALTER TABLE clips ADD COLUMN IF NOT EXISTS ai_score   int;           -- 0-100
+ALTER TABLE clips ADD COLUMN IF NOT EXISTS ai_reason  text;
+ALTER TABLE clips ADD COLUMN IF NOT EXISTS ai_rules   text[];        -- scoring rules that fired
+
+CREATE TABLE IF NOT EXISTS clip_jobs (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     uuid REFERENCES users(id) ON DELETE CASCADE,
+  source      text NOT NULL,                 -- video URL or local file path
+  platform    text,                          -- twitch | youtube | folder
+  title       text,
+  status      text NOT NULL DEFAULT 'queued', -- queued | running | done | failed
+  stage       text,
+  progress    real NOT NULL DEFAULT 0,
+  error       text,
+  clip_count  int NOT NULL DEFAULT 0,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS clip_jobs_user_idx ON clip_jobs (user_id, created_at DESC);
+
+-- per-0.5s analysis signals for a video (time = job start + offset): loudness, gunfire, speech, laughter, rule score...
+CREATE TABLE IF NOT EXISTS clip_signals (
+  time    timestamptz NOT NULL,
+  job_id  uuid NOT NULL,
+  kind    text NOT NULL,
+  value   double precision NOT NULL
+);
+CREATE INDEX IF NOT EXISTS clip_signals_job_kind_time_idx ON clip_signals (job_id, kind, time);
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    PERFORM create_hypertable('clip_signals', 'time', if_not_exists => TRUE, migrate_data => TRUE);
+  END IF;
+END $$;
+ALTER TABLE clip_jobs ADD COLUMN IF NOT EXISTS requested text; -- what the user typed (channel/video/folder), for the result cache
+-- Human mentorship requests: pending only, without payments or scheduling.
+CREATE TABLE IF NOT EXISTS mentorship_requests (
+ id uuid PRIMARY KEY,
+ user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ request_key uuid NOT NULL,
+ payload jsonb NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT now(),
+ UNIQUE(user_id,request_key)
+);
+CREATE INDEX IF NOT EXISTS mentorship_requests_user_time ON mentorship_requests(user_id,created_at DESC);

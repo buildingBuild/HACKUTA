@@ -15,6 +15,7 @@
     "db:migrate": "npm run db:migrate -w server",
     "db:seed": "npm run db:seed -w server",
     "setup": "npm run db:migrate && npm run db:seed",
-    "test": "npm run test -w server"
+    "test": "npm run test -w server",
+    "analyze": "npm run analyze -w server --"
   }
 }

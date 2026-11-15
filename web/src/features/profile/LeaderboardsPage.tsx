@@ -3,7 +3,7 @@ import "./profile.css";
 import "./leaderboards.css";
 import { FazeLogo } from "../../components/FazeLogo";
 import { fetchLeaderboard, profileUrl } from "./api";
-import { Avatar, LevelBadge, StateBox } from "./components";
+import { Avatar, StateBox } from "./components";
 import { usePolling } from "./usePolling";
 import { useRankMoves, type RankMove } from "./useRankMoves";
 import { fmtCompact, fmtLeaderboardValue } from "./format";
@@ -24,10 +24,8 @@ function MoveBadge({ move }: { move: RankMove | undefined }) {
 }
 
 const TABS: { type: LeaderboardType; label: string; blurb: string }[] = [
-  { type: "elo", label: "ELO", blurb: "Highest FACEIT ELO right now." },
-  { type: "improvement", label: "Most improved", blurb: "Biggest ELO gain over the window." },
-  { type: "creator-growth", label: "Creator growth", blurb: "Follower growth across linked socials." },
   { type: "karma", label: "Karma", blurb: "Upvotes earned in the community." },
+  { type: "creator-growth", label: "Creator growth", blurb: "Follower growth across linked socials." },
 ];
 
 const WINDOWS = [7, 30, 90] as const;
@@ -39,10 +37,10 @@ export type LeaderboardsPageProps = {
   limit?: number;
 };
 
-export function LeaderboardsPage({ initialType = "elo", highlightHandle, limit = 20 }: LeaderboardsPageProps) {
-  const [type, setType] = useState<LeaderboardType>(initialType);
+export function LeaderboardsPage({ initialType = "karma", highlightHandle, limit = 20 }: LeaderboardsPageProps) {
+  const [type, setType] = useState<LeaderboardType>(TABS.some((t) => t.type === initialType) ? initialType : "karma");
   const [windowDays, setWindowDays] = useState<number>(30);
-  const windowed = type === "improvement" || type === "creator-growth";
+  const windowed = type === "creator-growth";
   const { data, error, loading } = usePolling(() => fetchLeaderboard(type, { limit, window: windowed ? windowDays : undefined }), [type, windowDays, limit]);
   const tab = TABS.find((t) => t.type === type)!;
   const board = windowed ? `${type}:${windowDays}` : type;
@@ -129,7 +127,6 @@ export function LeaderboardsPage({ initialType = "elo", highlightHandle, limit =
                     <a className="lbx-step__card" href={profileUrl(e.handle)}>
                       <span className="lbx-step__avatar">
                         <Avatar name={e.display_name} url={e.avatar_url} size={e.rank === 1 ? 88 : 72} />
-                        <LevelBadge level={e.faceit_level} size="sm" />
                       </span>
                       <strong className="lbx-step__name">{e.display_name}</strong>
                       <span className="lbx-step__handle">
@@ -173,7 +170,6 @@ export function LeaderboardsPage({ initialType = "elo", highlightHandle, limit =
                           <span>@{e.handle}</span>
                         </span>
                       </a>
-                      <LevelBadge level={e.faceit_level} size="sm" />
                       <span className="lbx-row__value">
                         {fmt(e.value)}
                         {e.sample !== undefined && <small>{fmtCompact(e.sample)} followers</small>}

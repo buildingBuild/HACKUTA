@@ -149,3 +149,18 @@
   .hq__wall { grid-template-columns: repeat(3, 1fr); }
   .hq__count { display: none; }
 }
+
+/* real analyzed clips as collage tiles */
+.frame--real .frame__thumb { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: frame-pan 7s ease-in-out infinite alternate; }
+.frame--real .frame__time { text-transform: uppercase; color: var(--faze-red); }
+
+/* waiting for real clips: blank scanning tile */
+.frame--pending { background: #141414; }
+.frame--pending::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(228, 0, 43, 0.18) 50%, transparent 70%) 0 0 / 250% 100%;
+  animation: pending-scan 1.2s linear infinite;
+}
+@keyframes pending-scan { to { background-position: -250% 0; } }

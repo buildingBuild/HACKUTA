@@ -9,7 +9,7 @@ import type { OnboardingData } from './types';
 export type ClipCategory = 'highlights' | 'clutches' | 'funny' | 'content';
 
 export interface ClipSource {
-  key: 'faceit' | 'twitch' | 'youtube' | 'psn' | 'xbox';
+  key: 'upload' | 'twitch' | 'youtube' | 'psn' | 'xbox';
   label: string;
   icon: string;
 }
@@ -51,7 +51,8 @@ export const MAPS: DemoClip['map'][] = [
   ['Overpass', '#23262b', '#9aa3ad'],
 ];
 
-export const FACEIT_SOURCE: ClipSource = { key: 'faceit', label: 'FACEIT', icon: '/brand/social/faceit.svg' };
+/** Clips uploaded straight to HQ under your gamertag (always available, no account linking) */
+export const UPLOAD_SOURCE: ClipSource = { key: 'upload', label: 'your uploads', icon: '/brand/faze-logo.svg' };
 export const PLATFORM_SOURCES: ClipSource[] = [
   { key: 'twitch', label: 'Twitch', icon: '/brand/social/twitch.svg' },
   { key: 'youtube', label: 'YouTube', icon: '/brand/social/youtube.svg' },
@@ -59,13 +60,13 @@ export const PLATFORM_SOURCES: ClipSource[] = [
   { key: 'xbox', label: 'Xbox', icon: '/brand/social/xbox.svg' },
 ];
 
-/** FACEIT (always, via the gamertag) + whichever platforms they linked */
+/** Your HQ uploads (always) + whichever platforms they linked */
 export function linkedSources(data: OnboardingData): ClipSource[] {
-  return [FACEIT_SOURCE, ...PLATFORM_SOURCES.filter((s) => data[s.key as 'twitch'].trim())];
+  return [UPLOAD_SOURCE, ...PLATFORM_SOURCES.filter((s) => data[s.key as 'twitch'].trim())];
 }
 
 export function handleFor(source: ClipSource, data: OnboardingData): string {
-  if (source.key === 'faceit') return data.gamertag;
+  if (source.key === 'upload') return data.gamertag;
   if (source.key === 'youtube') return `@${data.youtube}`;
   return data[source.key];
 }

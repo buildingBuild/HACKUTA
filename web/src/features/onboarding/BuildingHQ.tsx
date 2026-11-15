@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FazeLogo } from '../../components/FazeLogo';
-import { ClipFrame } from './ClipFrame';
+import { platformOf, type RealClip } from '../clips/api';
 import { linkedSources, makeClips } from './clips';
 import type { OnboardingData } from './types';
 import './building.css';
@@ -17,13 +17,31 @@ type Phase = 'scan' | 'analyze' | 'reveal';
 const SPANS: Record<number, [number, number]> = { 0: [2, 2], 5: [2, 1], 9: [1, 2], 13: [2, 2], 18: [2, 1] };
 const TILE_COUNT = 26; // 7 cols x 5 rows with the bento spans above
 
-export function BuildingHQ({ data, onDone }: { data: OnboardingData; onDone: () => void }) {
+const SRC_ICON = { twitch: '/brand/social/twitch.svg', youtube: '/brand/social/youtube.svg', folder: '/brand/social/folder.svg' };
+
+/** A real analyzed clip as a collage tile: thumbnail + title + AI score. */
+function RealTile({ clip, delay, scored, style }: { clip: RealClip; delay: number; scored: boolean; style: React.CSSProperties }) {
+  return (
+    <figure className={`frame frame--real ${scored ? 'frame--scored' : ''}`} style={{ ['--d' as string]: `${delay}ms`, ['--sdelay' as string]: `${delay * 0.6}ms`, ['--rot' as string]: '0deg', ...style }}>
+      {clip.thumbnail_url && <img className="frame__thumb" src={clip.thumbnail_url} alt="" />}
+      <span className="frame__grain" />
+      <figcaption className="frame__meta">
+        <img src={SRC_ICON[platformOf(clip)]} alt="" />
+        <span className="frame__title">{clip.title}</span>
+        <span className="frame__time">{clip.category}</span>
+      </figcaption>
+      <span className="frame__score">{clip.ai_score}</span>
+    </figure>
+  );
+}
+
+export function BuildingHQ({ data, real, waiting, onDone }: { data: OnboardingData; real?: RealClip[] | null; waiting?: boolean; onDone: () => void }) {
   const [phase, setPhase] = useState<Phase>('scan');
   const [found, setFound] = useState(0);
 
   const sources = useMemo(() => linkedSources(data), [data]);
 
-  const total = 14 + sources.length * 9;
+  const total = real?.length ?? 0;
 
   // same seeded clips the profile shows next; shuffle only the entrance order
   const clips = useMemo(() => makeClips(data, TILE_COUNT), [data]);
@@ -31,13 +49,14 @@ export function BuildingHQ({ data, onDone }: { data: OnboardingData; onDone: () 
 
   // phase timeline
   useEffect(() => {
+    if (waiting) return;
     const t = [
       window.setTimeout(() => setPhase('analyze'), 2700),
       window.setTimeout(() => setPhase('reveal'), 4300),
       window.setTimeout(onDone, 6600),
     ];
     return () => t.forEach(window.clearTimeout);
-  }, [onDone]);
+  }, [onDone, waiting]);
 
   // clip counter ticking up during the scan
   useEffect(() => {
@@ -61,7 +80,7 @@ export function BuildingHQ({ data, onDone }: { data: OnboardingData; onDone: () 
         : 'HQ online';
 
   return (
-    <div className={`hq hq--${phase}`} onClick={onDone} role="status" aria-live="polite">
+    <div className={`hq hq--${phase}`} onClick={waiting ? undefined : onDone} role="status" aria-live="polite">
       <header className="hq__bar">
         <span className="hq__status">
           <span className="hq__dot" />
@@ -82,17 +101,10 @@ export function BuildingHQ({ data, onDone }: { data: OnboardingData; onDone: () 
         {clips.map((c) => {
           const delay = order.indexOf(c.id) * 85;
           const span = SPANS[c.id] ?? [1, 1];
-          return (
-            <ClipFrame
-              key={c.id}
-              clip={c}
-              gamertag={data.gamertag}
-              delay={delay}
-              scored={phase !== 'scan'}
-              scoreDelay={delay * 0.6}
-              style={{ gridColumn: `span ${span[0]}`, gridRow: `span ${span[1]}` }}
-            />
-          );
+          const style = { gridColumn: `span ${span[0]}`, gridRow: `span ${span[1]}` };
+          if (real?.length) return <RealTile key={c.id} clip={real[c.id % real.length]} delay={delay} scored={phase !== 'scan'} style={style} />;
+          // Never present synthetic clips as results from linked accounts.
+          return <figure key={c.id} className="frame frame--pending" style={{ ['--d' as string]: `${delay}ms`, ['--rot' as string]: '0deg', ...style }} />;
         })}
       </div>
 
@@ -104,7 +116,7 @@ export function BuildingHQ({ data, onDone }: { data: OnboardingData; onDone: () 
         </p>
       </div>
 
-      <span className="hq__skip">click to skip</span>
+      <span className="hq__skip">{waiting ? 'Loading your clips…' : 'click to skip'}</span>
     </div>
   );
 }

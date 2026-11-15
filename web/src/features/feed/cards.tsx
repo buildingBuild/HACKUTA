@@ -4,7 +4,7 @@ import { useLive } from '../../components/live/useLive';
 import { FazeLogo } from '../../components/FazeLogo';
 import { createCommunityApi } from '../community/api';
 import { ClipFrame } from '../onboarding/ClipFrame';
-import { FACEIT_SOURCE, MAPS, type DemoClip } from '../onboarding/clips';
+import { MAPS, UPLOAD_SOURCE, type DemoClip } from '../onboarding/clips';
 import type { ExternalItem, FeedClip, FeedItem, Trivia, Versus } from './api';
 
 const threadHref = (id: string) => `/community?thread=${encodeURIComponent(id)}`;
@@ -100,7 +100,7 @@ function toFrame(c: FeedClip, i: number): DemoClip {
   const map = MAPS.find((m) => m[0].toLowerCase() === (c.map ?? '').toLowerCase()) ?? MAPS[i % MAPS.length];
   const t = c.title.toLowerCase();
   const kills = /ace|quad/.test(t) ? 3 : /triple|1v3/.test(t) ? 3 : /1v2|double|spray/.test(t) ? 2 : 1;
-  return { id: i, title: c.title, category: 'highlights', map, source: FACEIT_SOURCE, time: '00:' + String(10 + (i * 7) % 49).padStart(2, '0'), score: 0, rot: 0, progress: 30 + (i * 13) % 60, kills };
+  return { id: i, title: c.title, category: 'highlights', map, source: UPLOAD_SOURCE, time: '00:' + String(10 + (i * 7) % 49).padStart(2, '0'), score: 0, rot: 0, progress: 30 + (i * 13) % 60, kills };
 }
 
 function ClipCard({ clip, shape, index }: { clip: FeedClip; shape: string; index: number }) {

@@ -111,3 +111,12 @@ a.nav__item:hover, button.nav__item:hover, .nav__item.is-on { background: var(--
   .nav__menu--features .nav__menu-panel { position: fixed; left: 16px; right: 16px; top: 108px; min-width: 0; }
   .nav__right { margin-left: auto; }
 }
+
+/* Keep the expanded main navigation usable with Coaching and Timeline on tablets. */
+@media (min-width: 641px) and (max-width: 1000px) {
+  .nav { flex-wrap: wrap; gap: 10px 20px; }
+  .nav__links { order: 3; flex-basis: 100%; flex-wrap: wrap; }
+}
+
+.nav__points { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.nav__points strong { color: var(--faze-red); font-variant-numeric: tabular-nums; }

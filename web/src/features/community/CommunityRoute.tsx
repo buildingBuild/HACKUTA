@@ -10,11 +10,28 @@ export function CommunityRoute({ user, uploadUrl }: { user: SessionUser | null; 
   useEffect(() => {
     let live = true;
     setClips([]); setError('');
-    fetch(`/api/clips`, { headers: authHeaders() })
-      .then(async response => { if (!response.ok) throw new Error('Clip library is unavailable. Discussions still work; retry to attach a clip.'); return response.json(); })
-      .then(result => { if (live) setClips(result.clips ?? []); })
-      .catch(reason => { if (live) setError(reason.message); });
-    return () => { live = false; };
+    let inFlight = false;
+    const refresh = async (force = false) => {
+      if(inFlight || (!force && document.visibilityState === 'hidden'))return;
+      inFlight = true;
+      try {
+        const response = await fetch('/api/clips', { headers: authHeaders() });
+        if(!response.ok)throw new Error('Clip library unavailable. Discussions still work.');
+        const result = await response.json();
+        if(live){setClips(old => {
+          const incoming: Clip[] = result.clips ?? [];
+          const byId = new Map(incoming.map(c=>[c.id,c]));
+          return [...incoming.filter(c=>!old.some(v=>v.id===c.id)), ...old.filter(c=>byId.has(c.id)).map(c=>byId.get(c.id)!)];
+        });setError('');}
+      } catch(reason) { if(live)setError(reason instanceof Error?reason.message:'Clip library unavailable.'); }
+      finally { inFlight = false; }
+    };
+    void refresh(true);
+    const timer = setInterval(()=>void refresh(),20000);
+    const focus = () => void refresh(true);
+    window.addEventListener('focus',focus);
+    document.addEventListener('visibilitychange',focus);
+    return () => { live = false; clearInterval(timer);window.removeEventListener('focus',focus);document.removeEventListener('visibilitychange',focus); };
   }, [user?.id]);
   const params = new URLSearchParams(window.location.search);
   return <>{error && <p role="alert" style={{ padding: 16 }}>{error}</p>}<CommunityPage uploadUrl={uploadUrl} currentUser={user ? { ...user, display_name: user.display_name || user.handle } : undefined} clips={clips} initialBoard={params.get('board') || 'faze-cs2'} initialClipId={params.get('clip') || ''} /></>;

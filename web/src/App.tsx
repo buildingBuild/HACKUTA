@@ -1,6 +1,7 @@
 // App shell + tiny path router (no dependency; links are plain <a href>). SHARED.
 // Route table (REQUIREMENTS.md §5.1):
-//   /                       Home (Lionsgate-style showcase)          public
+//   /                       Home = your profile (signed out -> /join) public
+//   /old-home               archived showcase home (not in nav)      public
 //   /join                   onboarding flow (creates an account)     public
 //   /community/*            Community (Dahiya)                       public, writes need sign-in
 //   /feed                   FaZe Feed, experimental masonry (Joe)    public
@@ -19,17 +20,19 @@ import { featureByPath } from './components/features';
 import { GridBackground } from './components/GridBackground';
 import { NotFound } from './components/NotFound';
 import { RequireRole } from './components/RequireRole';
-import { useSessionUser } from './components/session';
+import { homeFor, useSessionUser } from './components/session';
 import { Loading, Page } from './components/ui';
 import { AdminPage } from './features/admin/AdminPage';
 import { CommunityRoute } from './features/community/CommunityRoute';
+import { HQPage } from './features/hq/HQPage';
 import { FeedPage } from './features/feed/FeedPage';
 import { HomePage } from './features/home/HomePage';
 import { OnboardingFlow } from './features/onboarding/OnboardingFlow';
-import { LeaderboardsPage, ProfilePage } from './features/profile';
+import { LeaderboardsPage } from './features/profile';
 import { RecruitingPage } from './features/recruiting/RecruitingPage';
 import { RgbPage } from './features/rgb/RgbPage';
 import { TimelinePage } from './features/timeline';
+import { MentorshipPage } from './features/mentorship/MentorshipPage';
 import { RewardsPage } from './features/rewards';
 
 const match = (path: string, pattern: RegExp) => path.match(pattern)?.[1];
@@ -51,13 +54,24 @@ export function App() {
   const handle = match(path, /^\/u\/([^/]+)$/);
   const feature = featureByPath(path);
 
-  if (path === '/') page = <HomePage user={user} />;
-  else if (handle) page = <ProfilePage handle={decodeURIComponent(handle)} />;
+  if (path === '/') {
+    // Home is your own profile. Signed out -> onboarding; staff -> their workspace.
+    if (loading) page = <Page><Loading /></Page>;
+    else if (user && user.role === 'user')
+      page = <HQPage handle={user.handle} />; // one profile everywhere (features/hq)
+    else {
+      window.location.replace(user ? homeFor(user) : '/join');
+      page = null;
+    }
+  } else if (path === '/old-home') page = <HomePage user={user} />; // archived showcase home, not in the nav
+  else if (handle)
+    page = <HQPage handle={decodeURIComponent(handle)} />;
   else if (path === '/me') {
     if (!loading) window.location.replace(user ? `/u/${encodeURIComponent(user.handle)}` : '/join');
     page = <Page><Loading /></Page>;
   } else if (path === '/community' || path.startsWith('/community/')) page = loading ? null : <CommunityRoute user={user} />;
   else if (path === '/feed') page = loading ? null : <FeedPage user={user} />;
+  else if (path === '/coaching') page = loading ? null : <MentorshipPage user={user} />;
   else if (path === '/leaderboards') page = <LeaderboardsPage highlightHandle={user?.handle} />;
   else if (path === '/rgb') page = <RgbPage />;
   else if (path === '/timeline') page = <TimelinePage />;

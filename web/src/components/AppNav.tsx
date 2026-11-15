@@ -1,8 +1,8 @@
-// Top nav: Home · Community · Leaderboards · Features ▾, plus the user menu (Profile, Recruiting, Admin,
+// Top nav: Home · Feed · Coaching · Leaderboards · Rewards · Timeline, plus the user menu (Profile, Recruiting, Admin,
 // demo login, sign out). SHARED (Joe): restyle freely, keep the demo login picker for judging.
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { FEATURES } from './features';
 import { FazeLogo } from './FazeLogo';
+import { api } from './api';
 import { homeFor, isStaff, signIn, type SessionUser } from './session';
 import './AppNav.css';
 
@@ -13,15 +13,15 @@ interface Props {
 
 const MAIN = [
   { href: '/', label: 'Home', match: (p: string) => p === '/' },
-  { href: '/community', label: 'Community', match: (p: string) => p.startsWith('/community') },
   { href: '/feed', label: 'Feed', match: (p: string) => p === '/feed' },
+  { href: '/coaching', label: 'Coaching', match: (p: string) => p === '/coaching' },
   { href: '/leaderboards', label: 'Leaderboards', match: (p: string) => p.startsWith('/leaderboards') },
-  { href: '/timeline', label: 'Timeline', match: (p: string) => p === '/timeline' },
   { href: '/rewards', label: 'Rewards', match: (p: string) => p === '/rewards' },
+  { href: '/timeline', label: 'Timeline', match: (p: string) => p === '/timeline' },
 ];
 
 // Pages that make sense for any account: stay put when switching demo users.
-const STAY = [/^\/community/, /^\/leaderboards/, /^\/timeline$/, /^\/rewards$/, /^\/u\//, /^\/(hud|rgb|guessr|wall)$/];
+const STAY = [/^\/coaching$/, /^\/community/, /^\/leaderboards/, /^\/timeline$/, /^\/rewards$/, /^\/u\//, /^\/(hud|rgb|guessr|wall)$/];
 
 /** <details> dropdown that closes on outside click / Escape. */
 function Menu({ label, className, children }: { label: React.ReactNode; className?: string; children: React.ReactNode }) {
@@ -50,6 +50,26 @@ function Menu({ label, className, children }: { label: React.ReactNode; classNam
 export function AppNav({ user, path }: Props) {
   const [users, setUsers] = useState<SessionUser[]>([]);
   const [switching, setSwitching] = useState(false);
+  const [points, setPoints] = useState<{ userId: string; balance: number | null } | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    const userId = user.id;
+    let live = true;
+    const refresh = () => {
+      void api<{ balance: number | null }>('/api/rewards/me')
+        .then((out) => { if (live) setPoints({ userId, balance: out.balance }); })
+        .catch(() => { if (live) setPoints({ userId, balance: null }); });
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    return () => {
+      live = false;
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     fetch('/api/auth/demo-users')
@@ -69,7 +89,6 @@ export function AppNav({ user, path }: Props) {
   }
 
   const staff = isStaff(user);
-  const featureOn = FEATURES.some((f) => path === f.path);
 
   const picker = (
     <label className="nav__login">
@@ -99,17 +118,6 @@ export function AppNav({ user, path }: Props) {
             {l.label}
           </a>
         ))}
-        <Menu label={<span className={`nav__link ${featureOn ? 'nav__link--on' : ''}`}>Features ▾</span>} className="nav__menu--features">
-          {FEATURES.map((f) => (
-            <a key={f.slug} href={f.path} className={`nav__feature ${path === f.path ? 'is-on' : ''}`}>
-              <span className="nav__feature-mark" aria-hidden>{f.mark}</span>
-              <span>
-                <strong>{f.name}</strong>
-                <small>{f.status === 'soon' ? 'Coming soon' : f.cta}</small>
-              </span>
-            </a>
-          ))}
-        </Menu>
       </nav>
 
       <div className="nav__right">
@@ -125,6 +133,10 @@ export function AppNav({ user, path }: Props) {
             }
           >
             <a href={`/u/${encodeURIComponent(user.handle)}`} className="nav__item">My profile</a>
+            <a href="/rewards" className="nav__item nav__points">
+              <span>FaZe Points</span>
+              <strong>{points?.userId === user.id ? (points.balance?.toLocaleString() ?? 'Unavailable') : '…'}</strong>
+            </a>
             {staff && <a href="/recruiting" className={`nav__item ${path.startsWith('/recruiting') ? 'is-on' : ''}`}>Recruiting</a>}
             {user.role === 'admin' && <a href="/admin" className={`nav__item ${path.startsWith('/admin') ? 'is-on' : ''}`}>Admin</a>}
             <div className="nav__item nav__item--picker">{picker}</div>

@@ -12,12 +12,9 @@ import './feed.css';
 
 const FILTERS: { id: string; label: string; kinds: FeedKind[] | null }[] = [
   { id: 'all', label: 'Everything', kinds: null },
-  { id: 'clips', label: 'Clips', kinds: ['clip', 'live'] },
-  { id: 'talk', label: 'Talk', kinds: ['thread', 'voice', 'quote', 'reddit'] },
-  { id: 'play', label: 'Play', kinds: ['versus', 'trivia', 'challenge', 'board', 'live'] },
-  { id: 'watch', label: 'Watch', kinds: ['yt', 'watch', 'live'] },
+  { id: 'clips', label: 'Clips', kinds: ['clip'] },
+  { id: 'community', label: 'Community', kinds: null },
   { id: 'web', label: 'Around the web', kinds: ['yt', 'reddit'] },
-  { id: 'squad', label: 'The squad', kinds: ['player'] },
 ];
 
 const MAX_PAGES = 6;
@@ -125,7 +122,9 @@ export function FeedPage({ user }: { user: SessionUser | null }) {
           )}
         </div>
         <nav className="fd-filters" aria-label="Filter the feed">
-          {FILTERS.map((f) => (
+          {FILTERS.map((f) => f.id === 'community' ? (
+            <a key={f.id} href="/community">Community</a>
+          ) : (
             <button key={f.id} type="button" className={filter === f.id ? 'is-on' : ''} aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
               {f.label}
             </button>
