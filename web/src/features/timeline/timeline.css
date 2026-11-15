@@ -644,6 +644,10 @@
   .tl-path__hint { display: none; }
   .tl-tip text,
   .tl-limb-label { display: none; }
+  /* bigger crown on phones (labels are hidden there anyway) */
+  .tl-canopy { width: 170%; margin-left: -35%; }
+  .tl-crown { margin-top: -10px; }
+  .tl-tree { padding-top: 270px; } /* room for the trunk's lean before the first card */
 
   .tl-btrunk { left: calc(16px + var(--tl-trunk-col) / 2); transform: translateX(-50%) scaleX(0.45); }
   .tl-aura { left: calc(16px + var(--tl-trunk-col) / 2); width: 160px; }

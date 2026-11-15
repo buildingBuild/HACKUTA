@@ -584,3 +584,11 @@ a.pf-badge:hover { border-color: var(--pf-red); color: var(--pf-red); }
   font-family: var(--pf-display); font-weight: 900; font-size: 15px; opacity: 0.35;
 }
 .pf-fanbadge strong { display: block; font-family: var(--pf-display); font-weight: 800; font-size: 17px; text-transform: uppercase; letter-spacing: 0.03em; }
+.pf-fanbadge:not(.is-earned) { opacity: 0.6; }
+.pf-fanbadge.is-earned { border-style: solid; border-color: var(--pf-line); }
+.pf-fanbadge.is-earned .pf-fanbadge__mark { background: var(--pf-red); color: #fff; opacity: 1; }
+.pf-fanbadge:hover { border-color: var(--pf-line); }
+.pf-fanbadge.is-earned:hover { border-color: var(--pf-red); }
+.pf-fanbadges__more { margin: 12px 0 0; }
+.pf-fanbadges__more a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.pf-fanbadges__more a:hover { color: var(--pf-red); }

@@ -135,6 +135,7 @@ export function TimelinePage() {
   const [step, setStep] = useState(-1);
   const [eraOn, setEraOn] = useState<string>('canopy');
   const [treeH, setTreeH] = useState(0);
+  const [bend, setBend] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const treeRef = useRef<HTMLDivElement>(null);
 
@@ -176,6 +177,21 @@ export function TimelinePage() {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  // Phones: the trunk runs down the left edge but the crown is centred, so the top of the trunk leans over to meet it.
+  useEffect(() => {
+    const calc = () => {
+      const crown = document.querySelector('.tl-canopy')?.getBoundingClientRect();
+      const trunk = document.querySelector('.tl-btrunk')?.getBoundingClientRect();
+      if (!crown || !trunk || !trunk.width) return;
+      const scale = trunk.width / 280; // the trunk svg is 280 wide, squeezed on phones
+      const off = (crown.left + crown.width / 2 - (trunk.left + trunk.width / 2)) / scale;
+      setBend(Math.abs(off) < 2 ? 0 : Math.round(off));
+    };
+    calc();
+    window.addEventListener('resize', calc);
+    return () => window.removeEventListener('resize', calc);
+  }, [treeH]);
 
   // Reveal-on-scroll + which era is in view (for the rail).
   useEffect(() => {
@@ -296,7 +312,7 @@ export function TimelinePage() {
 
       <div className="tl-tree" ref={treeRef}>
         <span className="tl-aura" aria-hidden="true" />
-        <BraidedTrunk height={treeH} top={TRUNK_TOP} bottom={TRUNK_BOTTOM} />
+        <BraidedTrunk height={treeH} top={TRUNK_TOP} bottom={TRUNK_BOTTOM} bend={bend} />
         {erasDesc.map((era) => (
           <EraBlock
             key={era.id}

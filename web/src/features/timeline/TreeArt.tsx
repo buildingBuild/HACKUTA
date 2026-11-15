@@ -462,7 +462,7 @@ export function Roots({ trunkWidth = 130, trunkHeight = 0 }: { trunkWidth?: numb
  * The trunk: one braided, glowing column drawn for the full height of the timeline.
  * Thin at the top (where it meets the canopy), thick and twisting at the bottom (the roots).
  */
-export function BraidedTrunk({ height, top = 22, bottom = 72 }: { height: number; top?: number; bottom?: number }) {
+export function BraidedTrunk({ height, top = 22, bottom = 72, bend = 0 }: { height: number; top?: number; bottom?: number; bend?: number }) {
   const TW = 280;
   const cx = TW / 2;
   const g = useMemo(() => {
@@ -470,13 +470,16 @@ export function BraidedTrunk({ height, top = 22, bottom = 72 }: { height: number
     const H = height;
     const step = 14;
     const widthAt = (y: number) => top + (bottom - top) * Math.pow(y / H, 1.25);
+    // optional lean at the top (phones): the trunk starts under the centred crown and bends to its column
+    const BEND_L = Math.min(300, H);
+    const xOff = (y: number) => bend * (1 - smooth(0, BEND_L, y));
 
     // solid core (tapered)
     const left: string[] = [];
     const right: string[] = [];
-    for (let y = 0; y <= H; y += step * 4) {
+    for (let y = 0; y <= H; y += bend && y < BEND_L ? step : step * 4) {
       const w = widthAt(y) * 0.62;
-      const wob = Math.sin(y / 260) * 2.5;
+      const wob = Math.sin(y / 260) * 2.5 + xOff(y);
       left.push(`${f(cx - w / 2 + wob)},${f(y)}`);
       right.unshift(`${f(cx + w / 2 + wob)},${f(y)}`);
     }
@@ -497,7 +500,7 @@ export function BraidedTrunk({ height, top = 22, bottom = 72 }: { height: number
         ys.push(yEnd);
         for (const y of ys) {
           const spread = widthAt(y) / 2 - 2;
-          const x = cx + spread * Math.sin(y / BRAID_PERIOD + (i * Math.PI * 2) / N) * 0.92;
+          const x = cx + xOff(y) + spread * Math.sin(y / BRAID_PERIOD + (i * Math.PI * 2) / N) * 0.92;
           pts.push(`${f(x)},${f(y)}`);
         }
         const mid = Math.min(H, y0 + SEG / 2);
@@ -505,7 +508,7 @@ export function BraidedTrunk({ height, top = 22, bottom = 72 }: { height: number
       }
     }
     return { core, strands };
-  }, [height, top, bottom, cx]);
+  }, [height, top, bottom, cx, bend]);
 
   if (!g) return null;
   return (
