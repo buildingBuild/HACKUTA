@@ -1,0 +1,10 @@
+.adm-counts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); }
+.adm-count { display: grid; gap: 6px; padding: 18px 20px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.adm-count:nth-child(4n) { border-right: 0; }
+.adm-count:nth-last-child(-n + 4) { border-bottom: 0; }
+.adm-count strong { font-size: 40px; }
+@media (max-width: 760px) {
+  .adm-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .adm-count { border-right: 1px solid var(--line) !important; border-bottom: 1px solid var(--line) !important; }
+  .adm-count:nth-child(2n) { border-right: 0 !important; }
+}

@@ -1,13 +1,24 @@
-// App shell + tiny path router (no dependency; links are plain <a href>). SHARED (Joe).
-//   /                 onboarding
-//   /u/:handle        public profile (Omar)
-//   /leaderboards     leaderboards (Omar)
-//   /recruiting       FaZe recruiting tab (Yao, staff only)
+// App shell + tiny path router (no dependency; links are plain <a href>). SHARED.
+// Route table (REQUIREMENTS.md §5.1):
+//   /                       Home (Lionsgate-style showcase)          public
+//   /join                   onboarding flow (creates an account)     public
+//   /community/*            Community (Dahiya)                       public, writes need sign-in
+//   /leaderboards           public leaderboards (Omar)               public
+//   /u/:handle, /me         fan profile (Omar)                       public
+//   /hud /rgb /guessr /wall Phase 2 features (branded placeholders)  public
+//   /recruiting/*           Recruiting tab (Yao)                     recruiter + admin
+//   /admin                  admin area (Phase 2 director console)    admin
 import type { ReactNode } from 'react';
-import { CommunityRoute } from './features/community/CommunityRoute';
 import { AppNav } from './components/AppNav';
+import { ComingSoon } from './components/ComingSoon';
+import { featureByPath } from './components/features';
 import { GridBackground } from './components/GridBackground';
+import { NotFound } from './components/NotFound';
+import { RequireRole } from './components/RequireRole';
 import { useSessionUser } from './components/session';
+import { Loading, Page } from './components/ui';
+import { AdminPage } from './features/admin/AdminPage';
+import { CommunityRoute } from './features/community/CommunityRoute';
 import { OnboardingFlow } from './features/onboarding/OnboardingFlow';
 import { LeaderboardsPage, ProfilePage } from './features/profile';
 import { RecruiterDashboard } from './features/recruiter/RecruiterDashboard';
@@ -18,7 +29,8 @@ export function App() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
   const { user, loading } = useSessionUser();
 
-  if (path === '/') {
+  // Full-bleed onboarding (its own chrome). TODO(S3): '/' becomes the Home showcase.
+  if (path === '/' || path === '/join') {
     return (
       <GridBackground>
         <AppNav user={user} path={path} />
@@ -29,11 +41,28 @@ export function App() {
 
   let page: ReactNode;
   const handle = match(path, /^\/u\/([^/]+)$/);
+  const feature = featureByPath(path);
+
   if (handle) page = <ProfilePage handle={decodeURIComponent(handle)} />;
-  else if (path === '/community') page = loading ? null : <CommunityRoute user={user} />;
+  else if (path === '/me') {
+    if (!loading) window.location.replace(user ? `/u/${encodeURIComponent(user.handle)}` : '/join');
+    page = <Page><Loading /></Page>;
+  } else if (path === '/community' || path.startsWith('/community/')) page = loading ? null : <CommunityRoute user={user} />;
   else if (path === '/leaderboards') page = <LeaderboardsPage highlightHandle={user?.handle} />;
-  else if (path === '/recruiting' || path === '/recruiter') page = loading ? null : <RecruiterDashboard user={user} />;
-  else page = <p style={{ padding: 24 }}>Page not found. <a href="/">Go home</a></p>;
+  else if (feature) page = <ComingSoon feature={feature} />;
+  else if (path === '/recruiting' || path.startsWith('/recruiting/') || path === '/recruiter')
+    page = (
+      <RequireRole user={user} loading={loading} roles={['recruiter', 'admin']}>
+        <RecruiterDashboard user={user} />
+      </RequireRole>
+    );
+  else if (path === '/admin' || path.startsWith('/admin/'))
+    page = (
+      <RequireRole user={user} loading={loading} roles={['admin']}>
+        <AdminPage />
+      </RequireRole>
+    );
+  else page = <NotFound />;
 
   return (
     <GridBackground>

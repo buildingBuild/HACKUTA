@@ -1,4 +1,5 @@
 -- FaZe HQ schema: REQUIREMENTS.md §7.2. SHARED FILE: additive changes only.
+-- (coaching_reports is legacy since the V3 pivot: kept, never dropped, no longer written.)
 -- Safe to re-run. Runs on TigerData (hypertables) and plain Postgres 13+ (plain tables).
 -- Apply with: npm run db:migrate   (also applies leaderboards.sql afterwards)
 
@@ -133,13 +134,76 @@ CREATE TABLE IF NOT EXISTS social_stats (
 );
 CREATE INDEX IF NOT EXISTS social_stats_user_time_idx ON social_stats (user_id, platform, time DESC);
 
+-- ---------- V3 pivot: fan profile + Phase 2 contracts (REQUIREMENTS.md §7.2) ----------
+
+-- ADDITIVE (V3): fan profile bio (edited by the owner).
+ALTER TABLE users ADD COLUMN IF NOT EXISTS bio text;
+
+-- FaZe Live event bus log (Phase 2: director console / match feed writes, RGB Sync + The Wall + Home read).
+CREATE TABLE IF NOT EXISTS live_events (
+  time        timestamptz NOT NULL DEFAULT now(),
+  id          uuid NOT NULL DEFAULT gen_random_uuid(),
+  match_id    uuid,
+  type        text NOT NULL CHECK (type IN ('match_start', 'round_win', 'round_loss', 'ace', 'clutch', 'match_win', 'match_loss', 'match_end')),
+  game        text NOT NULL DEFAULT 'cs2' CHECK (game IN ('cs2', 'r6', 'cod')),
+  opponent    text NOT NULL,
+  faze_score  int NOT NULL DEFAULT 0,
+  opp_score   int NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS live_events_match_time_idx ON live_events (match_id, time DESC);
+
+-- The Wall placements (Phase 2): timelapse replay, per-user stats, admin rollback.
+CREATE TABLE IF NOT EXISTS pixel_events (
+  time     timestamptz NOT NULL DEFAULT now(),
+  user_id  uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  canvas   text NOT NULL DEFAULT 'main',
+  x        smallint NOT NULL CHECK (x >= 0),
+  y        smallint NOT NULL CHECK (y >= 0),
+  color    smallint NOT NULL CHECK (color >= 0)
+);
+CREATE INDEX IF NOT EXISTS pixel_events_canvas_time_idx ON pixel_events (canvas, time DESC);
+CREATE INDEX IF NOT EXISTS pixel_events_user_time_idx ON pixel_events (user_id, time DESC);
+
+-- FaZe Guessr (Phase 2). x/y are 0..1 radar-image coordinates; day is set for the daily puzzle.
+CREATE TABLE IF NOT EXISTS guessr_puzzles (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  day          date UNIQUE,
+  map          text NOT NULL,
+  image_url    text NOT NULL,
+  x            real NOT NULL CHECK (x BETWEEN 0 AND 1),
+  y            real NOT NULL CHECK (y BETWEEN 0 AND 1),
+  event_name   text,
+  year         int,
+  youtube_url  text,
+  t_seconds    int,
+  blurb        text,
+  choices      jsonb NOT NULL DEFAULT '[]'::jsonb,
+  created_at   timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS guessr_guesses (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  puzzle_id     uuid NOT NULL REFERENCES guessr_puzzles(id) ON DELETE CASCADE,
+  user_id       uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  x             real NOT NULL,
+  y             real NOT NULL,
+  event_choice  text,
+  distance      real,
+  score         int NOT NULL DEFAULT 0,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (puzzle_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS guessr_guesses_puzzle_score_idx ON guessr_guesses (puzzle_id, score DESC);
+
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'timescaledb') THEN
     CREATE EXTENSION IF NOT EXISTS timescaledb;
     PERFORM create_hypertable('player_stats', 'time', if_not_exists => TRUE, migrate_data => TRUE);
     PERFORM create_hypertable('social_stats', 'time', if_not_exists => TRUE, migrate_data => TRUE);
-    RAISE NOTICE 'player_stats + social_stats are hypertables';
+    PERFORM create_hypertable('live_events', 'time', if_not_exists => TRUE, migrate_data => TRUE);
+    PERFORM create_hypertable('pixel_events', 'time', if_not_exists => TRUE, migrate_data => TRUE);
+    RAISE NOTICE 'player_stats, social_stats, live_events, pixel_events are hypertables';
   ELSE
     RAISE NOTICE 'TimescaleDB not available: time-series tables stay plain (leaderboards.sql will be skipped)';
   END IF;

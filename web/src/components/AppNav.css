@@ -64,3 +64,50 @@
 .nav__brand { display: inline-flex; align-items: flex-start; gap: 6px; }
 .nav__logo { width: 40px; height: auto; color: var(--faze-red); }
 .nav__brand .brand__hq { margin-left: 0; vertical-align: baseline; color: var(--ink); font-weight: 900; }
+
+/* ---------- V3 nav: Features menu + user menu ---------- */
+.nav__links { align-items: center; }
+.nav__right { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+.nav__menu { position: relative; }
+.nav__menu-btn { list-style: none; cursor: pointer; user-select: none; }
+.nav__menu-btn::-webkit-details-marker { display: none; }
+.nav__menu-btn:focus-visible { outline: 2px solid var(--faze-red); outline-offset: 4px; }
+.nav__menu-panel {
+  position: absolute; top: calc(100% + 12px); left: 0; z-index: 20; min-width: 260px; padding: 8px;
+  display: grid; gap: 2px; background: var(--paper); border: 1px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--faze-red-soft);
+}
+.nav__menu--user .nav__menu-panel { left: auto; right: 0; min-width: 240px; }
+.nav__feature { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: center; padding: 10px; color: var(--ink); text-decoration: none; }
+.nav__feature:hover, .nav__feature.is-on { background: var(--faze-red-soft); }
+.nav__feature-mark {
+  display: grid; place-items: center; height: 44px; background: var(--ink); color: var(--paper);
+  font-family: var(--font-display); font-weight: 900; font-size: 16px; letter-spacing: 0.04em;
+}
+.nav__feature strong { display: block; font-family: var(--font-display); font-weight: 800; font-size: 17px; text-transform: uppercase; letter-spacing: 0.04em; }
+.nav__feature small { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.nav__user { display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border: 1px solid var(--line); }
+.nav__user img, .nav__user-dot { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: var(--ink); color: var(--paper); display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; text-transform: uppercase; }
+.nav__user-name { font-family: var(--font-display); font-weight: 700; font-size: 16px; text-transform: uppercase; letter-spacing: 0.04em; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav__role { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; background: var(--faze-red); color: var(--paper); padding: 2px 6px; }
+.nav__item {
+  display: block; width: 100%; padding: 10px 12px; border: 0; background: transparent; text-align: left; cursor: pointer;
+  font-family: var(--font-display); font-weight: 700; font-size: 16px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink); text-decoration: none;
+}
+a.nav__item:hover, button.nav__item:hover, .nav__item.is-on { background: var(--faze-red-soft); }
+.nav__item--picker { cursor: default; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin: 4px 0; }
+.nav__item--picker .nav__login { display: grid; gap: 6px; }
+.nav__item--picker .nav__login-label { display: block; }
+.nav__item--picker select { max-width: none; width: 100%; }
+.nav__item--out { color: var(--faze-red); }
+.nav__join {
+  display: inline-flex; align-items: center; min-height: 36px; padding: 0 16px; background: var(--faze-red); color: var(--paper); text-decoration: none;
+  font-family: var(--font-display); font-weight: 800; font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+}
+.nav__join:hover { background: var(--ink); }
+@media (max-width: 640px) {
+  .nav__user-name { display: none; }
+  .nav__menu--features .nav__menu-panel { position: fixed; left: 16px; right: 16px; top: 108px; min-width: 0; }
+  .nav__right { margin-left: auto; }
+}

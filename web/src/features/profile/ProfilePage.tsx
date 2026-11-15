@@ -1,6 +1,6 @@
 import { useState } from "react";
 import "./profile.css";
-import { getDemoUserId, useSessionUser } from "../../components/session";
+import { useSessionUser } from "../../components/session";
 import { RecruiterLens } from "./RecruiterLens";
 import { ApiError, fetchProfile, profileUrl } from "./api";
 import { StateBox, TrendChart } from "./components";
@@ -53,11 +53,11 @@ function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (clip: Pr
   const [trendKey, setTrendKey] = useState<StatKey>("elo");
   const trendTile = STAT_TILES.find((t) => t.key === trendKey)!;
   const name = p.user.display_name;
-  const isMe = getDemoUserId() === p.user.id;
+  const { user: viewer } = useSessionUser();
+  const isMe = viewer?.id === p.user.id;
   const hasStats = Object.keys(p.stats).length > 0 || p.clip_count > 0 || p.karma !== 0;
   const celebration = useScoutCelebration(p.scout);
   const faceitNick = p.game?.faceit_nickname ?? null;
-  const { user: viewer } = useSessionUser();
   const isStaff = viewer?.role === "recruiter" || viewer?.role === "admin";
   const level = p.game?.faceit_level ?? null;
   const elo = p.game?.faceit_elo ?? null;

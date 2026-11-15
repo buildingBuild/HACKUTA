@@ -1,6 +1,6 @@
 // Hackathon auth (REQUIREMENTS.md §7.5). SHARED FILE.
-// The demo login picker stores a user id; requests send it as the `x-user-id` header
-// (or a `fazehq_user` cookie). Recruiter/admin routes gate on role.
+// POST /api/auth/login sets the httpOnly `fazehq_user` cookie: that's the source of truth.
+// An `x-user-id` header is still accepted (scripts/tests, older callers). Staff routes gate on role.
 import type { RequestHandler } from 'express';
 import type { AuthDeps, Db, Role } from './yao-deps.js';
 
@@ -14,7 +14,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function createAuth(db: Db): AuthDeps {
   const identify: RequestHandler = async (req, _res, next) => {
     if (req.user) return next();
-    const id = req.header('x-user-id') || cookie(req.headers.cookie, 'fazehq_user');
+    const id = cookie(req.headers.cookie, 'fazehq_user') || req.header('x-user-id');
     if (!id || !UUID.test(id)) return next();
     try {
       const r = await db.query<{ id: string; role: Role }>(`SELECT id, role FROM users WHERE id = $1`, [id]);

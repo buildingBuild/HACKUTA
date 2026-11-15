@@ -61,7 +61,8 @@ export function createPlayersRouter({ db, auth }: YaoDeps): Router {
 
   r.post('/:userId/sync', async (req, res) => {
     const u = req.user;
-    if (u && u.role === 'user' && u.id !== req.params.userId) return res.status(403).json({ error: 'can only sync your own stats' });
+    if (!u) return res.status(401).json({ error: 'sign in required' });
+    if (u.role === 'user' && u.id !== req.params.userId) return res.status(403).json({ error: 'can only sync your own stats' });
     try {
       const result = await syncFromFaceit(db, req.params.userId);
       // New stats can push a player over the threshold too.

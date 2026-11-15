@@ -1,4 +1,4 @@
-import { authHeaders, setDemoUserId } from "../../components/session";
+import { authHeaders, signIn } from "../../components/session";
 import type { Leaderboard, LeaderboardType, Profile } from "./types";
 
 async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -70,7 +70,7 @@ export async function saveOnboardingProfile(answers: OnboardingAnswers): Promise
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(answers),
   });
-  setDemoUserId(out.user.id);
+  await signIn(out.user.id).catch(() => undefined); // session cookie for the new player
   return out;
 }
 

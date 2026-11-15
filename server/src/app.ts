@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { pool } from './db/client.js';
 import { createAuth } from './lib/auth.js';
 import { profileScoutProgress } from './lib/scouting/profileProgress.js';
+import { createAdminRouter } from './routes/admin.js';
 import { createAuthRouter } from './routes/auth.js';
 import { createClipsRouter } from './routes/clips.js';
 import { createPlayersRouter } from './routes/players.js';
@@ -29,6 +30,7 @@ app.get('/api/health', async (_req, res) => {
 });
 
 app.use('/api/auth', createAuthRouter({ db, auth }));
+app.use('/api/admin', createAdminRouter({ db, auth })); // Yao (Phase 2 director console)
 app.use('/api/clips', createClipsRouter({ db, auth })); // Joe (placeholder)
 app.use('/api/players', createPlayersRouter({ db, auth })); // Yao
 app.use('/api/scouting', createScoutingRouter({ db, auth })); // Yao
