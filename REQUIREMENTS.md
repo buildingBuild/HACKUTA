@@ -1,276 +1,238 @@
-# FaZe HQ (working name): Requirements Doc
+# FaZe HQ: Requirements Doc (V3, fan hub)
 
-HackUTA 2026 · FaZe Challenge: "Be the CTO of FaZe Clan" (main track) + ElevenLabs (main track) + MLH tracks we can stack
-Team: Joe (Posts/Clips + UI), Yao (Coaching + Scouting), Dahiya (Social/Community), Omar (Profile/Portfolio + Leaderboards)
-Stack: React + Node.js (Express) + TigerData (Postgres with time-series). Hosting: open (Vercel by default, see §8)
-Game: **Counter-Strike 2**
+HackUTA 2026 · FaZe Challenge: "Be the CTO of FaZe Clan" (main track) + MLH tracks we can stack
+Team: Joe, Yao, Dahiya, Omar
+Stack: React + Vite + TypeScript · Node.js (Express) · TigerData (Postgres + TimescaleDB). Hosting: one always-on Node service (Railway), see §8
+Game focus: **Counter-Strike 2** (design stays game-agnostic: `cs2 | r6 | cod`)
 
-> This doc is the shared source of truth for humans and agents. Feature owners can flesh out their own section, but anything in **Shared Contracts** needs a quick team check before it changes.
+> This doc is the shared source of truth for humans and agents. Owners can flesh out their own feature section, but anything in **Shared Contracts (§7)** needs a quick team check before it changes.
+>
+> **V3 pivot (Nov 15).** AI clip coaching, the ElevenLabs voice coach, AI scout-report writing and coaching subscriptions are **removed** (old code is at git tag `pre-pivot`). Recruiting and player metrics stay, moved into their own staff-only tab.
 
 ---
 
 ## 1. One-liner
 
-A FaZe-branded home base that **streamlines how FaZe finds top CS2 talent**. Players upload clips, get AI coaching, hang out in community threads, and build a public portfolio. When a player (or creator) crosses a performance threshold, FaZe recruiters get an auto-generated scout report on their dashboard. Think of it as an **always-on FaZe5**, feeding talent into FaZe Up Next.
+**FaZe HQ is the fan hub that puts FaZe into fans' everyday gaming life.** A pro broadcast HUD on your stream, RGB lights that flash red when FaZe wins a round, a daily FaZe Guessr, and a shared pixel wall that paints faster when FaZe plays well. Every feature quietly puts the FaZe brand on fans' screens, streams and rooms, and rebuilds the hype FaZe had in its early years.
 
 ## 2. Why this fits FaZe right now
 
-- FaZe refocused on esports in 2026 after closing its creator division, and CS2 is its flagship game.
-- In April 2026 FaZe announced **FaZe Up Next**, an academy for developing future stars. Our platform is the scouting funnel for that academy.
-- FaZe is already betting on young CS2 prospects (it brought in 18-year-old AWPer JBOEN on loan in June 2026). We make finding the next one faster and data-backed.
-- FaZe already proved fans want a shot at joining: the 2020 **#FaZe5** challenge pulled 211,000+ applicants and 35M+ views in 30 days. We turn a one-off event into a permanent product.
+- Judges' feedback: rebuild hype, make the social side different from other platforms, and don't lean on AI as the main feature.
+- Recruiting has been done before (#FAZE5 in 2013, 2014 and 2020, and FaZe1 in 2022), so it stays as a supporting tab, not the pitch.
+- FaZe refocused on esports in 2026 (creator division closed in Jan, FaZe Up Next academy launched in Apr), and CS2 is the flagship. Live-match features tie fan attention to FaZe's competitive games.
+- Reference: HardScope's lionsgateclub.com fan hub, with clear feature pillars and calls to action on the home page.
 
 ## 3. Target users
 
 | User | What they want | What we give them |
 |---|---|---|
-| **Aspiring CS2 players** (new fans) | Get better, get noticed | AI clip coaching, progress tracking, scout threshold progress bar |
-| **Returning fans** (grew up on FaZe trickshots and montages) | Nostalgia, community, reason to care again | Community threads, FaZe history content (foundation in §5.3, more ideas pending team brainstorm) |
-| **Esports fans** | Talk about FaZe CS2 matches and roster moves | Event and talent threads |
-| **Aspiring creators** | Grow an audience, get signed | Social stats on their portfolio, creator scouting track (secondary) |
-| **FaZe recruiters / admins** (B2B side) | Find talent without scrolling the whole internet | Recruiter dashboard with ranked prospects, AI scout reports, voice briefings |
+| **Returning fans** (grew up on FaZe) | Nostalgia, a reason to care again | FaZe Guessr (legendary plays), FaZe History board, The Wall |
+| **Esports fans** | Feel part of FaZe's live matches | Live banner, RGB Sync, The Wall hype mode, match threads |
+| **Small streamers** | Look pro for free | FaZe-branded Broadcast HUD (CS2 Game State Integration) |
+| **Players** | Show off, get noticed | Profile with game stats, public leaderboards; Recruiting tab on FaZe's side |
+| **FaZe recruiters / admins** | Find talent; run live moments | Recruiting tab (prospects, thresholds), Director console (Phase 2) |
 
-## 4. The demo loop (P0: this must work end to end)
+## 4. The demo (what judges experience)
 
-Every feature plugs into this one story. If we only finish this, we still have a strong demo.
+1. Home page with the live banner: "FaZe is live: 9 to 7 vs Vitality."
+2. Admin hits **round win** on the director console. At once: an RGB keyboard/bulb flashes red, the on-screen virtual setup pulses, The Wall enters hype mode, and the banner score updates.
+3. Judges scan a QR code and place pixels on The Wall from their phones.
+4. Judges play today's FaZe Guessr.
+5. Broadcast HUD plays a recorded CS2 session in OBS (live if we have CS2 running).
+6. (Short) Recruiting tab: a recruiter syncs a player's FACEIT stats, the player crosses the threshold, and a new prospect appears.
 
-1. **Sign in** as a demo player and link a FACEIT nickname (CS2).
-2. **Upload a clip** (Joe). Optionally link it to a social post (YouTube/Twitch/TikTok URL).
-3. **AI coaching** reviews the clip and returns CS2-specific feedback with timestamps and scores (Yao).
-4. **Talk to the coach** (ElevenLabs voice agent) about the feedback (Yao, P1 but needed for the ElevenLabs track).
-5. **Share to community**: post the clip into a thread, others comment and upvote (Dahiya).
-6. **Portfolio updates**: FACEIT level/ELO, stats, AI coaching scores, and social numbers show on a public profile and leaderboard (Omar).
-7. **Threshold crossed**: the player's stats pass the scouting bar, a scout report is generated, and the **FaZe recruiter dashboard** lights up with a new prospect, with a voice briefing of the report (Yao).
+Every external dependency has a fallback: recorded GSI replay, virtual RGB setup, seeded Guessr data, director console instead of a live feed, mock FACEIT data.
 
-Demo trick: seed a "prospect" account that is *just below* the threshold, so uploading one great clip live pushes them over.
+## 5. Phases
 
-## 5. Features by owner
+### 5.1 Phase 1: foundation (build first)
 
-### 5.1 Posts / Clips (Joe)
+| Area | What | Done means |
+|---|---|---|
+| **App shell** | Top nav: Home, Community, Leaderboards, **Features ▾** (HUD, RGB Sync, Guessr, The Wall). User menu: Profile, Recruiting (staff), Admin (admin), demo login, sign out. Shared UI kit in `web/src/components/ui/` | Every nav link works (real page or branded "coming soon") |
+| **Accounts + roles** | `user`, `recruiter`, `admin`. Demo login picker with seeded accounts; server-set session cookie. Guards on frontend and backend | Recruiting needs recruiter/admin; Admin needs admin; 401/403 from the API |
+| **Home** (`/`) | Hero + "Join FaZe HQ" (opens onboarding at `/join`), live banner, one card per feature with a CTA, live counters. Fed by `GET /api/live` (mock now, event bus in Phase 2) | Looks finished with mock live data |
+| **Community** | Boards, threads, nested comments, up/down votes, sort hot/new/top, Watch Together rooms, weekly Pulse digest (non-AI ranking) | Create thread, comment, vote, all saved to the DB |
+| **Profile** (`/u/:handle`) | Fan profile: handle, avatar, bio (editable by owner), joined date, community activity. Optional **Game stats** card if FACEIT is linked. Slots for Guessr streak, pixels placed, synced-setup badge | Shows real user data |
+| **Leaderboards** (`/leaderboards`) | Public FACEIT-based boards (ELO, 30-day improvement, karma). Guessr and Wall boards join in Phase 2 | Public page renders seeded data |
+| **Recruiting** (`/recruiting`) | Prospect board, prospect detail (trends, criteria), threshold rules editor (admin). Data: FACEIT metrics + `player_stats` + scouting rules | Only visible to recruiter/admin |
+| **Data + dev** | Schema baseline, seed, `.env.example`, one command to run | Fresh clone looks full after `npm run setup` |
+| **Phase 2 contracts** | `LiveEvent` types in `shared/types.ts`; empty tables `live_events`, `pixel_events`, `guessr_puzzles`, `guessr_guesses` | Committed |
 
-**Goal:** get clips into the system and connected to social posts.
+### 5.2 Phase 2: features
 
-- Upload a short clip (target 10 to 60 seconds, mp4/webm). Upload goes **straight from the browser to blob storage** (Vercel Blob client upload, Cloudinary, or similar), never through our API body.
-- Attach metadata: game (CS2), map, side (T/CT), weapon focus, title, optional social post URL.
-- Link a social post: paste a YouTube/Twitch URL and pull public stats (views, likes) where an easy API exists. TikTok/Instagram/X: manual entry or mocked.
-- Clip feed and clip detail page (video player + coaching report panel slot that Yao fills).
-- Emits a `clips` row so coaching can pick it up.
+**Shared infrastructure (first)**
+- **FaZe Live event bus:** one realtime stream of FaZe's live match (`LiveEvent`, §7.3) over socket.io, logged to the `live_events` hypertable. RGB Sync, The Wall and the Home banner subscribe.
+- **Director console** (admin only, `/admin`): buttons for round win/loss, ace, clutch, match win, plus a score editor. In production this would be a real match data feed.
+- **Companion app** (Node, runs on the user's PC, `node companion`): receives CS2 GSI, talks to local RGB devices, subscribes to the event bus, serves a setup page at `http://localhost:7777` (pick devices, download GSI cfg, copy OBS overlay URL).
 
-**Also owns:** overall UI shell, nav, FaZe branding (use the FaZe Brand Toolkit from the challenge resources), and the shared design system.
+**Broadcast HUD.** "Every CS2 streamer gets a pro tournament broadcast HUD for free, and it's FaZe branded." The companion generates `gamestate_integration_fazehq.cfg`, receives GSI POSTs, and diffs them into events (kill, death, 2K to ACE, round won/lost, bomb planted, MVP). The overlay is an OBS Browser Source (1920x1080, transparent) on a local WebSocket: kill feed, multi-kill stingers, round banner, health/money bar, "FAZE UP" on an ace. GSI is official and read-only (own player data only). **Fallback:** recorded GSI JSON + replay script.
 
-### 5.2 Coaching + Scouting (Yao)
+**RGB Sync.** "When FaZe wins a round, every gamer's RGB setup turns red." Event to effect: round win = red pulse; ace/clutch = red/white strobe; match win = crest sweep; round loss = brief dim; your own kill (GSI) = quick flash. Devices: OpenRGB SDK (best coverage), Razer Chroma REST, Philips Hue bridge (about 10 commands/s), Govee LAN (UDP). **Fallback:** on-screen virtual setup on the website.
 
-**Goal:** turn clips and stats into feedback for players and talent signals for FaZe.
+**FaZe Guessr.** "GeoGuessr, but every location is a legendary FaZe play." A daily screenshot from a famous moment; the player clicks the spot on the map radar and optionally picks the event/year. Score = `5000 * exp(-distance / scale)` + event bonus. The reveal shows the spot, the YouTube clip at a timestamp and a lore blurb. Wordle-style share, daily leaderboard. About 15 to 20 seeded moments with a click-to-set admin tool. Modes: Daily, Endless.
 
-**AI clip coaching (CS2)**
-- Send the clip to a video-capable model. Gemini handles video natively and "Best Use of Gemini API" is an MLH track, so it's the default pick.
-- Ground the prompt with the player's context: FACEIT level/ELO, map, side, recent match stats.
-- Force structured JSON output (see Shared Contracts §7.3). Feedback categories:
-  - Crosshair placement (head level, pre-aiming common angles)
-  - Movement (counter-strafing before shooting, peeking: wide swing vs jiggle vs shoulder)
-  - Spray control (recoil, bursting vs spraying at range)
-  - Utility (smokes, flashes, molotovs, HE: timing and usage before entry)
-  - Positioning and trades (isolated deaths, crossfires, refrags)
-  - Decision making (rotations, economy awareness, clutch choices)
-- Output: overall clip score (0 to 100), per-category scores, 3 to 5 timestamped notes, 1 to 2 drills (e.g. aim_botz, prefire maps, recoil master).
-- Keep **cached results for the demo clips** so the demo survives bad Wi-Fi or rate limits.
+**The Wall.** "r/place, but FaZe's live results control how fast you can paint." 256x256 canvas, 16-color palette, one pixel per 60s cooldown. A FaZe round win starts hype mode (10s cooldown for a minute); an ace gives everyone a free pixel. The server holds a `Uint8Array` canvas, logs placements to the `pixel_events` hypertable (timelapse, stats, rollback), and broadcasts batches every 50 to 100 ms. Cooldowns are enforced server-side.
 
-**Performance metrics (CS2)**
-- Data source: **FACEIT Data API v4** (free key from developers.faceit.com). Gives FACEIT ELO, skill level, lifetime stats, and match stats.
-- Metrics: FACEIT level, ELO, ELO trend, K/D, K/R, HS%, ADR, win rate, matches played (last 20 matches + lifetime).
-- Premier CS Rating isn't in an easy official API. Let users self-report it on their profile (optional) or skip.
-- Store snapshots in TigerData hypertables so we can chart trends. If the API is down or the user isn't on FACEIT, fall back to seeded data. Mocking is totally fine for the hackathon.
-- Smoke test: `node scripts/test-faceit.mjs <nickname>` (see repo).
+**Integrations (if time):** share a Guessr result / Wall screenshot into a thread; auto-post a match thread when the director starts a match.
 
-**Scouting thresholds**
-- Two tracks, player track is the focus:
-  - **Player track** example rule: FACEIT Level 10 AND ELO ≥ 2,500 AND K/D ≥ 1.25 AND HS% ≥ 50 AND ADR ≥ 85 over last 20 matches AND avg AI clip score ≥ 80.
-  - **Creator track** (secondary) example rule: 30-day follower growth ≥ X%, engagement rate ≥ Y%.
-- Rules live in a config file (JSON), not hardcoded, so we can tune live.
-- When a rule passes: generate a scout report (LLM writes a short summary from stats + best clips), insert into `scout_reports`, show it on the recruiter dashboard.
+### 5.3 Real data sources (connected after Phase 1 builds)
 
-**Recruiter / admin dashboard (FaZe side)**
-- Prospects sorted by score, filters (player vs creator, level, region).
-- Prospect detail: scout report, stat trend charts, top clips with coaching notes, status (new → reviewing → contacted → passed).
-- **Voice briefing:** ElevenLabs text-to-speech reads the scout report summary out loud ("Here's your new prospect...").
-- Admin extras (if time): edit threshold config, moderate community posts.
+Each source gets an env key, a `*_MODE=live|mock` switch, a timeout and a seeded fallback.
 
-**ElevenLabs voice coach (P1, ElevenLabs main track)**
-- "Talk to your coach" button on the clip report page. An ElevenLabs conversational agent gets the player's latest coaching report and stats as context, answers questions, explains mistakes, and suggests drills.
-- Post-match only. Real-time in-game coaching needs screen capture and is out of scope.
-- Fallback for demo: a pre-recorded audio clip if the live agent fails.
+| Source | Used for |
+|---|---|
+| FACEIT Data API v4 | Profile Game stats, Leaderboards, Recruiting thresholds |
+| PandaScore (or similar) | Real FaZe match schedule / live status on Home |
+| YouTube Data API, Twitch Helix | FaZe videos and live streams on Home, Community Watch rooms |
+| Steam Web API | Link SteamID: avatar, CS2 hours; later the HUD companion |
 
-### 5.3 Social + Community (Dahiya)
-
-**Goal:** a Reddit-style space that keeps people coming back.
-
-- Boards: `FaZe CS2`, `Clips`, `Talent Watch`, `FaZe History`, `Events`.
-- Threads with title, body, optional attached clip (references Joe's `clips` table), upvotes, nested comments.
-- Sort: hot / new / top.
-- Event threads for FaZe CS2 matches (manually seeded for demo).
-- **Returning-fan foundation** (team brainstorm will expand this, build these as the base):
-  - `FaZe History` board seeded with posts from the FaZe Timeline resource (one per era) so new fans get the lore.
-  - "Recreate the classic" challenge thread type: a challenge post with a prompt + clip submissions + upvote leaderboard. Built generic so future challenge ideas plug in.
-- Basic moderation: report button, simple keyword filter.
-
-### 5.4 Profile / Portfolio + Leaderboards (Omar)
-
-**Goal:** a public gamer resume that doubles as the leaderboard and what recruiters see.
-
-- Public profile at `/u/:handle`: avatar, bio, linked accounts (FACEIT, Steam, socials), FACEIT level badge + ELO, key stats, trend charts, top clips with coaching scores, social stats, community karma.
-- "Scout progress" bar showing how close the player is to the threshold (reads Yao's scoring, doesn't recompute it).
-- Leaderboards: by ELO, by AI clip score, by improvement (biggest ELO gain in 30 days), by creator growth, by community karma. Powered by TigerData continuous aggregates.
-- Shareable profile card so players post it on socials = free marketing.
-
-## 6. Priorities (judging criterion #3: prioritization)
+## 6. Priorities
 
 | Priority | Scope |
 |---|---|
-| **P0** | Demo loop (§4) end to end with seeded data, user + recruiter/admin accounts, cached AI results as fallback |
-| **P1** | ElevenLabs voice coach + scout voice briefing, real FACEIT data for linked accounts, leaderboards, recruiter status workflow |
-| **P2** | Social stat import (YouTube/Twitch), creator scouting track, challenge threads, admin threshold editor |
-| **Out of scope** | Real payments, real-time in-game coaching, games other than CS2, mobile app, demo (.dem) file parsing |
+| **P0** | Phase 1 foundation; event bus + director console; The Wall; Guessr; RGB Sync virtual setup |
+| **P1** | Broadcast HUD with recorded replay; real RGB device (OpenRGB or Hue); real FACEIT data; real match schedule |
+| **P2** | Live CS2 HUD on stage; Govee/Chroma drivers; Guessr Endless/Era modes; Wall timelapse; community share integrations; YouTube/Twitch/Steam |
+| **Out of scope** | AI coaching / AI editing, real payments, companion installer, multi-instance scaling (mention Redis in the pitch), mobile app |
 
 ## 7. Shared Contracts (change only with a team check)
 
-### 7.1 Repo layout (recommended)
+### 7.1 Repo layout
 
 ```
 /
-├── web/                 React + Vite + TypeScript (UI shell: Joe)
-│   └── src/features/    clips/  coaching/  community/  profile/  recruiter/
-├── server/              Express + TypeScript
+├── shared/types.ts       Cross-cutting types (LiveEvent, LiveStatus, LiveCounters, Role). Type-only imports from web + server
+├── web/                  React + Vite + TypeScript
 │   └── src/
-│       ├── routes/      clips.ts  coaching.ts  community.ts  profiles.ts  scouting.ts  voice.ts
-│       ├── db/          schema.sql  seed.ts  client.ts
-│       ├── config/      scouting-rules.json
-│       └── lib/         ai/  faceit/  social/  voice/
-├── scripts/             test-faceit.mjs and other smoke tests
-├── api/index.ts         Only if hosting on Vercel: function entry that exports the Express app
+│       ├── components/   App shell, AppNav, RequireRole, ui/ kit, live/ (banner, counters, useLive)
+│       └── features/     home/ onboarding/ community/ profile/ recruiting/ (Phase 2: hud/ rgb/ guessr/ wall/ admin/)
+├── server/               Express + TypeScript
+│   └── src/
+│       ├── app.ts        Exports the app; serves web/dist in production
+│       ├── index.ts      http server + listen (Phase 2 attaches socket.io)
+│       ├── routes/       auth community profiles players scouting live admin clips
+│       ├── db/           schema.sql leaderboards.sql migrate.ts seed.ts client.ts
+│       ├── config/       scouting-rules.json
+│       └── lib/          auth faceit scouting live (Phase 2: bus wall guessr)
+├── companion/            Phase 2 local Node app (GSI + RGB)
+├── scripts/              smoke tests
 ├── CLAUDE.md / AGENTS.md
 └── REQUIREMENTS.md
 ```
 
-Keep the Express app itself host-agnostic (`server/src/app.ts` exports the app, `server/src/index.ts` calls `listen`). Then it runs locally, on a VM, or as a Vercel function without changes.
-
 ### 7.2 Database (TigerData / Postgres)
 
 Regular tables:
-
-- `users` (id, handle, display_name, avatar_url, role: `user` | `recruiter` | `admin`, created_at)
-- `game_accounts` (id, user_id, game = `cs2`, faceit_nickname, faceit_player_id, steam_id64, region, faceit_level, faceit_elo, premier_rating nullable)
+- `users` (id, handle, display_name, avatar_url, **bio**, role: `user` | `recruiter` | `admin`, created_at)
+- `game_accounts` (id, user_id, game, faceit_nickname, faceit_player_id, steam_id64, region, faceit_level, faceit_elo, premier_rating)
 - `social_accounts` (id, user_id, platform, handle, url)
-- `clips` (id, user_id, blob_url, thumbnail_url, game, map, side, title, social_post_url, status: `uploaded` | `analyzing` | `done` | `failed`, created_at)
-- `coaching_reports` (id, clip_id, overall_score, category_scores jsonb, notes jsonb, drills jsonb, model, created_at)
-- `communities` (id, slug, name, description)
-- `threads` (id, community_id, user_id, type: `post` | `challenge`, title, body, clip_id nullable, score, created_at)
-- `comments` (id, thread_id, parent_id nullable, user_id, body, clip_id nullable, score, created_at)
-- `votes` (user_id, target_type, target_id, value)
-- `scout_reports` (id, user_id, track: `player` | `creator`, rule_id, summary, evidence jsonb, audio_url nullable, status: `new` | `reviewing` | `contacted` | `passed`, created_at)
+- `clips` (id, user_id, blob_url, thumbnail_url, game, map, side, title, social_post_url, status, created_at): fan clips shared in Community
+- `communities`, `threads`, `comments`, `votes`: Community
+- `scout_reports` (id, user_id, track, rule_id, summary, evidence jsonb, audio_url, status: `new` | `reviewing` | `contacted` | `passed`, created_at). `evidence` holds `score`, `rule_label`, `criteria`, `metrics`
+- `guessr_puzzles` (id, day date unique nullable, map, image_url, x, y (0..1 radar coords), event_name, year, youtube_url, t_seconds, blurb, choices jsonb, created_at)
+- `guessr_guesses` (id, puzzle_id, user_id, x, y, event_choice, distance, score, created_at), unique (puzzle_id, user_id)
+- *(legacy, unused since V3: `coaching_reports`. Never dropped: additive-only rule)*
 
-Hypertables (time-series, this is where TigerData earns its prize):
-
-- `player_stats` (time, user_id, game, metric, value) e.g. metric = `elo`, `kd`, `hs_pct`, `adr`, `win_rate`
+Hypertables:
+- `player_stats` (time, user_id, game, metric, value). Metrics: `elo`, `faceit_level`, `kd`, `kr`, `hs_pct`, `adr`, `win_rate`, `matches`
 - `social_stats` (time, user_id, platform, followers, views, engagement_rate)
+- `live_events` (time, id, match_id, type, game, opponent, faze_score, opp_score)
+- `pixel_events` (time, user_id, canvas, x, y, color)
 
-Continuous aggregates: daily/weekly rollups of both for leaderboards and trend charts.
+Continuous aggregates (`leaderboards.sql`): daily/weekly rollups for leaderboards and trend charts.
 
-### 7.3 Coaching report JSON shape
+### 7.3 Live event contract (`shared/types.ts`)
 
-```json
-{
-  "overall_score": 82,
-  "category_scores": {
-    "crosshair_placement": 85,
-    "movement": 70,
-    "spray_control": 78,
-    "utility": 60,
-    "positioning": 88,
-    "decision_making": 79
-  },
-  "notes": [
-    { "t": "00:07", "category": "movement", "severity": "high",
-      "note": "Fired while still moving after the wide swing, first bullets went wide.",
-      "fix": "Counter-strafe: tap the opposite direction key to stop, then shoot." }
-  ],
-  "drills": [
-    { "name": "Counter-strafe + one-tap drill", "where": "aim_botz", "minutes": 10 }
-  ],
-  "summary": "Strong crosshair height, losing duels by shooting on the move."
-}
+```ts
+type LiveEventType = "match_start" | "round_win" | "round_loss" | "ace" | "clutch" | "match_win" | "match_loss" | "match_end";
+type LiveEvent = {
+  id: string;
+  type: LiveEventType;
+  game: "cs2" | "r6" | "cod";
+  opponent: string;
+  score: { faze: number; opp: number };
+  ts: number; // server time, ms
+};
 ```
+`GET /api/live` returns `{ status: LiveStatus, counters: LiveCounters }`. In Phase 2 the same data also arrives over socket.io (`live:event`, `live:status`), so UI components don't change.
 
-### 7.4 API surface (starting point)
+### 7.4 API surface
 
-| Method | Route | Owner |
-|---|---|---|
-| POST | `/api/clips` (register uploaded clip) | Joe |
-| GET | `/api/clips`, `/api/clips/:id` | Joe |
-| POST | `/api/coaching/analyze/:clipId` | Yao |
-| GET | `/api/coaching/:clipId` | Yao |
-| GET | `/api/players/:userId/stats` | Yao |
-| POST | `/api/players/:userId/sync` (pull fresh FACEIT stats) | Yao |
-| GET | `/api/scouting/prospects`, PATCH `/api/scouting/prospects/:id` | Yao |
-| POST | `/api/voice/session` (start ElevenLabs agent with context), POST `/api/voice/briefing/:reportId` | Yao |
-| GET/POST | `/api/communities/:slug/threads`, `/api/threads/:id/comments`, `/api/votes` | Dahiya |
-| GET | `/api/profiles/:handle`, `/api/leaderboards/:type` | Omar |
+| Method | Route | Access | Owner |
+|---|---|---|---|
+| GET | `/api/health` | public | shared |
+| GET | `/api/auth/demo-users`, `/api/auth/me` | public | Yao |
+| POST | `/api/auth/login` `{userId}` (sets cookie), `/api/auth/logout` | public | Yao |
+| GET | `/api/live` | public | Yao |
+| GET/POST | `/api/communities`, `/api/communities/:slug/threads`, `/api/threads/:id`, `/api/threads/:id/comments`, `/api/votes` | read public, write signed in | Dahiya |
+| GET | `/api/community/pulse`, `/api/community/watch/rooms` | public | Dahiya |
+| POST | `/api/profiles` (onboarding creates a user) | public | Omar |
+| GET | `/api/profiles/:handle` (staff-only fields stripped for others) | public | Omar |
+| PATCH | `/api/profiles/:handle` (bio etc., owner only) | owner | Omar |
+| GET | `/api/leaderboards`, `/api/leaderboards/:type` | public | Omar |
+| GET | `/api/players/:id/stats`, `/api/players/:id/account` | public | Yao |
+| POST/PUT | `/api/players/:id/sync`, `/api/players/:id/faceit` | owner or staff | Yao |
+| GET/PATCH | `/api/scouting/prospects`, `/api/scouting/prospects/:id`, `/api/scouting/progress/:userId` | recruiter/admin | Yao |
+| GET/PUT | `/api/scouting/rules` | GET staff, PUT admin | Yao |
+| * | `/api/admin/*` (director console in Phase 2) | admin | Yao |
+| GET/POST | `/api/clips`, `/api/clips/:id` | read public, write signed in | Joe |
 
 ### 7.5 Accounts and auth (hackathon version)
 
-Two account types: **user** (players/fans) and **recruiter/admin** (FaZe staff). Demo login picker with seeded accounts (a fan, a returning fan, the prospect, a FaZe recruiter, an admin). Store the user id in a cookie/header and gate recruiter/admin routes by role. Real auth only if time allows.
+Roles: `user`, `recruiter`, `admin`. The demo login picker lists seeded accounts (New Fan, Returning Fan, players, FaZe Recruiter, FaZe Admin). `POST /api/auth/login` sets an httpOnly `fazehq_user` cookie, which is the source of truth (same origin, so it also authenticates Phase 2 socket handshakes). An `x-user-id` header is still accepted for scripts and tests. Gate staff routes with `requireRole` on the server **and** `RequireRole` in the UI. Every user is assumed opted in and 18+ for the MVP.
 
 ### 7.6 Seed data
 
-`server/src/db/seed.ts` creates: ~15 users across roles, CS2 accounts from FACEIT Level 5 to Level 10, 30 days of stat history per player, ~20 clips with cached coaching reports, 5 boards with threads/comments, FaZe History posts, one challenge thread, and **one prospect just under the threshold**.
+`npm run setup` (migrate + seed) creates: the demo login accounts, about 8 CS2 players from FACEIT Level 5 to 10 with 30 days of stat history, 5 community boards with threads/comments/challenge/watch rooms, existing prospects, and **one player just under the scouting threshold** (a FACEIT sync pushes them over). Phase 2 owners add their own seed modules (Guessr moments, etc.) and call them from `seed.ts`.
 
 ## 8. Assumptions and decisions
 
 | Topic | Decision |
 |---|---|
-| Player data | FACEIT Data API v4 for real data, seeded/mocked data as fallback. Mocking is fine for the MVP. Leetify's API asks apps not to store its data, so it's display-only if we use it at all |
-| Scouting consent | **Assumed** for the MVP: every user is treated as opted in. Pitch mentions a real opt-in toggle for production |
-| Age / minors | **Assumed** 18+ for the MVP. Pitch mentions guardian consent for production |
-| Game | CS2 only for the demo; design stays game-agnostic |
-| Focus | Streamlining recruitment of top talent. Creator scouting is secondary |
-| Hosting | **Open.** Default Vercel (frontend + Express as a function). Alternatives: run locally for the demo, or host on Vultr (that's also an MLH prize track). Keep the server host-agnostic (§7.1) |
-| Returning fans | Foundation features in §5.3, more ideas after team brainstorm |
+| AI | Not a main feature. No AI coaching, editing or scout-report writing. Templates instead of LLM text |
+| Player data | FACEIT Data API v4 with mock fallback (`FACEIT_MODE=mock` is the default) |
+| Live match data | Admin director console for the demo; real feed (PandaScore etc.) is optional |
+| Hosting | **One always-on Node service** (Railway): Express serves `web/dist`, the API and socket.io on one origin. Vercel functions can't hold WebSockets. DB stays on TigerData |
+| Realtime | socket.io, single instance. Multi-instance (Redis) is a pitch talking point only |
+| Hardware/game access | Only through the local companion app (browsers can't reach local devices or receive GSI) |
+| Consent / age | Assumed opted in and 18+ for the MVP |
 
 ## 9. Risks
 
-1. **Video + serverless limits** (if on Vercel): direct-to-blob uploads, short clips, raise function `maxDuration`, keep cached demo results.
-2. **AI hallucination:** ground prompts with real stats, force JSON schema, label it as AI feedback.
-3. **API keys/rate limits:** every external call (Gemini, FACEIT, ElevenLabs, YouTube/Twitch) has a cached fallback.
-4. **Scope:** P0 loop is the contract. Integration checkpoint every few hours.
+1. **Live demo hardware:** the RGB device or CS2 may fail on stage. Virtual setup + recorded GSI replay are mandatory.
+2. **Venue Wi-Fi:** every external call has a mock/seeded fallback, and the director console replaces live feeds.
+3. **Realtime load at judging** (many phones on The Wall): server-side cooldowns, batched broadcasts, one instance.
+4. **Scope:** Phase 1 foundation first, then the event bus, since three features depend on it.
 
-## 10. Revenue model (judging criterion: "how it generates meaningful revenue")
+## 10. Revenue model
 
-| Stream | How | Notes |
-|---|---|---|
-| **Coaching subscription** | Free tier (a few clip reviews/week) + paid "FaZe Pro": unlimited reviews, deeper reports, voice coach | Voice coach is the premium hook |
-| **Sponsored talent hunts** | Brands fund seasonal challenges ("Road to FaZe, presented by X") with prizes | Proven by FaZe5/FaZe1 sponsor deals; likely the biggest money lever |
-| **Ads** | Ads in community feed and free tier | Standard, low effort |
-| **Talent pipeline value** | Cheaper, data-backed scouting for FaZe Up Next; finder's fee when other orgs sign talent FaZe passes on | Recruitment is the hook and cost saver, not the main cash line |
-| **Merch / drops** | Limited drops tied to challenges and leaderboard seasons | Mention, don't build |
+| Stream | How |
+|---|---|
+| **Sponsored live moments** | Brands sponsor hype mode, ace stingers and RGB celebrations ("Ace, presented by X"). Every synced setup and HUD is ad inventory |
+| **HUD / RGB theme packs** | Free FaZe theme; paid era packs and sponsor-branded packs |
+| **Sponsored Guessr / Wall seasons** | Seasonal events with prizes, merch drops tied to Wall art and Guessr streaks |
+| **Talent pipeline** | Recruiting tab: cheaper, data-backed scouting for FaZe Up Next |
+| **Ads** | Community feed and Home |
 
-Pitch framing: recruitment is the **hook** that drives engagement and growth; subscriptions and sponsored hunts are the **revenue**.
+Pitch framing: free tools put FaZe on millions of screens and rooms during every match; that attention is what sponsors buy.
 
 ## 11. Judging criteria map
 
 | Criterion | Where we hit it |
 |---|---|
-| 1. Target audience + problem | §3 table, recruiter persona, returning vs new fan hooks |
-| 2. Creativity of concept | Always-on FaZe5 feeding FaZe Up Next, voice coach + voice scout briefings |
-| 3. Prioritization | §6 P0/P1/P2 table, show it on a slide |
-| 4. Technical feasibility + MVP quality | Working demo loop, TigerData time-series, AI coaching with JSON schema |
-| 5. Engagement + growth potential | Scout progress bar, leaderboards, shareable profile cards, sponsored hunts |
+| Target audience + problem | §3: returning fans, esports fans, small streamers |
+| Creativity | RGB Sync + The Wall reacting to live FaZe results; Guessr through FaZe history |
+| Prioritization | §6 P0/P1/P2, Phase 1 then Phase 2 |
+| Technical feasibility | Event bus + hypertables (`live_events`, `pixel_events`), GSI companion, fallbacks |
+| Engagement + growth | Daily Guessr, shared Wall, HUD on streams = free distribution |
 
 ## 12. Tracks
 
 - **FaZe Challenge** (main)
-- **ElevenLabs** (main): voice coach + scout voice briefings
-- **MLH, stack what fits:** Best Use of Gemini API (clip analysis), Best Use of Tiger Data (hypertables + continuous aggregates), Best Use of Vultr (if we host there), GoDaddy Registry domain, DEV Writing Challenge (post a write-up after)
+- **MLH, stack what fits:** Best Use of Tiger Data (hypertables + continuous aggregates), Best Use of Vultr (if we host there), GoDaddy Registry domain, DEV Writing Challenge
 
-## 13. Deliverables checklist (from the challenge guide)
+## 13. Deliverables checklist
 
 - [ ] Working MVP
 - [ ] The user problem
@@ -280,10 +242,9 @@ Pitch framing: recruitment is the **hook** that drives engagement and growth; su
 - [ ] How it generates meaningful revenue
 - [ ] Devpost submission + demo video
 
-## 14. Open questions (owners fill in)
+## 14. Open questions
 
-- Joe: which blob storage? which social platforms get real API vs mocked?
-- Yao: final threshold numbers? Gemini model + per-clip cost for the revenue slide? ElevenLabs agent setup (context via prompt override or dynamic variables)?
-- Dahiya: final boards list? polling vs realtime for threads?
-- Omar: which leaderboards make the cut? share card format?
-- Everyone: product name, hosting choice, returning-fan brainstorm, final submission time, who records the demo video?
+- Which real RGB device do we bring to judging (Hue bulb vs OpenRGB keyboard)?
+- Who has CS2 on a laptop for a live HUD?
+- Guessr: final list of 15 to 20 moments + screenshots.
+- Railway account owner and domain.

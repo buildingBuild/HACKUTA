@@ -4,10 +4,11 @@ This repo's agent instructions live in **`CLAUDE.md`**, and product requirements
 
 The short version, in case you only read this file:
 
-1. Hackathon build, game is **CS2**. A working end-to-end demo loop (`REQUIREMENTS.md` §4) beats everything else.
-2. Stay inside the feature folder you were asked to work on. Don't edit other people's folders.
-3. Shared files (`server/src/db/schema.sql`, `seed.ts`, `web/src/components/`, `server/src/app.ts`, `api/index.ts`, `vercel.json`, root `package.json`) get additive changes only, and you must call them out in your summary.
-4. Match the contracts in `REQUIREMENTS.md` §7 exactly (DB schema, coaching JSON, API routes).
-5. Every external API call (Gemini, FACEIT, ElevenLabs) needs a cached/seeded fallback. Mock data is fine.
-6. Never commit secrets. Never upload video through the API body. Keep the server host-agnostic (hosting isn't decided).
-7. Two account types: `user` and `recruiter`/`admin`. Scouting consent and 18+ are assumed for the MVP.
+1. Hackathon build: **FaZe HQ, a FaZe fan hub** (CS2 focus). Phase 1 = Home, Community, Profile, Leaderboards, staff-only Recruiting. Phase 2 = Broadcast HUD, RGB Sync, FaZe Guessr, The Wall, on a live event bus.
+2. **No AI coaching, AI editing or AI-written reports.** These were removed in the V3 pivot (old code at tag `pre-pivot`).
+3. Stay inside the feature folder you were asked to work on. Shared files (`shared/types.ts`, `server/src/db/*`, `web/src/components/`, `web/src/App.tsx`, `server/src/app.ts`, root `package.json`) get additive changes only, and you must call them out in your summary.
+4. Match the contracts in `REQUIREMENTS.md` §7 exactly (DB schema, `LiveEvent`, API routes).
+5. Every external dependency needs a mock/seeded fallback (FACEIT, match feeds, CS2 GSI replay, virtual RGB setup).
+6. Never commit secrets. Hosting is one always-on Node service (Railway); don't write Vercel-only code.
+7. Roles: `user`, `recruiter`, `admin`. Gate staff routes on the server and in the UI.
+8. Git: pull/merge `origin/main`, verify, push to `main`.
