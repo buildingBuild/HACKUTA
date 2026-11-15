@@ -15,6 +15,7 @@ import { createClipsRouter } from './routes/clips.js';
 import { createLiveRouter } from './routes/live.js';
 import { createPlayersRouter } from './routes/players.js';
 import { createProfilesRouter } from './routes/profiles.js';
+import { createRewardsRouter } from './routes/rewards.js';
 import { createScoutingRouter } from './routes/scouting.js';
 
 const db = pool;
@@ -41,6 +42,7 @@ app.use('/api/scouting', createScoutingRouter({ db, auth })); // Yao
 app.use('/api/mentorship', auth.identify, createMentorshipRouter({ db, getUserId: req => req.user?.id }));
 app.use('/api', auth.identify, createCommunityRouter({ db, getUserId: req => req.user?.id })); // Dahiya
 app.use('/api', auth.identify, createProfilesRouter({ db, scoutProgress: profileScoutProgress })); // Omar
+app.use('/api/rewards', createRewardsRouter({ db, auth })); // Omar (FaZe Points: challenges + store)
 
 // Local demo clips (server/demo-clips/*.mp4) until real blob storage is wired.
 app.use('/demo-clips', express.static(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../demo-clips')));

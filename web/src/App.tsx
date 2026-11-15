@@ -6,8 +6,10 @@
 //   /feed                   FaZe Feed, experimental masonry (Joe)    public
 //   /leaderboards           public leaderboards (Omar)               public
 //   /timeline               FaZe history as a tree (Omar)            public
+//   /rewards                FaZe Points: challenges + store (Omar)   public, earning needs sign-in
 //   /u/:handle, /me         fan profile (Omar)                       public
-//   /hud /rgb /guessr /wall Phase 2 features (branded placeholders)  public
+//   /rgb                    RGB Sync: clip-synced keyboard lighting  public
+//   /hud /guessr /wall      Phase 2 features (branded placeholders)  public
 //   /recruiting/*           Recruiting tab (Yao)                     recruiter + admin
 //   /admin                  admin area (Phase 2 director console)    admin
 import type { ReactNode } from 'react';
@@ -26,8 +28,10 @@ import { HomePage } from './features/home/HomePage';
 import { OnboardingFlow } from './features/onboarding/OnboardingFlow';
 import { LeaderboardsPage, ProfilePage } from './features/profile';
 import { RecruitingPage } from './features/recruiting/RecruitingPage';
+import { RgbPage } from './features/rgb/RgbPage';
 import { TimelinePage } from './features/timeline';
 import { MentorshipPage } from './features/mentorship/MentorshipPage';
+import { RewardsPage } from './features/rewards';
 
 const match = (path: string, pattern: RegExp) => path.match(pattern)?.[1];
 
@@ -57,7 +61,9 @@ export function App() {
   else if (path === '/feed') page = loading ? null : <FeedPage user={user} />;
   else if (path === '/coaching') page = loading ? null : <MentorshipPage user={user} />;
   else if (path === '/leaderboards') page = <LeaderboardsPage highlightHandle={user?.handle} />;
+  else if (path === '/rgb') page = <RgbPage />;
   else if (path === '/timeline') page = <TimelinePage />;
+  else if (path === '/rewards') page = <RewardsPage />;
   else if (feature) page = <ComingSoon feature={feature} />;
   else if (path === '/recruiter') {
     window.location.replace('/recruiting');

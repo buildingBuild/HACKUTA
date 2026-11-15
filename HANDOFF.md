@@ -77,6 +77,12 @@ npm run dev     # web :5173, API :3001
   - The AI column is now WIN%.
 - Phase 2 for you: **FaZe Guessr** (`guessr_puzzles` / `guessr_guesses` are ready).
 
+## RGB Sync is live (added after Phase 1)
+
+- `/rgb` plays a FaZe vs The MongolZ highlight clip; an on-screen keyboard lights up at each moment. Works for everyone with no setup.
+- Yao's laptop keyboard joins in through `companion/` (`cd companion && npm install && npm start`). It is a separate package, not part of `npm install` at the root, so you never need it.
+- Shared-file changes: one route line in `App.tsx`, and RGB Sync flipped to `status: 'live'` in `components/features.ts`.
+
 ## Yao (me), still to do
 
 - **S6, connect real APIs:**

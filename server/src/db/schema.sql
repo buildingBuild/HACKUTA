@@ -195,6 +195,52 @@ CREATE TABLE IF NOT EXISTS guessr_guesses (
 );
 CREATE INDEX IF NOT EXISTS guessr_guesses_puzzle_score_idx ON guessr_guesses (puzzle_id, score DESC);
 
+-- FaZe Points (Omar): earn points from challenges, spend them on merch or coaching sessions.
+-- point_events is the ledger (balance = sum(delta)); a hypertable on TigerData.
+CREATE TABLE IF NOT EXISTS point_events (
+  time     timestamptz NOT NULL DEFAULT now(),
+  user_id  uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  delta    int NOT NULL,
+  kind     text NOT NULL CHECK (kind IN ('challenge', 'redeem', 'refund', 'bonus')),
+  reason   text NOT NULL,
+  ref      text
+);
+CREATE INDEX IF NOT EXISTS point_events_user_time_idx ON point_events (user_id, time DESC);
+
+-- One claim per challenge (weekly challenges use '<id>@<week start>').
+CREATE TABLE IF NOT EXISTS challenge_claims (
+  user_id       uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  challenge_id  text NOT NULL,
+  points        int NOT NULL,
+  claimed_at    timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, challenge_id)
+);
+
+CREATE TABLE IF NOT EXISTS rewards (
+  id          text PRIMARY KEY,
+  kind        text NOT NULL CHECK (kind IN ('merch', 'coaching')),
+  name        text NOT NULL,
+  blurb       text,
+  cost        int NOT NULL CHECK (cost > 0),
+  stock       int CHECK (stock >= 0),          -- NULL = unlimited
+  options     jsonb NOT NULL DEFAULT '[]'::jsonb, -- e.g. sizes
+  art         text,                            -- which illustration the store draws
+  sort        int NOT NULL DEFAULT 0,
+  active      boolean NOT NULL DEFAULT true
+);
+
+CREATE TABLE IF NOT EXISTS redemptions (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reward_id   text NOT NULL REFERENCES rewards(id),
+  cost        int NOT NULL,
+  option      text,
+  status      text NOT NULL DEFAULT 'requested' CHECK (status IN ('requested', 'fulfilled', 'used', 'cancelled')),
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  used_at     timestamptz
+);
+CREATE INDEX IF NOT EXISTS redemptions_user_idx ON redemptions (user_id, created_at DESC);
+
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'timescaledb') THEN
@@ -203,7 +249,8 @@ BEGIN
     PERFORM create_hypertable('social_stats', 'time', if_not_exists => TRUE, migrate_data => TRUE);
     PERFORM create_hypertable('live_events', 'time', if_not_exists => TRUE, migrate_data => TRUE);
     PERFORM create_hypertable('pixel_events', 'time', if_not_exists => TRUE, migrate_data => TRUE);
-    RAISE NOTICE 'player_stats, social_stats, live_events, pixel_events are hypertables';
+    PERFORM create_hypertable('point_events', 'time', if_not_exists => TRUE, migrate_data => TRUE);
+    RAISE NOTICE 'player_stats, social_stats, live_events, pixel_events, point_events are hypertables';
   ELSE
     RAISE NOTICE 'TimescaleDB not available: time-series tables stay plain (leaderboards.sql will be skipped)';
   END IF;
