@@ -4,6 +4,8 @@ import { getDemoUserId } from "../../components/session";
 import { ApiError, fetchProfile, profileUrl } from "./api";
 import { Avatar, LevelBadge, ScoutProgressBar, StateBox, TrendChart } from "./components";
 import { ShareCard } from "./ShareCard";
+import { FaceitLink } from "./FaceitLink";
+import { ScoutCelebration, useScoutCelebration } from "./ScoutCelebration";
 import { usePolling } from "./usePolling";
 import { fmtCompact, fmtNum, fmtPct, fmtSigned } from "./format";
 import type { Profile, StatKey } from "./types";
@@ -26,7 +28,8 @@ export type ProfilePageProps = {
 
 /** Public gamer resume at /u/:handle (REQUIREMENTS.md §5.4). */
 export function ProfilePage({ handle, clipHref = (id) => `/clips/${id}` }: ProfilePageProps) {
-  const { data, error, loading } = usePolling(() => fetchProfile(handle), [handle]);
+  // 5s so the live "clip pushes them over the bar" moment shows up fast on stage.
+  const { data, error, loading, refresh } = usePolling(() => fetchProfile(handle), [handle], 5000);
 
   if (loading && !data) return <div className="pf-root"><StateBox kind="loading">Loading profile…</StateBox></div>;
   if (!data) {
@@ -39,18 +42,21 @@ export function ProfilePage({ handle, clipHref = (id) => `/clips/${id}` }: Profi
       </div>
     );
   }
-  return <ProfileView p={data} clipHref={clipHref} />;
+  return <ProfileView p={data} clipHref={clipHref} refresh={() => void refresh(true)} />;
 }
 
-function ProfileView({ p, clipHref }: { p: Profile; clipHref: (id: string) => string }) {
+function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (id: string) => string; refresh: () => void }) {
   const [trendKey, setTrendKey] = useState<StatKey>("elo");
   const trendTile = STAT_TILES.find((t) => t.key === trendKey)!;
   const name = p.user.display_name;
   const isMe = getDemoUserId() === p.user.id;
   const hasStats = Object.keys(p.stats).length > 0 || p.clip_count > 0 || p.karma !== 0;
+  const celebration = useScoutCelebration(p.scout);
+  const faceitNick = p.game?.faceit_nickname ?? null;
 
   return (
     <div className="pf-root">
+      {celebration.show && <ScoutCelebration handle={p.user.handle} displayName={name} isMe={isMe} onClose={celebration.dismiss} />}
       <header className="pf-hero">
         <Avatar name={name} url={p.user.avatar_url} size={88} />
         <div className="pf-hero__id">
@@ -93,12 +99,15 @@ function ProfileView({ p, clipHref }: { p: Profile; clipHref: (id: string) => st
           <h2 id="pf-welcome-h" className="pf-h2">Welcome to FaZe HQ, {name}</h2>
           <ol className="pf-welcome__steps">
             <li className="is-done"><strong>Profile created.</strong> This page is your public CS2 resume. Share it anywhere.</li>
+            <li className={faceitNick ? "is-done" : ""}><strong>Link FACEIT.</strong> Pull in your level, ELO and match stats (just below).</li>
             <li><strong>Upload your first clip.</strong> Get AI coaching and a score that counts toward scouting.</li>
             <li><strong>Climb the bars.</strong> Clear every scouting threshold and FaZe recruiters get your report.</li>
           </ol>
           <a className="pf-btn pf-btn--primary" href="/coach">Upload your first clip →</a>
         </section>
       )}
+
+      {isMe && !hasStats && <FaceitLink handle={p.user.handle} userId={p.user.id} nickname={faceitNick} onSynced={refresh} />}
 
       {hasStats && <section className="pf-tiles" aria-label="Key stats">
         {STAT_TILES.map((t) => {
@@ -174,6 +183,7 @@ function ProfileView({ p, clipHref }: { p: Profile; clipHref: (id: string) => st
         </div>
 
         <aside className="pf-col">
+          {isMe && hasStats && <FaceitLink handle={p.user.handle} userId={p.user.id} nickname={faceitNick} onSynced={refresh} compact />}
           {p.social.length > 0 && (
             <section className="pf-card" aria-labelledby="pf-social-h">
               <h2 id="pf-social-h" className="pf-h2">Creator stats</h2>

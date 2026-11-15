@@ -74,6 +74,29 @@ export async function saveOnboardingProfile(answers: OnboardingAnswers): Promise
   return out;
 }
 
+// ---------- FACEIT link ----------
+
+export type FaceitSyncResult = {
+  source: "faceit" | "seed";
+  nickname: string | null;
+  stats: Record<string, number | null | undefined>;
+  error?: string;
+  scouting?: { created: { id: string; rule_id: string }[] } | null;
+};
+
+/** Save the nickname (Omar's route), then pull stats via Yao's sync route. */
+export async function linkFaceit(handle: string, nickname: string): Promise<FaceitSyncResult> {
+  const { user_id } = await getJson<{ user_id: string }>(`/api/profiles/${encodeURIComponent(handle)}/faceit`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ faceit_nickname: nickname }),
+  });
+  return syncFaceit(user_id);
+}
+
+export const syncFaceit = (userId: string) =>
+  getJson<FaceitSyncResult>(`/api/players/${encodeURIComponent(userId)}/sync`, { method: "POST" });
+
 /** Live availability check for the gamertag step. `handle` is the URL-safe version of the tag. */
 export const checkHandle = (gamertag: string) =>
   getJson<{ handle: string; available: boolean; mine?: boolean; reason?: string }>(`/api/handles/${encodeURIComponent(gamertag)}`);

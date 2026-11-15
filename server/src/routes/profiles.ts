@@ -7,6 +7,7 @@
 // Routes:
 //   POST /api/profiles                   onboarding -> create player (409 if tag taken by someone else)
 //   GET /api/handles/:gamertag           is this tag available?
+//   PUT /api/profiles/:handle/faceit     link your FACEIT nickname (own profile only)
 //   GET /api/profiles/:handle            public gamer resume
 //   GET /api/profiles/:handle/card.svg   shareable profile card (1200x630)
 //   GET /api/leaderboards                list of leaderboard types
@@ -560,6 +561,23 @@ export function createProfilesRouter(opts: ProfilesRouterOptions): Router {
     const sid = req.header("x-user-id") ?? null;
     const out = await createOrUpdateProfile(db, (req.body ?? {}) as CreateBody, sid && UUID.test(sid) ? sid : null);
     res.status(out.status).json(out.body);
+  }));
+
+  // Link (or change) your FACEIT nickname. The client then calls Yao's POST /api/players/:userId/sync.
+  router.put("/profiles/:handle/faceit", asyncRoute(async (req, res) => {
+    const user = await loadUser(db, String(req.params.handle));
+    if (!user) return res.status(404).json({ error: "Profile not found" });
+    if (req.header("x-user-id") !== user.id) return res.status(403).json({ error: "You can only link FACEIT on your own profile" });
+    const nickname = cleanStr((req.body as { faceit_nickname?: unknown } | undefined)?.faceit_nickname, 40);
+    if (!/^[A-Za-z0-9_.-]{2,32}$/.test(nickname)) return res.status(400).json({ error: "That doesn't look like a FACEIT nickname" });
+    const upd = await db.query(
+      `UPDATE game_accounts SET faceit_nickname = $2,
+              faceit_player_id = CASE WHEN faceit_nickname IS DISTINCT FROM $2 THEN NULL ELSE faceit_player_id END
+        WHERE user_id = $1 AND game = 'cs2'`,
+      [user.id, nickname],
+    );
+    if (!upd.rowCount) await db.query("INSERT INTO game_accounts (user_id, game, faceit_nickname) VALUES ($1, 'cs2', $2)", [user.id, nickname]);
+    res.json({ user_id: user.id, faceit_nickname: nickname });
   }));
 
   // Live "is this tag free?" check for the gamertag step.
