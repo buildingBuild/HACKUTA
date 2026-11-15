@@ -138,18 +138,18 @@ export function Canopy({ trunkWidth = 22 }: { trunkWidth?: number }) {
       </title>
       <defs>
         <radialGradient id="tl-crown" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#ffd88a" stopOpacity="0.32" />
-          <stop offset="45%" stopColor="#f0a940" stopOpacity="0.12" />
-          <stop offset="100%" stopColor="#f0a940" stopOpacity="0" />
+          <stop offset="0%" stopColor="#e4002b" stopOpacity="0.07" />
+          <stop offset="45%" stopColor="#e4002b" stopOpacity="0.03" />
+          <stop offset="100%" stopColor="#e4002b" stopOpacity="0" />
         </radialGradient>
         <radialGradient id="tl-leafglow">
-          <stop offset="0%" stopColor="#ffe6a8" stopOpacity="0.55" />
-          <stop offset="40%" stopColor="#f5b54a" stopOpacity="0.22" />
-          <stop offset="100%" stopColor="#f5b54a" stopOpacity="0" />
+          <stop offset="0%" stopColor="#ff4d63" stopOpacity="0.16" />
+          <stop offset="40%" stopColor="#e4002b" stopOpacity="0.06" />
+          <stop offset="100%" stopColor="#e4002b" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="tl-wood" x1="0" y1="1" x2="0" y2="0">
-          <stop offset="0%" stopColor="#ffd27a" />
-          <stop offset="100%" stopColor="#f6b84f" />
+          <stop offset="0%" stopColor="#e4002b" />
+          <stop offset="100%" stopColor="#c4001f" />
         </linearGradient>
         <filter id="tl-glow" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="5" result="b" />
@@ -394,16 +394,16 @@ export function Roots({ trunkWidth = 130, trunkHeight = 0 }: { trunkWidth?: numb
       <title id="tl-roots-t">The roots: FaZe's founders ClipZ, House Cat and Resistance, and the first names that grew from them.</title>
       <defs>
         <linearGradient id="tl-rootcore" x1="0" x2="1">
-          <stop offset="0%" stopColor="#7a430c" />
-          <stop offset="35%" stopColor="#f0b14d" />
-          <stop offset="50%" stopColor="#fff0c4" />
-          <stop offset="65%" stopColor="#f0b14d" />
-          <stop offset="100%" stopColor="#7a430c" />
+          <stop offset="0%" stopColor="#7d0016" />
+          <stop offset="35%" stopColor="#e4002b" />
+          <stop offset="50%" stopColor="#ff5c72" />
+          <stop offset="65%" stopColor="#e4002b" />
+          <stop offset="100%" stopColor="#7d0016" />
         </linearGradient>
         <linearGradient id="tl-rootwood" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ffd98a" />
-          <stop offset="55%" stopColor="#e3a142" />
-          <stop offset="100%" stopColor="#a8661d" />
+          <stop offset="0%" stopColor="#ff3b55" />
+          <stop offset="55%" stopColor="#e4002b" />
+          <stop offset="100%" stopColor="#a3001c" />
         </linearGradient>
       </defs>
 
@@ -512,11 +512,11 @@ export function BraidedTrunk({ height, top = 22, bottom = 72 }: { height: number
     <svg className="tl-btrunk" width={TW} height={height} viewBox={`0 0 ${TW} ${height}`} aria-hidden="true">
       <defs>
         <linearGradient id="tl-core" x1="0" x2="1">
-          <stop offset="0%" stopColor="#7a430c" />
-          <stop offset="35%" stopColor="#f0b14d" />
-          <stop offset="50%" stopColor="#fff0c4" />
-          <stop offset="65%" stopColor="#f0b14d" />
-          <stop offset="100%" stopColor="#7a430c" />
+          <stop offset="0%" stopColor="#7d0016" />
+          <stop offset="35%" stopColor="#e4002b" />
+          <stop offset="50%" stopColor="#ff5c72" />
+          <stop offset="65%" stopColor="#e4002b" />
+          <stop offset="100%" stopColor="#7d0016" />
         </linearGradient>
       </defs>
       <path className="tl-btrunk__core" d={g.core} fill="url(#tl-core)" />
