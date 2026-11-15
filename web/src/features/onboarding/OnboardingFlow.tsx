@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { FazeLogo } from '../../components/FazeLogo';
 import { AppNav } from '../../components/AppNav';
 import type { SessionUser } from '../../components/session';
+import { analyzeOnboarding, userClips, type RealClip } from '../clips/api';
 import { saveOnboardingProfile } from '../profile/api';
 import { BuildingHQ } from './BuildingHQ';
 import { ProfilePreview } from './ProfilePreview';
@@ -43,6 +44,9 @@ export function OnboardingFlow() {
   const [building, setBuilding] = useState(false);
   // Real player created via Omar's POST /api/profiles when they hit FaZe Up
   const [player, setPlayer] = useState<{ user: SessionUser; url: string } | null>(null);
+  const [realClips, setRealClips] = useState<RealClip[] | null>(null);
+  // true while we're fetching their real clips: the HQ collage shows blank "scanning" tiles instead of demo clips
+  const [clipsLoading, setClipsLoading] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const timer = useRef<number | undefined>(undefined);
 
@@ -76,11 +80,24 @@ export function OnboardingFlow() {
     if (!canContinue) return;
     if (step.id === 'review') {
       setBuilding(true); // play the "building your HQ" sequence first
+      setClipsLoading(!!(data.twitch || data.youtube || data.folder?.trim()));
       // save in parallel; the preview still works if this fails (demo safety)
       setSaveError(null);
       saveOnboardingProfile(data)
-        .then((out) => setPlayer({ user: out.user as SessionUser, url: out.profile_url }))
-        .catch((err: Error) => setSaveError(err.message || 'Could not save your profile'));
+        .then((out) => {
+          setPlayer({ user: out.user as SessionUser, url: out.profile_url });
+          // signed in now: kick off real clip analysis for everything they linked (runs in the background)
+          // already-analyzed sources come back from the cache instantly; fresh ones keep running in the background
+          void analyzeOnboarding(data)
+            .then(() => userClips(out.user.id))
+            .then((c) => c.length && setRealClips(c))
+            .catch(() => {})
+            .finally(() => setClipsLoading(false));
+        })
+        .catch((err: Error) => {
+          setSaveError(err.message || 'Could not save your profile');
+          setClipsLoading(false);
+        });
     }
     else goTo(index + 1);
   };
@@ -97,7 +114,7 @@ export function OnboardingFlow() {
 
   return (
     <div className="onb">
-      {building && <BuildingHQ data={data} onDone={finishBuilding} />}
+      {building && <BuildingHQ data={data} real={realClips} waiting={clipsLoading} onDone={finishBuilding} />}
       <FazeLogo className={`watermark ${finished ? 'watermark--done' : ''}`} />
       {finished && <AppNav user={player?.user ?? null} path={player ? player.url : '/'} />}
       {!finished && (
@@ -122,6 +139,7 @@ export function OnboardingFlow() {
           <span className="panel__bloom" aria-hidden="true" />
           {finished ? (
             <ProfilePreview
+              real={realClips}
               data={data}
               onEdit={() => goTo(STEPS.length - 1)}
               profileUrl={player?.url}

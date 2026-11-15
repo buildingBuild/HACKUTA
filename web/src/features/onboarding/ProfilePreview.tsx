@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { platformOf, type RealClip } from '../clips/api';
 import { ClipFrame } from './ClipFrame';
 import { CATEGORIES, handleFor, linkedSources, makeClips, type ClipCategory } from './clips';
 import { GAMES, type OnboardingData } from './types';
@@ -52,9 +53,48 @@ interface Props {
   /** set once the player is saved (Omar's /u/:handle) */
   profileUrl?: string;
   saveError?: string | null;
+  /** analyzed clips from the pipeline (replaces the demo clips when present) */
+  real?: RealClip[] | null;
 }
 
-export function ProfilePreview({ data, onEdit, profileUrl, saveError }: Props) {
+type RealTab = 'all' | 'pro' | 'funny' | 'content';
+const REAL_TABS: { id: RealTab; label: string }[] = [
+  { id: 'all', label: 'All clips' },
+  { id: 'pro', label: 'Pro plays' },
+  { id: 'funny', label: 'Funny moments' },
+  { id: 'content', label: 'Content' },
+];
+const SRC = {
+  twitch: { icon: '/brand/social/twitch.svg', label: 'Twitch' },
+  youtube: { icon: '/brand/social/youtube.svg', label: 'YouTube' },
+  folder: { icon: '/brand/social/folder.svg', label: 'Your folder' },
+};
+
+/** One analyzed clip: plays muted on loop, AI category/score/reason, link to the exact moment. */
+function RealClipCard({ clip, i }: { clip: RealClip; i: number }) {
+  const src = SRC[platformOf(clip)];
+  return (
+    <article className="rc rise" style={{ ['--i' as string]: Math.min(i, 8) }}>
+      <div className="rc__media">
+        <video src={clip.blob_url} poster={clip.thumbnail_url ?? undefined} muted loop autoPlay playsInline preload="metadata" />
+        <span className={`rc__cat rc__cat--${clip.category}`}>{clip.category}</span>
+        <span className="rc__score">{clip.ai_score}</span>
+      </div>
+      <div className="rc__body">
+        <h3>{clip.title}</h3>
+        <p>{clip.ai_reason}</p>
+        <footer>
+          <span className="rc__src"><img src={src.icon} alt="" /> {src.label}</span>
+          {clip.social_post_url && <a href={clip.social_post_url} target="_blank" rel="noopener noreferrer">Original moment ↗</a>}
+        </footer>
+        {clip.ai_rules?.length ? <div className="rc__rules">{clip.ai_rules.map((r) => <span key={r}>{r.replace('_', ' ')}</span>)}</div> : null}
+      </div>
+    </article>
+  );
+}
+
+export function ProfilePreview({ data, onEdit, profileUrl, saveError, real }: Props) {
+  const [realTab, setRealTab] = useState<RealTab>('all');
   const clips = useMemo(() => makeClips(data), [data]);
   const sources = useMemo(() => linkedSources(data), [data]);
   const game = GAMES.find((g) => g.id === data.game);
@@ -65,6 +105,10 @@ export function ProfilePreview({ data, onEdit, profileUrl, saveError }: Props) {
   const avg = Math.round(plays.reduce((a, c) => a + c.score, 0) / Math.max(1, plays.length));
   const bestClip = plays.reduce((b, c) => (c.score > b.score ? c : b), plays[0] ?? clips[0]);
   const best = bestClip.score;
+  const hasReal = !!real?.length;
+  const realAvg = hasReal ? Math.round(real!.reduce((a, c) => a + (c.ai_score ?? 0), 0) / real!.length) : 0;
+  const realBest = hasReal ? real![0] : null;
+  const realShown = hasReal ? real!.filter((c) => realTab === 'all' || c.category === realTab) : [];
   const activity = useMemo(() => activityGrid(data.gamertag), [data.gamertag]);
 
   const tabs: { id: Tab; label: string; count: number }[] = [
@@ -130,20 +174,18 @@ export function ProfilePreview({ data, onEdit, profileUrl, saveError }: Props) {
       <section className="pf__stats rise" style={{ ['--i' as string]: 3 }}>
         <div className="stat">
           <span className="stat__label">Clips found</span>
-          <span className="stat__value">{clips.length}</span>
-          <span className="stat__sub">across {sources.length} sources</span>
+          <span className="stat__value">{hasReal ? real!.length : clips.length}</span>
+          <span className="stat__sub">{hasReal ? 'analyzed by AI' : `across ${sources.length} sources`}</span>
         </div>
         <div className="stat">
-          <span className="stat__label">Avg hype</span>
-          <span className="stat__value">{avg}</span>
-          <span className="stat__sub">highlights + clutches</span>
+          <span className="stat__label">{hasReal ? 'Avg AI score' : 'Avg hype'}</span>
+          <span className="stat__value">{hasReal ? realAvg : avg}</span>
+          <span className="stat__sub">{hasReal ? 'pro + funny + content' : 'highlights + clutches'}</span>
         </div>
         <div className="stat">
           <span className="stat__label">Best clip</span>
-          <span className="stat__value stat__value--red">{best}</span>
-          <span className="stat__sub">
-            {bestClip.title} · {bestClip.map[0]}
-          </span>
+          <span className="stat__value stat__value--red">{realBest ? realBest.ai_score : best}</span>
+          <span className="stat__sub">{realBest ? realBest.title : `${bestClip.title} · ${bestClip.map[0]}`}</span>
         </div>
         <div className="stat stat--wide">
           <span className="stat__label">Clip activity</span>
@@ -158,25 +200,45 @@ export function ProfilePreview({ data, onEdit, profileUrl, saveError }: Props) {
         </div>
       </section>
 
+      {hasReal ? (
+        <>
+          <nav className="pf__tabs rise" style={{ ['--i' as string]: 4 }} aria-label="Clip categories">
+            {REAL_TABS.map((t) => (
+              <button key={t.id} type="button" className={`pf__tab ${realTab === t.id ? 'pf__tab--on' : ''}`} onClick={() => setRealTab(t.id)}>
+                {t.label}
+                <span className="pf__count">{t.id === 'all' ? real!.length : real!.filter((c) => c.category === t.id).length}</span>
+              </button>
+            ))}
+          </nav>
+          <div key={realTab} className="rc-grid">
+            {realShown.map((c, i) => (
+              <RealClipCard key={c.id} clip={c} i={i} />
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
       <nav className="pf__tabs rise" style={{ ['--i' as string]: 4 }} aria-label="Clip categories">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className={`pf__tab ${tab === t.id ? 'pf__tab--on' : ''}`}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-            <span className="pf__count">{t.count}</span>
-          </button>
-        ))}
-      </nav>
-
-      <div key={tab} className="pf__grid">
-        {shown.map((c, i) => (
-          <ClipFrame key={c.id} clip={c} gamertag={data.gamertag} delay={240 + i * 45} scored scoreDelay={500 + i * 45} />
-        ))}
-      </div>
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className={`pf__tab ${tab === t.id ? 'pf__tab--on' : ''}`}
+              onClick={() => setTab(t.id)}
+            >
+              {t.label}
+              <span className="pf__count">{t.count}</span>
+            </button>
+          ))}
+        </nav>
+  
+        <div key={tab} className="pf__grid">
+          {shown.map((c, i) => (
+            <ClipFrame key={c.id} clip={c} gamertag={data.gamertag} delay={240 + i * 45} scored scoreDelay={500 + i * 45} />
+          ))}
+        </div>
+        </>
+      )}
     </div>
   );
 }

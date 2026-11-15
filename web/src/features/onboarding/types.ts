@@ -7,6 +7,8 @@ export interface OnboardingData {
   youtube: string;
   psn: string;
   xbox: string;
+  /** local folder with gameplay videos (the server reads it directly) */
+  folder: string;
 }
 
 export type StepId = 'intro' | 'game' | 'gamertag' | 'accounts' | 'review';
@@ -134,4 +136,5 @@ export const EMPTY_DATA: OnboardingData = {
   youtube: '',
   psn: '',
   xbox: '',
+  folder: '',
 };

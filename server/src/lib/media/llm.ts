@@ -43,7 +43,9 @@ async function frames(segment: string, count = 6): Promise<string[]> {
 
 // ---------- OpenAI (Responses API) ----------
 const OPENAI_URL = 'https://api.openai.com/v1/responses';
-const openaiModel = () => process.env.OPENAI_MODEL || 'gpt-5-mini';
+const openaiModel = () => process.env.OPENAI_MODEL || 'gpt-6.1-sol';
+// "watch this moment" is called many times: use a faster model for it
+const openaiJudgeModel = () => process.env.OPENAI_JUDGE_MODEL || 'gpt-5.5';
 
 type OpenAIOut = {
   id: string;
@@ -59,7 +61,7 @@ async function openai(body: Record<string, unknown>): Promise<OpenAIOut> {
     const res = await fetch(OPENAI_URL, {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: openaiModel(), ...body }),
+      body: JSON.stringify({ model: openaiModel(), ...body }), // body.model overrides
       signal: AbortSignal.timeout(120_000),
     }).catch((e) => e as Error);
     if (res instanceof Error) {
@@ -118,7 +120,8 @@ export async function judge<T>(segment: string, prompt: string, schema: Record<s
       },
     ],
     text: { format: { type: 'json_schema', name: 'verdict', schema: strict(schema), strict: true } },
-    reasoning: { effort: 'minimal' },
+    reasoning: { effort: 'low' },
+    model: openaiJudgeModel(),
   });
   return JSON.parse(outText(r)) as T;
 }

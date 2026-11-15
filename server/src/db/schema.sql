@@ -249,3 +249,4 @@ BEGIN
     PERFORM create_hypertable('clip_signals', 'time', if_not_exists => TRUE, migrate_data => TRUE);
   END IF;
 END $$;
+ALTER TABLE clip_jobs ADD COLUMN IF NOT EXISTS requested text; -- what the user typed (channel/video/folder), for the result cache

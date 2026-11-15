@@ -91,7 +91,7 @@ export function AccountsStep({ data, update }: StepProps) {
           onChange={(v) => update({ twitch: v })}
           onBlur={() => update({ twitch: toHandle(data.twitch) })}
           placeholder="channel"
-          hint="We'll pull your Twitch clips and VOD highlights."
+          hint="We pull your latest VODs and find the best moments."
           autoFocus
         />
       </div>
@@ -104,7 +104,7 @@ export function AccountsStep({ data, update }: StepProps) {
           onChange={(v) => update({ youtube: v })}
           onBlur={() => update({ youtube: toHandle(data.youtube) })}
           placeholder="handle"
-          hint="We'll pull your YouTube videos and Shorts."
+          hint="We pull your latest videos and find the best moments."
         />
       </div>
       <div className="rise" style={{ ['--i' as string]: 4 }}>
@@ -114,7 +114,7 @@ export function AccountsStep({ data, update }: StepProps) {
           value={data.psn}
           onChange={(v) => update({ psn: v })}
           placeholder="psn_id"
-          hint="We'll pull your PlayStation captures."
+          hint="Shown on your profile so the fam can add you."
         />
       </div>
       <div className="rise" style={{ ['--i' as string]: 5 }}>
@@ -124,7 +124,17 @@ export function AccountsStep({ data, update }: StepProps) {
           value={data.xbox}
           onChange={(v) => update({ xbox: v })}
           placeholder="gamertag"
-          hint="We'll pull your Xbox game clips."
+          hint="Shown on your profile so the fam can add you."
+        />
+      </div>
+      <div className="rise field-grid__wide" style={{ ['--i' as string]: 6 }}>
+        <Field
+          label="Clips folder"
+          icon="/brand/social/folder.svg"
+          value={data.folder}
+          onChange={(v) => update({ folder: v })}
+          placeholder="~/Videos/Captures"
+          hint="Where your gameplay recordings live on this computer. We analyze up to 10 videos."
         />
       </div>
     </div>
@@ -157,6 +167,7 @@ export function ReviewStep({ data, jump }: ReviewProps) {
     { key: 'youtube', label: 'YouTube', value: data.youtube && `@${data.youtube}`, icon: '/brand/social/youtube.svg', step: 'accounts' },
     { key: 'psn', label: 'PSN', value: data.psn, icon: '/brand/social/playstation.svg', step: 'accounts' },
     { key: 'xbox', label: 'Xbox', value: data.xbox, icon: '/brand/social/xbox.svg', step: 'accounts' },
+    { key: 'folder', label: 'Folder', value: data.folder && data.folder.split('/').filter(Boolean).pop()!, icon: '/brand/social/folder.svg', step: 'accounts' },
   ];
   const linked = nodes.filter((n) => n.value).length;
 

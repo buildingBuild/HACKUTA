@@ -105,19 +105,63 @@ async function setJob(db: Pool, id: string, patch: Record<string, unknown>) {
 let chain: Promise<unknown> = Promise.resolve();
 const queue = <T>(fn: () => Promise<T>) => (chain = chain.then(fn, fn)) as Promise<T>;
 
+/** On server start: re-queue jobs a previous process left unfinished (dev restarts, crashes). */
+export async function resumeJobs(db: Pool) {
+  const { rows } = await db.query<{ id: string }>(
+    `UPDATE clip_jobs SET status = 'queued', stage = NULL, progress = 0 WHERE status IN ('queued', 'running') RETURNING id`,
+  );
+  for (const { id } of rows) void queue(() => runJob(db, id).catch((e) => console.warn('[clips] job failed', id, (e as Error).message)));
+  if (rows.length) console.log(`[clips] resumed ${rows.length} unfinished analysis job(s)`);
+}
+
 /** Create one job per video in `source` and queue them (one at a time). */
+/** What the user typed, normalized, so the same channel/video/folder hits the cache. */
+export const requestKey = (source: string) => source.trim().replace(/^~(?=\/)/, process.env.HOME ?? '~').replace(/\/+$/, '').replace(/^https?:\/\/(www\.)?/i, 'https://www.').toLowerCase();
+
+/** Result cache: if this channel/video/folder was already analyzed, copy those clips to the new user instantly. */
+async function fromCache(db: Pool, userId: string, key: string) {
+  const { rows } = await db.query<{ id: string; source: string; platform: string; title: string | null; clip_count: number }>(
+    `SELECT DISTINCT ON (source) id, source, platform, title, clip_count FROM clip_jobs
+      WHERE (requested = $1 OR lower(source) = $1) AND status = 'done' AND clip_count > 0
+      ORDER BY source, created_at DESC`,
+    [key],
+  );
+  const jobs: { id: string; source: string; title: string | null; cached: true }[] = [];
+  for (const old of rows) {
+    const {
+      rows: [j],
+    } = await db.query<{ id: string }>(
+      `INSERT INTO clip_jobs (user_id, source, platform, title, requested, status, stage, progress, clip_count)
+       VALUES ($1, $2, $3, $4, $5, 'done', 'done', 1, $6) RETURNING id`,
+      [userId, old.source, old.platform, old.title, key, old.clip_count],
+    );
+    await db.query(
+      `INSERT INTO clips (user_id, blob_url, thumbnail_url, game, title, social_post_url, status, job_id, source_url, start_s, end_s, category, ai_score, ai_reason, ai_rules)
+       SELECT $1, blob_url, thumbnail_url, game, title, social_post_url, status, $2, source_url, start_s, end_s, category, ai_score, ai_reason, ai_rules
+         FROM clips WHERE job_id = $3`,
+      [userId, j.id, old.id],
+    );
+    jobs.push({ id: j.id, source: old.source, title: old.title, cached: true });
+  }
+  return jobs;
+}
+
 export async function createJobs(db: Pool, userId: string, source: string, opts: JobOptions = {}, limit = 10) {
+  const key = requestKey(source);
+  const cached = await fromCache(db, userId, key);
+  if (cached.length) return cached;
   const items = await resolveSources(source, limit);
   if (!items.length) throw new Error('No videos found there');
   const jobs: { id: string; source: string; title: string | null }[] = [];
   for (const it of items) {
     const {
       rows: [j],
-    } = await db.query<{ id: string }>(`INSERT INTO clip_jobs (user_id, source, platform, title) VALUES ($1, $2, $3, $4) RETURNING id`, [
+    } = await db.query<{ id: string }>(`INSERT INTO clip_jobs (user_id, source, platform, title, requested) VALUES ($1, $2, $3, $4, $5) RETURNING id`, [
       userId,
       it.source,
       it.platform,
       it.title ?? null,
+      key,
     ]);
     jobs.push({ id: j.id, source: it.source, title: it.title ?? null });
     void queue(() => runJob(db, j.id, opts).catch((e) => console.warn('[clips] job failed', j.id, (e as Error).message)));
@@ -475,6 +519,8 @@ async function agentPick(
   maxClips: number,
 ): Promise<Pick[]> {
   const picks: Pick[] = [];
+  let inspects = 0;
+  const MAX_INSPECTS = 6;
   const t0 = ctx.job.created_at.getTime() / 1000 + ctx.offset;
   const ruleAt = (a: number, b: number) => [...new Set(ctx.cands.filter((c) => c.peak >= a - 4 && c.peak <= b + 4).flatMap((c) => c.rules))];
 
@@ -502,6 +548,7 @@ async function agentPick(
       return lines.slice(0, 10);
     },
     inspect_window: async ({ start, end }) => {
+      if (++inspects > MAX_INSPECTS) return { error: `inspection budget (${MAX_INSPECTS}) used: save your best clips now and call finish` };
       const a = Math.max(0, Number(start));
       const b = Math.min(ctx.length, Math.max(a + 5, Number(end)));
       return inspect(ctx.file, ctx.dir, a, b, `rules: ${ruleAt(a, b).join(', ') || 'none'}; said: ${transcriptBetween(ctx.words, a, b) || '(nothing)'}`);
@@ -533,6 +580,7 @@ Prefer variety across categories (pro / funny / content). Tighten windows so the
     `Video: "${ctx.job.source}". Analyzed window: ${Math.round(ctx.length)}s. Pick up to ${maxClips} clips.`,
     TOOLS,
     (name, args) => (tools[name] ?? (async () => ({ error: 'unknown tool' })))(args as Record<string, number | string>),
+    10,
   );
   return picks;
 }
@@ -601,7 +649,11 @@ export async function runJob(db: Pool, jobId: string, opts: JobOptions = {}) {
     const maxClips = opts.maxClips ?? 3;
     let picks: Pick[] = [];
     try {
-      picks = await agentPick({ db, job, offset, length, file, dir, words, cands: s.candidates }, maxClips);
+      // the agent gets 4 minutes; after that, keep whatever it saved and fall back for the rest
+      picks = await Promise.race([
+        agentPick({ db, job, offset, length, file, dir, words, cands: s.candidates }, maxClips),
+        new Promise<Pick[]>((_, reject) => setTimeout(() => reject(new Error('agent timed out')), 240_000)),
+      ]);
     } catch (e) {
       console.warn(`[clips] ${provider()} agent failed, using fallback:`, (e as Error).message);
     }

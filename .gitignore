@@ -13,3 +13,4 @@ server/demo-clips/*
 # clip pipeline (Joe): local yt-dlp binary + rendered clips/work files
 server/bin/
 server/media/
+CLIP_PIPELINE.md
