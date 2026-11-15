@@ -31,7 +31,8 @@ web/src/features/home/           Joe
 web/src/features/onboarding/     Joe (/join)
 web/src/features/community/      Dahiya
 web/src/features/profile/        Omar (profile + leaderboards)
-web/src/features/recruiting/     Yao (staff-only tab)
+web/src/features/recruiting/     Yao (staff-only tab: pipeline uses Omar's ProspectBoard)
+web/src/features/admin/          Yao (admin overview; Phase 2 director console)
 web/src/features/{hud,rgb,guessr,wall,admin}/   Phase 2 (Joe HUD visuals, Yao admin/director, Omar guessr, Dahiya wall)
 server/src/routes/auth.ts        Yao (shared demo auth)
 server/src/routes/live.ts        Yao

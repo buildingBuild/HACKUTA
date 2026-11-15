@@ -1,0 +1,17 @@
+/* Recruiting tab shell (owner: Yao). */
+.rc-tabs {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px; padding: 0 24px; min-height: 46px;
+  background: var(--ink); color: var(--paper);
+}
+.rc-tabs__title { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--faze-red); margin-right: 8px; }
+.rc-tab {
+  padding: 12px 0; border-bottom: 2px solid transparent; color: rgba(255, 255, 255, 0.65); text-decoration: none;
+  font-family: var(--font-display); font-weight: 800; font-size: 16px; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.rc-tab:hover { color: var(--paper); }
+.rc-tab.is-on { color: var(--paper); border-bottom-color: var(--faze-red); }
+.rc-tabs__note { margin-left: auto; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255, 255, 255, 0.45); }
+@media (max-width: 640px) {
+  .rc-tabs { padding: 0 16px; }
+  .rc-tabs__note { display: none; }
+}

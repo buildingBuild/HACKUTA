@@ -22,7 +22,7 @@ import { CommunityRoute } from './features/community/CommunityRoute';
 import { HomePage } from './features/home/HomePage';
 import { OnboardingFlow } from './features/onboarding/OnboardingFlow';
 import { LeaderboardsPage, ProfilePage } from './features/profile';
-import { RecruiterDashboard } from './features/recruiter/RecruiterDashboard';
+import { RecruitingPage } from './features/recruiting/RecruitingPage';
 
 const match = (path: string, pattern: RegExp) => path.match(pattern)?.[1];
 
@@ -51,10 +51,13 @@ export function App() {
   } else if (path === '/community' || path.startsWith('/community/')) page = loading ? null : <CommunityRoute user={user} />;
   else if (path === '/leaderboards') page = <LeaderboardsPage highlightHandle={user?.handle} />;
   else if (feature) page = <ComingSoon feature={feature} />;
-  else if (path === '/recruiting' || path.startsWith('/recruiting/') || path === '/recruiter')
+  else if (path === '/recruiter') {
+    window.location.replace('/recruiting');
+    page = null;
+  } else if (path === '/recruiting' || path.startsWith('/recruiting/'))
     page = (
       <RequireRole user={user} loading={loading} roles={['recruiter', 'admin']}>
-        <RecruiterDashboard user={user} />
+        <RecruitingPage path={path} user={user} />
       </RequireRole>
     );
   else if (path === '/admin' || path.startsWith('/admin/'))

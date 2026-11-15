@@ -2,6 +2,7 @@
 // SHARED FILE: add your router below, additive only.
 import express from 'express';
 import { createCommunityRouter } from './routes/community.js';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pool } from './db/client.js';
@@ -43,6 +44,14 @@ app.use('/api', auth.identify, createProfilesRouter({ db, scoutProgress: profile
 app.use('/demo-clips', express.static(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../demo-clips')));
 
 app.use('/api', (_req, res) => res.status(404).json({ error: 'not found' }));
+
+// Production: serve the built web app (web/dist) from the same origin, with an SPA fallback so
+// deep links like /u/kairo or /recruiting/rules load index.html. In dev, Vite serves the web on :5173.
+const webDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../web/dist');
+if (existsSync(path.join(webDist, 'index.html'))) {
+  app.use(express.static(webDist, { index: false, maxAge: '1h' }));
+  app.get(/^\/(?!api\/|demo-clips\/).*/, (_req, res) => res.sendFile(path.join(webDist, 'index.html')));
+}
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('[api] unhandled:', err);
   res.status(500).json({ error: 'internal error' });

@@ -16,7 +16,8 @@ const levelTier = (l: number) => (l >= 10 ? "top" : l >= 8 ? "high" : l >= 4 ? "
  * FaZe recruiter pipeline (staff only; Yao's API enforces the role).
  * Status tabs double as pipeline counts; rows open the player's portfolio in recruiter mode.
  */
-export function ProspectBoard() {
+/** `hrefFor` picks where a row opens (default: the player's profile with the recruiter lens). */
+export function ProspectBoard({ hrefFor = (p: ProspectRow) => profileUrl(p.handle) }: { hrefFor?: (p: ProspectRow) => string } = {}) {
   const [all, setAll] = useState<ProspectRow[] | null>(null);
   const [error, setError] = useState<{ message: string; status?: number } | null>(null);
   const [tab, setTab] = useState<StatusTab>("all");
@@ -77,7 +78,7 @@ export function ProspectBoard() {
       <header className="pf-board__hero pf-rise">
         <p className="pf-kicker"><span className="pf-kicker__bar" />FaZe recruiter<span className="pf-kicker__dim">· staff only · live</span></p>
         <h1 className="pf-display pf-board__title">Talent pipeline<span className="pf-accent">.</span></h1>
-        <p className="pf-board__lede">Players who cleared the FaZe Up Next bar, ranked by prospect score. Open one to see their dossier, AI scout report and flagged clip moments.</p>
+        <p className="pf-board__lede">Players who cleared the FaZe Up Next bar, ranked by prospect score. Open one for the scout report, every bar they cleared and 30-day trends.</p>
       </header>
 
       {denied ? (
@@ -121,7 +122,7 @@ export function ProspectBoard() {
               <ol className="pf-prospects">
                 {rows.map((p, i) => (
                   <li key={p.id}>
-                    <a className={`pf-prospect ${fresh.has(p.id) ? "is-fresh" : ""}`} href={profileUrl(p.handle)}>
+                    <a className={`pf-prospect ${fresh.has(p.id) ? "is-fresh" : ""}`} href={hrefFor(p)}>
                       <span className="pf-prospect__rank">{String(i + 1).padStart(2, "0")}</span>
                       <span className="pf-prospect__who">
                         <Avatar name={p.display_name || p.handle} url={p.avatar_url} size={44} />
@@ -138,7 +139,7 @@ export function ProspectBoard() {
                         <Stat label="K/D" v={p.metrics?.kd} d={2} />
                         <Stat label="HS%" v={p.metrics?.hs_pct} d={0} />
                         <Stat label="ADR" v={p.metrics?.adr} d={0} />
-                        <Stat label="AI" v={p.metrics?.avg_clip_score} d={0} />
+                        <Stat label="WIN%" v={p.metrics?.win_rate} d={0} />
                       </span>
                       <span className="pf-prospect__score">
                         <strong className="pf-display">{p.score ?? "–"}</strong>

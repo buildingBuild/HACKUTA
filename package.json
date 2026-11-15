@@ -1,15 +1,20 @@
 {
   "name": "faze-hq",
   "private": true,
-  "workspaces": ["web", "server"],
+  "workspaces": [
+    "web",
+    "server"
+  ],
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "dev:web": "npm run dev -w web",
     "dev:server": "npm run dev -w server",
     "build": "npm run build -w web",
+    "start": "npm run start -w server",
     "lint": "npm run lint -w web && npm run lint -w server",
     "db:migrate": "npm run db:migrate -w server",
     "db:seed": "npm run db:seed -w server",
+    "setup": "npm run db:migrate && npm run db:seed",
     "test": "npm run test -w server"
   }
 }
