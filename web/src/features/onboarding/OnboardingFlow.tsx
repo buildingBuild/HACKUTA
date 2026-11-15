@@ -91,10 +91,14 @@ export function OnboardingFlow() {
           <FazeLogo className="brand__logo" title="FaZe" />
           <span className="brand__hq">HQ</span>
         </span>
-        <TraceLine steps={STEPS} statuses={statuses} />
-        <span className="onb__count">
-          {finished ? 'Complete' : `${String(index).padStart(2, '0')} / ${String(STEPS.length - 1).padStart(2, '0')}`}
-        </span>
+        {!finished && (
+          <>
+            <TraceLine steps={STEPS} statuses={statuses} />
+            <span className="onb__count">
+              {`${String(index).padStart(2, '0')} / ${String(STEPS.length - 1).padStart(2, '0')}`}
+            </span>
+          </>
+        )}
       </header>
 
       <main className="onb__stage">
