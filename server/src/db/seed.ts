@@ -12,12 +12,10 @@ const FANS = [
 ];
 
 async function seedFans() {
+  // Recreate so anything added while demoing (clips, linked FACEIT) is reset.
+  await pool.query(`DELETE FROM users WHERE handle = ANY($1::text[])`, [FANS.map((f) => f.handle)]);
   for (const f of FANS) {
-    await pool.query(
-      `INSERT INTO users (handle, display_name, role) VALUES ($1, $2, 'user')
-       ON CONFLICT (handle) DO UPDATE SET display_name = EXCLUDED.display_name`,
-      [f.handle, f.display_name],
-    );
+    await pool.query(`INSERT INTO users (handle, display_name, role) VALUES ($1, $2, 'user')`, [f.handle, f.display_name]);
   }
   console.log(`✓ fans (${FANS.length})`);
 }

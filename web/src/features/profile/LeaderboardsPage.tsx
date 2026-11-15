@@ -3,6 +3,18 @@ import "./profile.css";
 import { fetchLeaderboard, profileUrl } from "./api";
 import { Avatar, LevelBadge, StateBox } from "./components";
 import { usePolling } from "./usePolling";
+import { useRankMoves, type RankMove } from "./useRankMoves";
+
+function MoveBadge({ move }: { move: RankMove | undefined }) {
+  if (!move) return <span className="pf-move" aria-hidden />;
+  if (move.kind === "new") return <span className="pf-move pf-move--new" title="New on this board since your last visit">NEW</span>;
+  const up = move.kind === "up";
+  return (
+    <span className={`pf-move ${up ? "pf-move--up" : "pf-move--down"}`} title={`${up ? "Up" : "Down"} ${move.by} since your last visit`}>
+      {up ? "▲" : "▼"}{move.by}
+    </span>
+  );
+}
 import { fmtCompact, fmtLeaderboardValue } from "./format";
 import type { LeaderboardType } from "./types";
 
@@ -29,6 +41,8 @@ export function LeaderboardsPage({ initialType = "elo", highlightHandle, limit =
   const windowed = type === "improvement" || type === "creator-growth";
   const { data, error, loading } = usePolling(() => fetchLeaderboard(type, { limit, window: windowed ? windowDays : undefined }), [type, windowDays, limit]);
   const tab = TABS.find((t) => t.type === type)!;
+  const board = windowed ? `${type}:${windowDays}` : type;
+  const { moves, flashing } = useRankMoves(board, data && data.type === type ? data : null);
 
   return (
     <div className="pf-root">
@@ -70,8 +84,11 @@ export function LeaderboardsPage({ initialType = "elo", highlightHandle, limit =
         ) : (
           <ol className="pf-lb">
             {data.entries.map((e) => (
-              <li key={e.handle} className={`pf-lb__row ${e.rank <= 3 ? `is-top is-top-${e.rank}` : ""} ${e.handle === highlightHandle ? "is-me" : ""}`}>
-                <span className="pf-lb__rank">{e.rank}</span>
+              <li key={e.handle} className={`pf-lb__row ${e.rank <= 3 ? `is-top is-top-${e.rank}` : ""} ${e.handle === highlightHandle ? "is-me" : ""} ${flashing.has(e.handle) ? "is-moved" : ""}`}>
+                <span className="pf-lb__rank">
+                  {e.rank}
+                  <MoveBadge move={moves[e.handle]} />
+                </span>
                 <a className="pf-lb__player" href={profileUrl(e.handle)}>
                   <Avatar name={e.display_name} url={e.avatar_url} size={36} />
                   <span className="pf-lb__names">

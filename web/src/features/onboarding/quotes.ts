@@ -9,12 +9,11 @@ export const TICKER_LINES = [
   'The scouts are watching*',
   'Counter-strafe. Then shoot.',
   'From montage kids to Major contenders.',
+  'Day one or day zero. Welcome home.',
+  'Trickshots built the house.',
 ];
 
 export const STEP_LINES: Record<string, string> = {
   game: 'Pick your battlefield.',
   gamertag: 'The name the scouts will remember.',
-  streaming: 'Got an audience? Bring it.',
-  console: 'Cross-platform? Cool. Optional.',
-  review: 'Last look before you FaZe up.',
 };

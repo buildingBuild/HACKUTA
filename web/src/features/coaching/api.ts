@@ -39,6 +39,46 @@ export interface ClipRow {
 export const getClip = (clipId: string) => api<ClipRow>(`/api/clips/${clipId}`);
 export const listClips = (userId: string) => api<{ clips: ClipRow[] }>(`/api/clips?userId=${encodeURIComponent(userId)}`);
 
+export interface NewClip {
+  blob_url: string;
+  title?: string;
+  map?: string;
+  side?: 'T' | 'CT';
+}
+/** Registers a clip by URL (Joe's real flow uploads to blob storage first, then calls this). */
+export const createClip = (clip: NewClip) => api<ClipRow>('/api/clips', { method: 'POST', body: JSON.stringify(clip) });
+
+// ---------- player stats + FACEIT ----------
+
+export interface PlayerStats {
+  user_id: string;
+  latest: Record<string, number>;
+  trend: ({ day: string } & Record<string, number | string>)[];
+}
+export interface GameAccount {
+  faceit_nickname: string | null;
+  faceit_player_id: string | null;
+  region: string | null;
+  faceit_level: number | null;
+  faceit_elo: number | null;
+}
+
+export const getPlayerStats = (userId: string, days = 30) => api<PlayerStats>(`/api/players/${userId}/stats?days=${days}`);
+export const getAccount = (userId: string) => api<{ account: GameAccount | null }>(`/api/players/${userId}/account`);
+export const linkFaceit = (userId: string, nickname: string) =>
+  api<{ account: GameAccount }>(`/api/players/${userId}/faceit`, { method: 'PUT', body: JSON.stringify({ nickname }) });
+export const syncFaceit = (userId: string) =>
+  api<{ source: 'faceit' | 'mock' | 'seed'; nickname: string | null; new_matches?: number; error?: string; scouting: AnalyzeResponse['scouting'] }>(
+    `/api/players/${userId}/sync`,
+    { method: 'POST' },
+  );
+
+export const isYouTube = (url: string) => /^(https?:\/\/)?(www\.|m\.)?(youtube\.com|youtu\.be)\//i.test(url);
+export function youTubeEmbed(url: string): string | null {
+  const m = url.match(/(?:youtu\.be\/|v=|shorts\/|embed\/)([\w-]{11})/);
+  return m ? `https://www.youtube.com/embed/${m[1]}?enablejsapi=1&rel=0` : null;
+}
+
 export const startVoiceSession = (clipId: string) =>
   api<{ signedUrl: string | null; dynamicVariables: Record<string, string | number>; fallbackAudioUrl: string | null; error?: string }>(
     '/api/voice/session',

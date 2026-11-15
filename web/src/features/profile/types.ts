@@ -26,7 +26,11 @@ export type ProfileClip = {
   created_at: string;
   overall_score: number | null;
   summary: string | null;
+  notes: ClipNote[];
 };
+
+/** One timestamped AI coaching moment (REQUIREMENTS.md §7.3). */
+export type ClipNote = { t: string; category: string; severity: "low" | "medium" | "high"; note: string; fix?: string };
 
 export type Profile = {
   user: { id: string; handle: string; display_name: string; avatar_url: string | null; role: string; bio: string | null; created_at: string };
@@ -41,6 +45,26 @@ export type Profile = {
   karma: number;
   elo_rank: { rank: number; total: number } | null;
   scout: ScoutProgress;
+  dossier: Dossier;
+};
+
+export type Dossier = {
+  percentiles: { metric: string; label: string; digits: number; value: number; better_than_pct: number | null; pool: number }[];
+  form: {
+    days_tracked: number;
+    elo_delta: number | null;
+    kd_delta: number | null;
+    adr_delta: number | null;
+    hs_delta: number | null;
+    consistency: "high" | "steady" | "streaky" | null;
+    consistency_cv: number | null;
+  };
+  skills: {
+    categories: { key: string; label: string; avg: number; clips: number }[];
+    strongest: string | null;
+    weakest: string | null;
+    clips_analyzed: number;
+  };
 };
 
 export type LeaderboardType = "elo" | "clip-score" | "improvement" | "creator-growth" | "karma";

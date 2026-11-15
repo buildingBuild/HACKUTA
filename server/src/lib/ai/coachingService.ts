@@ -1,7 +1,7 @@
 // Orchestrates: clip -> (Gemini | cache) -> validated report -> DB -> scouting check.
 import type { Db } from '../yao-deps.js';
 import type { CoachingReport } from './coachingSchema.js';
-import { analyzeClip, geminiModel, withTimeout } from './gemini.js';
+import { analyzeClip, withTimeout } from './gemini.js';
 import { getCachedReport, getFallbackReport } from './cache/index.js';
 import type { PlayerContext } from './prompt.js';
 import { evaluate, type EvaluateResult } from '../scouting/engine.js';
@@ -12,7 +12,7 @@ export const coachingMode = (): CoachingMode => {
   return m === 'live' || m === 'cache' ? m : 'auto';
 };
 
-const LIVE_TIMEOUT_MS = Number(process.env.COACHING_TIMEOUT_MS || 45_000);
+const LIVE_TIMEOUT_MS = Number(process.env.COACHING_TIMEOUT_MS || 60_000);
 const CACHE_DELAY_MS = Number(process.env.COACHING_CACHE_DELAY_MS ?? 2_500);
 
 export interface ClipRow {
@@ -83,13 +83,15 @@ async function produceReport(clip: ClipRow, ctx: PlayerContext): Promise<{ repor
     return { report: exact ?? getFallbackReport(), model: exact ? 'cache' : 'cache-fallback' };
   };
 
-  if (mode === 'cache') {
+  const delayed = async () => {
     await new Promise((r) => setTimeout(r, CACHE_DELAY_MS)); // feels like real analysis on stage
     return cached();
-  }
+  };
+  if (mode === 'cache') return delayed();
+  // auto: seeded demo clips keep their scripted result (e.g. the prospect's 92 that crosses the bar).
+  if (mode === 'auto' && getCachedReport(clip.blob_url)) return delayed();
   try {
-    const report = await withTimeout(analyzeClip(clip.blob_url, ctx), LIVE_TIMEOUT_MS, 'Gemini analysis');
-    return { report, model: geminiModel() };
+    return await withTimeout(analyzeClip(clip.blob_url, ctx), LIVE_TIMEOUT_MS, 'Gemini analysis');
   } catch (e) {
     if (mode === 'live') throw e;
     console.warn(`[coaching] live analysis failed for clip ${clip.id}, using cache:`, (e as Error).message);

@@ -12,12 +12,12 @@ interface Props {
 }
 
 export function TalkToCoachButton({ clipId, fallbackText }: Props) {
-  const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [fallbackPlaying, setFallbackPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const conversation = useConversation({
-    onError: (e: unknown) => setError(typeof e === 'string' ? e : 'Voice coach error'),
+    onError: (e: unknown) => setNote(typeof e === 'string' ? e : 'Voice coach error'),
   });
   const live = conversation.status === 'connected' || conversation.status === 'connecting';
 
@@ -44,19 +44,19 @@ export function TalkToCoachButton({ clipId, fallbackText }: Props) {
   }
 
   async function start() {
-    setError(null);
+    setNote(null);
     setBusy(true);
     try {
       const session = await startVoiceSession(clipId);
       if (!session.signedUrl) {
-        setError('Live coach unavailable, playing recorded feedback');
+        setNote('Live coach offline · playing recorded feedback');
         await playFallback(session.fallbackAudioUrl);
         return;
       }
       await navigator.mediaDevices.getUserMedia({ audio: true });
       await conversation.startSession({ signedUrl: session.signedUrl, dynamicVariables: session.dynamicVariables });
     } catch (e) {
-      setError((e as Error).message || 'Could not start voice coach');
+      setNote((e as Error).message || 'Could not start voice coach');
       await playFallback(null);
     } finally {
       setBusy(false);
@@ -74,15 +74,22 @@ export function TalkToCoachButton({ clipId, fallbackText }: Props) {
   return (
     <div className="yao-coach">
       <button className={`yao-btn ${active ? 'yao-btn--live' : 'yao-btn--primary'}`} onClick={active ? stop : start} disabled={busy}>
-        {busy ? 'Connecting…' : active ? '■ End coaching call' : '🎙 Talk to your coach'}
+        {busy ? 'Connecting…' : active ? '■ End coaching call' : 'Talk to your coach'}
+        {!busy && !active && <span className="yao-btn__arrow">→</span>}
       </button>
-      {live && (
+      {live ? (
         <span className="yao-coach__status">
           <span className={`yao-dot ${conversation.isSpeaking ? 'yao-dot--pulse' : ''}`} />
-          {conversation.isSpeaking ? 'Coach is speaking' : 'Listening… ask about your mistakes or drills'}
+          {conversation.isSpeaking ? 'Coach speaking' : 'Listening · ask about a mistake or a drill'}
         </span>
+      ) : fallbackPlaying ? (
+        <span className="yao-coach__status">
+          <span className="yao-dot yao-dot--pulse" /> Playing feedback
+        </span>
+      ) : (
+        <span className="yao-label">Voice · post-match only</span>
       )}
-      {error && <span className="yao-coach__error">{error}</span>}
+      {note && <span className="yao-coach__error">{note}</span>}
     </div>
   );
 }

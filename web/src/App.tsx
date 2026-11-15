@@ -37,7 +37,7 @@ export function App() {
   else if (path === '/coach') page = loading ? null : <MyClipsPage user={user} />;
   else if (path === '/community') page = loading ? null : <CommunityRoute user={user} />;
   else if (path === '/leaderboards') page = <LeaderboardsPage highlightHandle={user?.handle} />;
-  else if (path === '/recruiter') page = <RecruiterDashboard />;
+  else if (path === '/recruiter') page = loading ? null : <RecruiterDashboard user={user} />;
   else page = <p style={{ padding: 24 }}>Page not found. <a href="/">Go home</a></p>;
 
   return (

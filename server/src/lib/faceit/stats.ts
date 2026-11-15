@@ -48,16 +48,21 @@ export async function insertSnapshot(db: Db, userId: string, values: Record<stri
 }
 
 export interface SyncResult {
-  source: 'faceit' | 'seed';
+  source: 'faceit' | 'mock' | 'seed';
   nickname: string | null;
   stats: Record<string, number | null | undefined>;
+  new_matches?: number;
   error?: string;
 }
 
+/** live = real FACEIT API (needs FACEIT_API_KEY); mock = generated data. Defaults to mock without a key. */
+export const faceitMode = (): 'live' | 'mock' =>
+  process.env.FACEIT_MODE === 'live' && process.env.FACEIT_API_KEY ? 'live' : 'mock';
+
 /**
  * Pull fresh FACEIT stats for a user's linked nickname and store a snapshot.
- * If FACEIT fails (no key, rate limit, not on FACEIT), return the latest seeded
- * stats instead so the UI never breaks.
+ * Mock mode generates realistic data. In live mode, if FACEIT fails (rate limit,
+ * not on FACEIT), fall back to mock data so the UI never breaks.
  */
 export async function syncFromFaceit(db: Db, userId: string): Promise<SyncResult> {
   const acc = await db.query<{ id: string; faceit_nickname: string | null }>(
@@ -65,9 +70,15 @@ export async function syncFromFaceit(db: Db, userId: string): Promise<SyncResult
     [userId],
   );
   const nickname = acc.rows[0]?.faceit_nickname ?? null;
-  const fallback = async (error: string): Promise<SyncResult> => ({ source: 'seed', nickname, stats: await getLatestStats(db, userId), error });
+  if (!nickname) return { source: 'seed', nickname, stats: await getLatestStats(db, userId), error: 'no FACEIT nickname linked' };
 
-  if (!nickname) return fallback('no FACEIT nickname linked');
+  const mock = async (error?: string): Promise<SyncResult> => {
+    const { mockSync } = await import('./mock.js');
+    const m = await mockSync(db, userId, nickname);
+    return { source: 'mock', nickname, stats: { ...m.stats }, new_matches: m.newMatches, ...(error ? { error } : {}) };
+  };
+  if (faceitMode() === 'mock') return mock();
+
   try {
     const player = await getPlayerByNickname(nickname);
     const [lifetime, recent] = await Promise.all([
@@ -84,7 +95,7 @@ export async function syncFromFaceit(db: Db, userId: string): Promise<SyncResult
     );
     return { source: 'faceit', nickname, stats: { ...n.last20, ...n.lifetime } };
   } catch (e) {
-    console.warn(`[faceit] sync failed for ${nickname}:`, (e as Error).message);
-    return fallback((e as Error).message);
+    console.warn(`[faceit] live sync failed for ${nickname}, using mock:`, (e as Error).message);
+    return mock((e as Error).message);
   }
 }

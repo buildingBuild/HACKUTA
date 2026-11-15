@@ -43,9 +43,11 @@ export function createClipsRouter({ db, auth }: YaoDeps): Router {
 
   r.post('/', auth.requireRole('user', 'recruiter', 'admin'), async (req, res) => {
     const b = req.body ?? {};
-    if (typeof b.blob_url !== 'string' || !/^https?:\/\//.test(b.blob_url)) {
-      return res.status(400).json({ error: 'blob_url (uploaded clip URL) is required' });
+    if (typeof b.blob_url !== 'string' || !/^https?:\/\/\S+$/.test(b.blob_url.trim())) {
+      return res.status(400).json({ error: 'blob_url (uploaded clip URL or YouTube link) is required' });
     }
+    b.blob_url = b.blob_url.trim();
+    if (b.side && !['T', 'CT'].includes(b.side)) return res.status(400).json({ error: 'side must be T or CT' });
     try {
       const q = await db.query(
         `INSERT INTO clips (user_id, blob_url, thumbnail_url, map, side, title, social_post_url)

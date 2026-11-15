@@ -5,6 +5,9 @@
 //   app.use("/api", createProfilesRouter({ db: pool }));
 //
 // Routes:
+//   POST /api/profiles                   onboarding -> create player (409 if tag taken by someone else)
+//   GET /api/handles/:gamertag           is this tag available?
+//   PUT /api/profiles/:handle/faceit     link your FACEIT nickname (own profile only)
 //   GET /api/profiles/:handle            public gamer resume
 //   GET /api/profiles/:handle/card.svg   shareable profile card (1200x630)
 //   GET /api/leaderboards                list of leaderboard types
@@ -262,10 +265,10 @@ async function loadProfile(db: Db, opts: ProfilesRouterOptions, user: UserRow) {
   const clips = await rows<Record<string, unknown>>(
     db,
     `SELECT c.id, c.title, c.map, c.side, c.thumbnail_url, c.blob_url, c.social_post_url, c.status, c.created_at,
-            r.overall_score, r.category_scores, r.summary
+            r.overall_score, r.category_scores, r.summary, r.notes
        FROM clips c
        LEFT JOIN LATERAL (
-         SELECT cr.overall_score, cr.category_scores,
+         SELECT cr.overall_score, cr.category_scores, cr.notes,
                 COALESCE(to_jsonb(cr)->>'summary', cr.category_scores->>'summary') AS summary
            FROM coaching_reports cr WHERE cr.clip_id = c.id ORDER BY cr.created_at DESC LIMIT 1
        ) r ON true
@@ -333,12 +336,124 @@ async function loadProfile(db: Db, opts: ProfilesRouterOptions, user: UserRow) {
       id: c.id, title: c.title, map: c.map, side: c.side, thumbnail_url: c.thumbnail_url, blob_url: c.blob_url,
       social_post_url: c.social_post_url, status: c.status, created_at: c.created_at,
       overall_score: num(c.overall_score), summary: c.summary ?? null,
+      // Timestamped AI coaching moments (REQUIREMENTS §7.3 notes) for the clip review player.
+      notes: Array.isArray(c.notes) ? c.notes : [],
     })),
     clip_count: clips.length,
     avg_clip_score: avgClipScore,
     karma: Number(k?.karma ?? 0),
     elo_rank: rank ? { rank: Number(rank.rank), total: Number(rank.total) } : null,
     scout,
+    dossier: await loadDossier(db, uid),
+  };
+}
+
+// ---------- scout dossier (recruiter view: how they compare, form, skill profile) ----------
+
+const DOSSIER_METRICS = [
+  { metric: "elo", label: "ELO", digits: 0 },
+  { metric: "kd", label: "K/D", digits: 2 },
+  { metric: "adr", label: "ADR", digits: 1 },
+  { metric: "hs_pct", label: "HS%", digits: 0 },
+  { metric: "kr", label: "K/R", digits: 2 },
+  { metric: "win_rate", label: "Win rate", digits: 0 },
+] as const;
+
+const SKILL_LABELS: Record<string, string> = {
+  crosshair_placement: "Crosshair placement",
+  movement: "Movement",
+  spray_control: "Spray control",
+  utility: "Utility",
+  positioning: "Positioning & trades",
+  decision_making: "Decision making",
+};
+
+async function loadDossier(db: Db, uid: string) {
+  const metricNames = DOSSIER_METRICS.map((m) => m.metric);
+
+  // Percentile of this player's latest value vs every player's latest value (players only).
+  const pctRows = await rows<{ metric: string; value: number; pct: number; pool: number }>(
+    db,
+    `WITH latest AS (
+       SELECT DISTINCT ON (ps.user_id, ps.metric) ps.user_id, ps.metric, ps.value
+         FROM player_stats ps JOIN users u ON u.id = ps.user_id AND u.role = 'user'
+        WHERE ps.metric = ANY($2)
+        ORDER BY ps.user_id, ps.metric, ps.time DESC)
+     SELECT metric, value, pct, pool FROM (
+       SELECT user_id, metric, value,
+              cume_dist() OVER (PARTITION BY metric ORDER BY value) AS pct,
+              count(*) OVER (PARTITION BY metric) AS pool
+         FROM latest) x
+      WHERE user_id = $1`,
+    [uid, metricNames],
+  );
+  const pctBy = new Map(pctRows.map((r) => [r.metric, r]));
+  const percentiles = DOSSIER_METRICS.flatMap((m) => {
+    const r = pctBy.get(m.metric);
+    if (!r) return [];
+    // "Better than X%" = share of the rest of the pool at or below this value.
+    const pool = Number(r.pool);
+    const better = pool > 1 ? Math.round(((Number(r.pct) * pool - 1) / (pool - 1)) * 100) : null;
+    return [{ metric: m.metric, label: m.label, digits: m.digits, value: Number(r.value), better_than_pct: better, pool }];
+  });
+
+  // 30-day form: change + consistency (coefficient of variation of daily K/D and ADR).
+  const formRows = await rows<{ metric: string; first: number; last: number; mean: number; sd: number | null; days: number }>(
+    db,
+    `WITH daily AS (
+       SELECT metric, date_trunc('day', time) AS d, avg(value) AS v
+         FROM player_stats WHERE user_id = $1 AND metric = ANY($2) AND time >= now() - interval '30 days'
+        GROUP BY metric, d)
+     SELECT metric,
+            (array_agg(v ORDER BY d ASC))[1] AS first, (array_agg(v ORDER BY d DESC))[1] AS last,
+            avg(v) AS mean, stddev_samp(v) AS sd, count(*)::int AS days
+       FROM daily GROUP BY metric`,
+    [uid, ["elo", "kd", "adr", "hs_pct"]],
+  );
+  const f = new Map(formRows.map((r) => [r.metric, r]));
+  const delta = (m: string) => (f.get(m) ? Number(f.get(m)!.last) - Number(f.get(m)!.first) : null);
+  const cvs = ["kd", "adr"].flatMap((m) => {
+    const r = f.get(m);
+    return r && r.sd != null && Number(r.mean) > 0 && Number(r.days) >= 5 ? [Number(r.sd) / Number(r.mean)] : [];
+  });
+  const cv = cvs.length ? cvs.reduce((a, b) => a + b, 0) / cvs.length : null;
+  const form = {
+    days_tracked: Math.max(0, ...formRows.map((r) => Number(r.days))),
+    elo_delta: delta("elo"),
+    kd_delta: delta("kd"),
+    adr_delta: delta("adr"),
+    hs_delta: delta("hs_pct"),
+    consistency: cv === null ? null : cv < 0.04 ? "high" : cv < 0.08 ? "steady" : "streaky",
+    consistency_cv: cv,
+  };
+
+  // AI skill profile: mean of each coaching category over the latest report per clip.
+  const skillRows = await rows<{ key: string; avg: number; n: number }>(
+    db,
+    `WITH latest AS (
+       SELECT DISTINCT ON (c.id) r.category_scores
+         FROM clips c JOIN coaching_reports r ON r.clip_id = c.id
+        WHERE c.user_id = $1 ORDER BY c.id, r.created_at DESC)
+     SELECT kv.key, avg((kv.value)::numeric)::float AS avg, count(*)::int AS n
+       FROM latest, jsonb_each_text(latest.category_scores) kv
+      WHERE kv.value ~ '^[0-9.]+$'
+      GROUP BY kv.key`,
+    [uid],
+  );
+  const categories = skillRows
+    .filter((s) => s.key in SKILL_LABELS)
+    .map((s) => ({ key: s.key, label: SKILL_LABELS[s.key]!, avg: Math.round(Number(s.avg) * 10) / 10, clips: Number(s.n) }))
+    .sort((a, b) => b.avg - a.avg);
+
+  return {
+    percentiles,
+    form,
+    skills: {
+      categories,
+      strongest: categories[0]?.key ?? null,
+      weakest: categories.length > 1 ? categories[categories.length - 1]!.key : null,
+      clips_analyzed: Math.max(0, ...categories.map((c) => c.clips)),
+    },
   };
 }
 
@@ -456,11 +571,135 @@ function renderCard(p: Awaited<ReturnType<typeof loadProfile>>): string {
 </svg>`;
 }
 
+// ---------- create profile (from onboarding) ----------
+
+const SOCIAL_PLATFORMS = {
+  twitch: (h: string) => `https://twitch.tv/${encodeURIComponent(h)}`,
+  youtube: (h: string) => `https://youtube.com/@${encodeURIComponent(h)}`,
+  psn: () => null,
+  xbox: () => null,
+} as const;
+type SocialPlatform = keyof typeof SOCIAL_PLATFORMS;
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** URL-safe handle from a gamertag: keeps letters, digits, _ . - ; everything else becomes _. */
+export function toProfileHandle(gamertag: string): string {
+  return gamertag.trim().replace(/^@+/, "").replace(/[^A-Za-z0-9_.-]+/g, "_").replace(/_+/g, "_").replace(/^[_.-]+|[_.-]+$/g, "").slice(0, 32);
+}
+
+const cleanStr = (v: unknown, max = 64): string => (typeof v === "string" ? v.trim().replace(/^@+/, "").slice(0, max) : "");
+
+/** "https://twitch.tv/name", "youtube.com/@name" or "@name" -> "name". */
+function socialHandle(v: unknown): string {
+  const s = cleanStr(v, 200);
+  const m = s.match(/(?:twitch\.tv|youtube\.com)\/(?:c\/|channel\/|user\/)?@?([^/?#\s]+)/i);
+  if (!m) return cleanStr(s);
+  try {
+    return cleanStr(decodeURIComponent(m[1]!));
+  } catch {
+    return cleanStr(m[1]);
+  }
+}
+
+type CreateBody = { gamertag?: unknown; game?: unknown; twitch?: unknown; youtube?: unknown; psn?: unknown; xbox?: unknown; faceit_nickname?: unknown; region?: unknown };
+
+async function createOrUpdateProfile(db: Db, body: CreateBody, sessionUserId: string | null) {
+  const gamertag = cleanStr(body.gamertag, 32);
+  const handle = toProfileHandle(gamertag);
+  if (handle.length < 2) return { status: 400, body: { error: "Gamertag needs at least 2 letters or numbers" } };
+  const game = cleanStr(body.game, 16) || "cs2";
+  if (game !== "cs2") return { status: 400, body: { error: "Only CS2 is live right now" } };
+
+  const [existing] = await rows<{ id: string; handle: string }>(db, "SELECT id, handle FROM users WHERE lower(handle) = lower($1) LIMIT 1", [handle]);
+  let userId: string;
+  let created = false;
+  if (existing) {
+    // Re-running onboarding as the same signed-in player updates their links; anyone else gets 409.
+    if (!sessionUserId || existing.id !== sessionUserId) return { status: 409, body: { error: `@${handle} is already taken`, handle } };
+    userId = existing.id;
+    await db.query("UPDATE users SET display_name = $2 WHERE id = $1", [userId, gamertag]);
+  } else {
+    const [u] = await rows<{ id: string }>(
+      db,
+      "INSERT INTO users (handle, display_name, role) VALUES ($1, $2, 'user') ON CONFLICT (handle) DO NOTHING RETURNING id",
+      [handle, gamertag],
+    );
+    if (!u) return { status: 409, body: { error: `@${handle} is already taken`, handle } };
+    userId = u.id;
+    created = true;
+  }
+
+  const faceit = cleanStr(body.faceit_nickname, 32) || null;
+  const region = cleanStr(body.region, 8) || null;
+  const upd = await db.query(
+    `UPDATE game_accounts SET faceit_nickname = COALESCE($2, faceit_nickname), region = COALESCE($3, region)
+      WHERE user_id = $1 AND game = 'cs2'`,
+    [userId, faceit, region],
+  );
+  if (!upd.rowCount) {
+    await db.query("INSERT INTO game_accounts (user_id, game, faceit_nickname, region) VALUES ($1, 'cs2', $2, $3)", [userId, faceit, region]);
+  }
+
+  // Replace only the platforms onboarding knows about; leave anything else alone.
+  const platforms = Object.keys(SOCIAL_PLATFORMS) as SocialPlatform[];
+  const socials = platforms
+    .map((p) => ({ platform: p, handle: socialHandle(body[p]) }))
+    .filter((s) => s.handle.length > 0)
+    .map((s) => ({ ...s, url: SOCIAL_PLATFORMS[s.platform](s.handle) }));
+  await db.query("DELETE FROM social_accounts WHERE user_id = $1 AND platform = ANY($2)", [userId, platforms]);
+  if (socials.length) {
+    await db.query(
+      `INSERT INTO social_accounts (user_id, platform, handle, url)
+       SELECT $1, s.platform, s.handle, s.url FROM jsonb_to_recordset($2::jsonb) AS s(platform text, handle text, url text)`,
+      [userId, JSON.stringify(socials)],
+    );
+  }
+
+  const [user] = await rows<{ id: string; handle: string; display_name: string; role: string }>(
+    db, "SELECT id, handle, display_name, role FROM users WHERE id = $1", [userId],
+  );
+  return { status: created ? 201 : 200, body: { user, created, profile_url: `/u/${encodeURIComponent(user!.handle)}` } };
+}
+
 // ---------- router ----------
 
 export function createProfilesRouter(opts: ProfilesRouterOptions): Router {
   const { db } = opts;
   const router = Router();
+
+  // Onboarding "FaZe up": create the player (or update links if it's already theirs).
+  router.post("/profiles", asyncRoute(async (req, res) => {
+    const sid = req.header("x-user-id") ?? null;
+    const out = await createOrUpdateProfile(db, (req.body ?? {}) as CreateBody, sid && UUID.test(sid) ? sid : null);
+    res.status(out.status).json(out.body);
+  }));
+
+  // Link (or change) your FACEIT nickname. The client then calls Yao's POST /api/players/:userId/sync.
+  router.put("/profiles/:handle/faceit", asyncRoute(async (req, res) => {
+    const user = await loadUser(db, String(req.params.handle));
+    if (!user) return res.status(404).json({ error: "Profile not found" });
+    if (req.header("x-user-id") !== user.id) return res.status(403).json({ error: "You can only link FACEIT on your own profile" });
+    const nickname = cleanStr((req.body as { faceit_nickname?: unknown } | undefined)?.faceit_nickname, 40);
+    if (!/^[A-Za-z0-9_.-]{2,32}$/.test(nickname)) return res.status(400).json({ error: "That doesn't look like a FACEIT nickname" });
+    const upd = await db.query(
+      `UPDATE game_accounts SET faceit_nickname = $2,
+              faceit_player_id = CASE WHEN faceit_nickname IS DISTINCT FROM $2 THEN NULL ELSE faceit_player_id END
+        WHERE user_id = $1 AND game = 'cs2'`,
+      [user.id, nickname],
+    );
+    if (!upd.rowCount) await db.query("INSERT INTO game_accounts (user_id, game, faceit_nickname) VALUES ($1, 'cs2', $2)", [user.id, nickname]);
+    res.json({ user_id: user.id, faceit_nickname: nickname });
+  }));
+
+  // Live "is this tag free?" check for the gamertag step.
+  router.get("/handles/:gamertag", asyncRoute(async (req, res) => {
+    const handle = toProfileHandle(String(req.params.gamertag));
+    if (handle.length < 2) return res.json({ handle, available: false, reason: "too short" });
+    const [u] = await rows<{ id: string }>(db, "SELECT id FROM users WHERE lower(handle) = lower($1) LIMIT 1", [handle]);
+    const sid = req.header("x-user-id");
+    res.json({ handle, available: !u || u.id === sid, mine: Boolean(u && u.id === sid) });
+  }));
 
   router.get("/profiles/:handle", asyncRoute(async (req, res) => {
     const user = await loadUser(db, String(req.params.handle));
