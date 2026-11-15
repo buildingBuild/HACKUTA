@@ -5,6 +5,7 @@
 //   /community/*            Community (Dahiya)                       public, writes need sign-in
 //   /feed                   FaZe Feed, experimental masonry (Joe)    public
 //   /leaderboards           public leaderboards (Omar)               public
+//   /timeline               FaZe history as a tree (Omar)            public
 //   /u/:handle, /me         fan profile (Omar)                       public
 //   /rgb                    RGB Sync: clip-synced keyboard lighting  public
 //   /hud /guessr /wall      Phase 2 features (branded placeholders)  public
@@ -27,6 +28,7 @@ import { OnboardingFlow } from './features/onboarding/OnboardingFlow';
 import { LeaderboardsPage, ProfilePage } from './features/profile';
 import { RecruitingPage } from './features/recruiting/RecruitingPage';
 import { RgbPage } from './features/rgb/RgbPage';
+import { TimelinePage } from './features/timeline';
 
 const match = (path: string, pattern: RegExp) => path.match(pattern)?.[1];
 
@@ -56,6 +58,7 @@ export function App() {
   else if (path === '/feed') page = loading ? null : <FeedPage user={user} />;
   else if (path === '/leaderboards') page = <LeaderboardsPage highlightHandle={user?.handle} />;
   else if (path === '/rgb') page = <RgbPage />;
+  else if (path === '/timeline') page = <TimelinePage />;
   else if (feature) page = <ComingSoon feature={feature} />;
   else if (path === '/recruiter') {
     window.location.replace('/recruiting');

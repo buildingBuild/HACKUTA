@@ -1,8 +1,8 @@
-// Fan-profile sections (V3 pivot, drafted by Yao for Omar): editable bio, community activity,
-// and placeholder slots for Phase 2 badges (Guessr streak, pixels placed, synced setup).
+// Fan-profile sections: editable bio, community activity, and fan badges
+// (earned from profile data now; Guessr / The Wall / RGB Sync badges arrive with Phase 2).
 import { useState } from "react";
 import { api } from "../../components/api";
-import type { Activity } from "./types";
+import type { Activity, Profile } from "./types";
 
 function ago(iso: string): string {
   const h = Math.max(0, (Date.now() - Date.parse(iso)) / 3600_000);
@@ -117,33 +117,61 @@ export function ActivityPanel({ activity, isMe, karma }: { activity: Activity; i
   );
 }
 
-const SLOTS = [
-  { key: "guessr", label: "Guessr streak", mark: "?", href: "/guessr" },
-  { key: "wall", label: "Pixels placed", mark: "▦", href: "/wall" },
-  { key: "rgb", label: "Synced setup", mark: "RGB", href: "/rgb" },
+/** Badges a fan can earn today, worked out from data the profile already returns. */
+type Badge = { key: string; label: string; mark: string; earned: boolean; detail: string };
+
+function badgesFor(p: Profile): Badge[] {
+  const rank = p.elo_rank?.rank ?? null;
+  const joinedYear = new Date(p.user.created_at).getFullYear();
+  return [
+    { key: "founding", label: "Founding fan", mark: "HQ", earned: joinedYear <= 2026, detail: "Joined FaZe HQ in its launch year" },
+    { key: "top10", label: rank ? `#${rank} by ELO` : "Top 10 ELO", mark: "#", earned: rank !== null && rank <= 10, detail: "Top 10 on the ELO leaderboard" },
+    { key: "faceit", label: "FACEIT linked", mark: "F", earned: Boolean(p.game?.faceit_nickname), detail: "Link a FACEIT account" },
+    { key: "voice", label: "Voice of the fam", mark: "▲", earned: p.karma >= 10, detail: `10 karma in Community (${p.karma} so far)` },
+    { key: "starter", label: "Thread starter", mark: "✎", earned: p.activity.thread_count >= 1, detail: "Start a thread in Community" },
+    { key: "reel", label: "On the reel", mark: "▶", earned: p.clip_count >= 1, detail: "Post a clip" },
+  ];
+}
+
+// Phase 2 badges: they arrive with each feature.
+const UPCOMING = [
+  { label: "Guessr", href: "/guessr" },
+  { label: "The Wall", href: "/wall" },
+  { label: "RGB Sync", href: "/rgb" },
 ];
 
-/** Phase 2 badge slots: render now so the layout is final; values arrive with each feature. */
-export function FanBadges() {
+export function FanBadges({ profile }: { profile: Profile }) {
+  const all = badgesFor(profile);
+  const earned = all.filter((b) => b.earned);
+  const locked = all.filter((b) => !b.earned);
   return (
     <section className="pf-panel pf-rise" aria-labelledby="pf-fanbadges-h">
       <div className="pf-panel__head">
-        <p className="pf-kicker"><span className="pf-kicker__bar" />FaZe HQ</p>
+        <p className="pf-kicker"><span className="pf-kicker__bar" />FaZe HQ<span className="pf-kicker__dim">· {earned.length} of {all.length} earned</span></p>
         <h2 id="pf-fanbadges-h" className="pf-display pf-h2">Fan badges</h2>
       </div>
       <ul className="pf-fanbadges">
-        {SLOTS.map((s) => (
-          <li key={s.key}>
-            <a href={s.href} className="pf-fanbadge">
-              <span className="pf-fanbadge__mark" aria-hidden>{s.mark}</span>
+        {[...earned, ...locked].map((b) => (
+          <li key={b.key}>
+            <div className={`pf-fanbadge ${b.earned ? "is-earned" : ""}`} title={b.detail}>
+              <span className="pf-fanbadge__mark" aria-hidden>{b.mark}</span>
               <span>
-                <strong>{s.label}</strong>
-                <span className="pf-label">Unlocks soon</span>
+                <strong>{b.label}</strong>
+                <span className="pf-label">{b.earned ? b.detail : `Locked · ${b.detail}`}</span>
               </span>
-            </a>
+            </div>
           </li>
         ))}
       </ul>
+      <p className="pf-fanbadges__more pf-label">
+        More with{" "}
+        {UPCOMING.map((u, i) => (
+          <span key={u.href}>
+            {i > 0 && (i === UPCOMING.length - 1 ? " and " : ", ")}
+            <a href={u.href}>{u.label}</a>
+          </span>
+        ))}
+      </p>
     </section>
   );
 }

@@ -16,10 +16,11 @@ const MAIN = [
   { href: '/community', label: 'Community', match: (p: string) => p.startsWith('/community') },
   { href: '/feed', label: 'Feed', match: (p: string) => p === '/feed' },
   { href: '/leaderboards', label: 'Leaderboards', match: (p: string) => p.startsWith('/leaderboards') },
+  { href: '/timeline', label: 'Timeline', match: (p: string) => p === '/timeline' },
 ];
 
 // Pages that make sense for any account: stay put when switching demo users.
-const STAY = [/^\/community/, /^\/leaderboards/, /^\/u\//, /^\/(hud|rgb|guessr|wall)$/];
+const STAY = [/^\/community/, /^\/leaderboards/, /^\/timeline$/, /^\/u\//, /^\/(hud|rgb|guessr|wall)$/];
 
 /** <details> dropdown that closes on outside click / Escape. */
 function Menu({ label, className, children }: { label: React.ReactNode; className?: string; children: React.ReactNode }) {

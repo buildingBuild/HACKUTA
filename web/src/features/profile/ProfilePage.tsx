@@ -212,7 +212,7 @@ function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (clip: Pr
         </div>
 
         <aside className="pf-col">
-          <FanBadges />
+          <FanBadges profile={p} />
           {isMe && <FaceitLink handle={p.user.handle} userId={p.user.id} nickname={faceitNick} onSynced={refresh} compact />}
           {p.social.length > 0 && (
             <section className="pf-panel pf-rise" aria-labelledby="pf-social-h">

@@ -9,6 +9,7 @@ import { FazeLogo } from '../../components/FazeLogo';
 import type { SessionUser } from '../../components/session';
 import { Badge, Button, Kicker } from '../../components/ui';
 import './home.css';
+import { TimelineTeaser } from '../timeline'; // Omar: teaser card linking to /timeline
 
 interface ThreadRow {
   id: string;
@@ -131,6 +132,8 @@ export function HomePage({ user }: { user: SessionUser | null }) {
           ))}
         </ol>
       </section>
+
+      <TimelineTeaser />
 
       <section className="home-section" aria-labelledby="home-roster-h">
         <div className="home-section__head">
