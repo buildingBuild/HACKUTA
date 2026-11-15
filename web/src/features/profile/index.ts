@@ -5,5 +5,6 @@
 export { ProfilePage } from "./ProfilePage";
 export { LeaderboardsPage } from "./LeaderboardsPage";
 export { ScoutProgressBar, LevelBadge, TrendChart } from "./components";
-export { fetchProfile, fetchLeaderboard, profileUrl, cardUrl } from "./api";
+export { fetchProfile, fetchLeaderboard, profileUrl, cardUrl, saveOnboardingProfile, checkHandle, ApiError } from "./api";
+export type { OnboardingAnswers, CreatedProfile } from "./api";
 export type * from "./types";

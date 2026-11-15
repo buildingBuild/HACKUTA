@@ -5,6 +5,9 @@
 //   app.use("/api", createProfilesRouter({ db: pool }));
 //
 // Routes:
+//   POST /api/profiles                   onboarding -> create player (409 if tag taken by someone else)
+//   GET /api/handles/:gamertag           is this tag available?
+//   PUT /api/profiles/:handle/faceit     link your FACEIT nickname (own profile only)
 //   GET /api/profiles/:handle            public gamer resume
 //   GET /api/profiles/:handle/card.svg   shareable profile card (1200x630)
 //   GET /api/leaderboards                list of leaderboard types
@@ -456,11 +459,135 @@ function renderCard(p: Awaited<ReturnType<typeof loadProfile>>): string {
 </svg>`;
 }
 
+// ---------- create profile (from onboarding) ----------
+
+const SOCIAL_PLATFORMS = {
+  twitch: (h: string) => `https://twitch.tv/${encodeURIComponent(h)}`,
+  youtube: (h: string) => `https://youtube.com/@${encodeURIComponent(h)}`,
+  psn: () => null,
+  xbox: () => null,
+} as const;
+type SocialPlatform = keyof typeof SOCIAL_PLATFORMS;
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** URL-safe handle from a gamertag: keeps letters, digits, _ . - ; everything else becomes _. */
+export function toProfileHandle(gamertag: string): string {
+  return gamertag.trim().replace(/^@+/, "").replace(/[^A-Za-z0-9_.-]+/g, "_").replace(/_+/g, "_").replace(/^[_.-]+|[_.-]+$/g, "").slice(0, 32);
+}
+
+const cleanStr = (v: unknown, max = 64): string => (typeof v === "string" ? v.trim().replace(/^@+/, "").slice(0, max) : "");
+
+/** "https://twitch.tv/name", "youtube.com/@name" or "@name" -> "name". */
+function socialHandle(v: unknown): string {
+  const s = cleanStr(v, 200);
+  const m = s.match(/(?:twitch\.tv|youtube\.com)\/(?:c\/|channel\/|user\/)?@?([^/?#\s]+)/i);
+  if (!m) return cleanStr(s);
+  try {
+    return cleanStr(decodeURIComponent(m[1]!));
+  } catch {
+    return cleanStr(m[1]);
+  }
+}
+
+type CreateBody = { gamertag?: unknown; game?: unknown; twitch?: unknown; youtube?: unknown; psn?: unknown; xbox?: unknown; faceit_nickname?: unknown; region?: unknown };
+
+async function createOrUpdateProfile(db: Db, body: CreateBody, sessionUserId: string | null) {
+  const gamertag = cleanStr(body.gamertag, 32);
+  const handle = toProfileHandle(gamertag);
+  if (handle.length < 2) return { status: 400, body: { error: "Gamertag needs at least 2 letters or numbers" } };
+  const game = cleanStr(body.game, 16) || "cs2";
+  if (game !== "cs2") return { status: 400, body: { error: "Only CS2 is live right now" } };
+
+  const [existing] = await rows<{ id: string; handle: string }>(db, "SELECT id, handle FROM users WHERE lower(handle) = lower($1) LIMIT 1", [handle]);
+  let userId: string;
+  let created = false;
+  if (existing) {
+    // Re-running onboarding as the same signed-in player updates their links; anyone else gets 409.
+    if (!sessionUserId || existing.id !== sessionUserId) return { status: 409, body: { error: `@${handle} is already taken`, handle } };
+    userId = existing.id;
+    await db.query("UPDATE users SET display_name = $2 WHERE id = $1", [userId, gamertag]);
+  } else {
+    const [u] = await rows<{ id: string }>(
+      db,
+      "INSERT INTO users (handle, display_name, role) VALUES ($1, $2, 'user') ON CONFLICT (handle) DO NOTHING RETURNING id",
+      [handle, gamertag],
+    );
+    if (!u) return { status: 409, body: { error: `@${handle} is already taken`, handle } };
+    userId = u.id;
+    created = true;
+  }
+
+  const faceit = cleanStr(body.faceit_nickname, 32) || null;
+  const region = cleanStr(body.region, 8) || null;
+  const upd = await db.query(
+    `UPDATE game_accounts SET faceit_nickname = COALESCE($2, faceit_nickname), region = COALESCE($3, region)
+      WHERE user_id = $1 AND game = 'cs2'`,
+    [userId, faceit, region],
+  );
+  if (!upd.rowCount) {
+    await db.query("INSERT INTO game_accounts (user_id, game, faceit_nickname, region) VALUES ($1, 'cs2', $2, $3)", [userId, faceit, region]);
+  }
+
+  // Replace only the platforms onboarding knows about; leave anything else alone.
+  const platforms = Object.keys(SOCIAL_PLATFORMS) as SocialPlatform[];
+  const socials = platforms
+    .map((p) => ({ platform: p, handle: socialHandle(body[p]) }))
+    .filter((s) => s.handle.length > 0)
+    .map((s) => ({ ...s, url: SOCIAL_PLATFORMS[s.platform](s.handle) }));
+  await db.query("DELETE FROM social_accounts WHERE user_id = $1 AND platform = ANY($2)", [userId, platforms]);
+  if (socials.length) {
+    await db.query(
+      `INSERT INTO social_accounts (user_id, platform, handle, url)
+       SELECT $1, s.platform, s.handle, s.url FROM jsonb_to_recordset($2::jsonb) AS s(platform text, handle text, url text)`,
+      [userId, JSON.stringify(socials)],
+    );
+  }
+
+  const [user] = await rows<{ id: string; handle: string; display_name: string; role: string }>(
+    db, "SELECT id, handle, display_name, role FROM users WHERE id = $1", [userId],
+  );
+  return { status: created ? 201 : 200, body: { user, created, profile_url: `/u/${encodeURIComponent(user!.handle)}` } };
+}
+
 // ---------- router ----------
 
 export function createProfilesRouter(opts: ProfilesRouterOptions): Router {
   const { db } = opts;
   const router = Router();
+
+  // Onboarding "FaZe up": create the player (or update links if it's already theirs).
+  router.post("/profiles", asyncRoute(async (req, res) => {
+    const sid = req.header("x-user-id") ?? null;
+    const out = await createOrUpdateProfile(db, (req.body ?? {}) as CreateBody, sid && UUID.test(sid) ? sid : null);
+    res.status(out.status).json(out.body);
+  }));
+
+  // Link (or change) your FACEIT nickname. The client then calls Yao's POST /api/players/:userId/sync.
+  router.put("/profiles/:handle/faceit", asyncRoute(async (req, res) => {
+    const user = await loadUser(db, String(req.params.handle));
+    if (!user) return res.status(404).json({ error: "Profile not found" });
+    if (req.header("x-user-id") !== user.id) return res.status(403).json({ error: "You can only link FACEIT on your own profile" });
+    const nickname = cleanStr((req.body as { faceit_nickname?: unknown } | undefined)?.faceit_nickname, 40);
+    if (!/^[A-Za-z0-9_.-]{2,32}$/.test(nickname)) return res.status(400).json({ error: "That doesn't look like a FACEIT nickname" });
+    const upd = await db.query(
+      `UPDATE game_accounts SET faceit_nickname = $2,
+              faceit_player_id = CASE WHEN faceit_nickname IS DISTINCT FROM $2 THEN NULL ELSE faceit_player_id END
+        WHERE user_id = $1 AND game = 'cs2'`,
+      [user.id, nickname],
+    );
+    if (!upd.rowCount) await db.query("INSERT INTO game_accounts (user_id, game, faceit_nickname) VALUES ($1, 'cs2', $2)", [user.id, nickname]);
+    res.json({ user_id: user.id, faceit_nickname: nickname });
+  }));
+
+  // Live "is this tag free?" check for the gamertag step.
+  router.get("/handles/:gamertag", asyncRoute(async (req, res) => {
+    const handle = toProfileHandle(String(req.params.gamertag));
+    if (handle.length < 2) return res.json({ handle, available: false, reason: "too short" });
+    const [u] = await rows<{ id: string }>(db, "SELECT id FROM users WHERE lower(handle) = lower($1) LIMIT 1", [handle]);
+    const sid = req.header("x-user-id");
+    res.json({ handle, available: !u || u.id === sid, mine: Boolean(u && u.id === sid) });
+  }));
 
   router.get("/profiles/:handle", asyncRoute(async (req, res) => {
     const user = await loadUser(db, String(req.params.handle));
