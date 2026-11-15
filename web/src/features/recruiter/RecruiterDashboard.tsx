@@ -1,6 +1,6 @@
 // FaZe recruiter dashboard (recruiter/admin only; the API enforces the role).
 // Polls every 5s so a live threshold crossing pops up during the demo.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { listProspects, STATUSES, type Prospect, type ProspectFilters } from './api';
 import { ProspectDetail } from './ProspectDetail';
 import '../coaching/coaching.css';
@@ -44,7 +44,7 @@ export function RecruiterDashboard() {
 
   if (openId) return <ProspectDetail id={openId} onBack={() => setOpenId(null)} />;
 
-  const set = (k: keyof ProspectFilters) => (e: React.ChangeEvent<HTMLSelectElement>) =>
+  const set = (k: keyof ProspectFilters) => (e: ChangeEvent<HTMLSelectElement>) =>
     setFilters((f) => ({ ...f, [k]: e.target.value || undefined }));
   const newCount = prospects?.filter((p) => p.status === 'new').length ?? 0;
 

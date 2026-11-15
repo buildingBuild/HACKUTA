@@ -1,4 +1,4 @@
-// TEMPORARY sandbox seed for Yao's features. Fold into server/src/db/seed.ts at merge.
+// Seed for coaching + scouting (owner: Yao). Called from seed.ts.
 // Safe on a shared DB: only deletes/recreates the handles listed below.
 //
 // Demo setup:
@@ -7,12 +7,11 @@
 //     "prospect-great-clip" is uploaded but not analyzed. Analyzing it live (cached
 //     score 92) lifts the last-5 average to 80.4 and creates a scout report.
 //   - "kairo" and "nyx" already passed, so the recruiter dashboard isn't empty.
-import { fileURLToPath } from 'node:url';
-import type { Db } from '../server/src/lib/yao-deps.js';
-import { CATEGORIES, type CoachingReport } from '../server/src/lib/ai/coachingSchema.js';
-import { getCachedReport } from '../server/src/lib/ai/cache/index.js';
-import { templateSummary } from '../server/src/lib/ai/scoutReport.js';
-import { evaluateRule, getRules } from '../server/src/lib/scouting/engine.js';
+import type { Db } from '../lib/yao-deps.js';
+import { CATEGORIES, type CoachingReport } from '../lib/ai/coachingSchema.js';
+import { getCachedReport } from '../lib/ai/cache/index.js';
+import { templateSummary } from '../lib/ai/scoutReport.js';
+import { evaluateRule, getRules } from '../lib/scouting/engine.js';
 
 const CLIP_BASE = process.env.DEMO_CLIP_BASE || 'http://localhost:3001/demo-clips';
 
@@ -176,14 +175,4 @@ export async function seed(db: Db) {
     console.log(`seeded ${p.handle} (L${p.final.faceit_level}, ${p.final.elo} ELO, ${p.clips.length} clips)`);
   }
   console.log('done. Log in as faze_recruiter for the dashboard, vyper for the demo prospect.');
-}
-
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const { pool } = await import('./db.js');
-  await seed(pool)
-    .catch((e) => {
-      console.error(e);
-      process.exitCode = 1;
-    })
-    .finally(() => pool.end());
 }

@@ -1,12 +1,12 @@
 /* Recruiter dashboard. Builds on coaching.css tokens (.yao-panel). */
-.yao-rec { display: grid; gap: 14px; }
+.yao-rec { display: grid; gap: 14px; max-width: 1180px; width: calc(100% - 32px); margin: 24px auto 64px; box-sizing: border-box; }
 .yao-rec__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .yao-badge { font-weight: 800; text-transform: uppercase; font-size: .75rem; letter-spacing: .08em; padding: 4px 10px; border-radius: 999px; }
 .yao-badge--new { background: var(--y-red); color: #fff; animation: yao-pulse 1.4s infinite; }
 
 .yao-filters { display: flex; flex-wrap: wrap; gap: 10px; }
 .yao-filters label, .yao-pd__status { display: grid; gap: 4px; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--y-muted); }
-.yao-filters select, .yao-pd__status select { font: inherit; font-size: .9rem; text-transform: capitalize; background: var(--y-bg2); color: var(--y-fg); border: 1px solid var(--y-line); border-radius: 6px; padding: 6px 8px; }
+.yao-filters select, .yao-pd__status select { font: inherit; font-size: .9rem; text-transform: capitalize; background: var(--y-bg); color: var(--y-fg); border: 1px solid var(--y-line); border-radius: 6px; padding: 6px 8px; }
 
 .yao-plist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .yao-prow { width: 100%; font: inherit; color: inherit; text-align: left; cursor: pointer; display: grid; grid-template-columns: 36px 40px minmax(120px, 1fr) auto 56px 92px; gap: 12px; align-items: center; background: var(--y-bg2); border: 1px solid var(--y-line); border-radius: 8px; padding: 10px 12px; transition: border-color .2s; }
@@ -16,8 +16,8 @@
 .yao-prow__who { display: grid; min-width: 0; }
 .yao-prow__who .yao-muted { font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .yao-prow__stats { display: flex; gap: 12px; font-size: .85rem; flex-wrap: wrap; }
-.yao-prow__score { font-size: 1.6rem; font-weight: 800; text-align: center; }
-.yao-avatar { width: 40px; height: 40px; border-radius: 50%; background: #333; object-fit: cover; display: inline-block; }
+.yao-prow__score { font-family: var(--y-display); font-size: 1.9rem; font-weight: 800; text-align: center; }
+.yao-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--y-bg2); object-fit: cover; display: inline-block; }
 .yao-avatar--lg { width: 64px; height: 64px; }
 .yao-lvl { display: inline-block; background: var(--y-red); color: #fff; font-weight: 800; border-radius: 4px; padding: 0 6px; font-size: .8rem; }
 
@@ -58,7 +58,7 @@
 .yao-clip__score { margin-left: auto; font-weight: 800; font-size: 1.2rem; }
 .yao-clip > .yao-muted { margin: 6px 0; font-size: .9rem; }
 .yao-clip__notes { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .88rem; }
-.yao-clip__notes code { background: #000; padding: 1px 5px; border-radius: 3px; }
+.yao-clip__notes code { background: var(--y-fg); color: #fff; font-family: var(--y-mono); padding: 1px 5px; border-radius: 3px; }
 
 @media (max-width: 720px) {
   .yao-prow { grid-template-columns: 28px 40px 1fr 48px; }

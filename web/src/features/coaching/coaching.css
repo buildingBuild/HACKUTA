@@ -1,26 +1,55 @@
-/* Coaching + recruiter styles. Uses FaZe tokens from the shared design system when
-   present (--faze-*), with brand fallbacks so it works standalone. */
-.yao-panel {
+/* Coaching + recruiter styles (owner: Yao). Tokens come from web/src/components/theme.css
+   with fallbacks, so the panel also works when embedded elsewhere. */
+.yao-panel, .yao-page {
   --y-red: var(--faze-red, #e4002b);
-  --y-bg: var(--faze-surface, #111);
-  --y-bg2: var(--faze-surface-2, #1b1b1b);
-  --y-fg: var(--faze-fg, #fff);
-  --y-muted: var(--faze-muted, #9a9a9a);
-  --y-line: var(--faze-line, #2a2a2a);
-  --y-elite: #22c55e;
-  --y-good: #a3e635;
-  --y-ok: #facc15;
-  --y-low: #f97316;
+  --y-bg: var(--paper, #fff);
+  --y-bg2: #f5f5f5;
+  --y-fg: var(--ink, #0a0a0a);
+  --y-muted: var(--muted, #8a8a8a);
+  --y-line: var(--line, rgba(10, 10, 10, 0.12));
+  --y-elite: #0f9d58;
+  --y-good: #65a30d;
+  --y-ok: #d99a00;
+  --y-low: #ea580c;
+  --y-display: var(--font-display, 'Barlow Condensed', 'Arial Narrow', sans-serif);
+  --y-mono: var(--font-mono, ui-monospace, monospace);
+}
+.yao-panel {
   background: var(--y-bg);
   color: var(--y-fg);
   border: 1px solid var(--y-line);
-  border-radius: 10px;
+  border-top: 4px solid var(--y-red);
+  border-radius: 12px;
   padding: 20px;
-  font-family: var(--faze-font, 'Inter', system-ui, sans-serif);
+  font-family: var(--font-body, 'Inter', system-ui, sans-serif);
+}
+
+/* ---------- pages ---------- */
+.yao-page { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; color: var(--y-fg); }
+.yao-eyebrow { font-family: var(--y-display); color: var(--y-red); font-weight: 700; font-size: 13px; letter-spacing: .2em; text-transform: uppercase; margin: 0 0 6px; }
+.yao-eyebrow a { color: inherit; }
+.yao-title { font-family: var(--y-display); font-weight: 800; font-size: clamp(32px, 5vw, 52px); line-height: 1; margin: 0 0 18px; text-transform: uppercase; }
+.yao-scout { padding: 0; margin: 0 0 16px; max-width: none; }
+.yao-clip-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.yao-video { background: #000; border-radius: 12px; overflow: hidden; aspect-ratio: 16 / 9; position: sticky; top: 72px; }
+.yao-video video { width: 100%; height: 100%; display: block; }
+.yao-video__missing { height: 100%; display: grid; place-content: center; gap: 6px; text-align: center; color: #bbb; padding: 16px; font-size: 14px; }
+.yao-video__missing strong { color: #fff; font-family: var(--y-display); text-transform: uppercase; letter-spacing: .06em; font-size: 18px; }
+.yao-video__missing code { color: #fff; }
+.yao-cliplist { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.yao-cliprow { display: grid; grid-template-columns: 48px 1fr auto; gap: 14px; align-items: center; padding: 12px 14px; border: 1px solid var(--y-line); border-radius: 10px; background: var(--y-bg); color: inherit; text-decoration: none; transition: border-color .2s; }
+.yao-cliprow:hover { border-color: var(--y-red); }
+.yao-cliprow__map { width: 48px; height: 48px; display: grid; place-items: center; background: var(--y-fg); color: #fff; border-radius: 8px; font-family: var(--y-display); font-weight: 800; text-transform: uppercase; }
+.yao-cliprow__title { display: grid; gap: 2px; min-width: 0; }
+.yao-cliprow__score { font-family: var(--y-display); font-weight: 800; font-size: 28px; }
+.yao-cliprow__cta { font-family: var(--y-display); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--y-red); }
+@media (max-width: 860px) {
+  .yao-clip-grid { grid-template-columns: 1fr; }
+  .yao-video { position: static; }
 }
 .yao-panel--center { text-align: center; display: grid; gap: 10px; justify-items: center; padding: 36px 20px; }
-.yao-h { font-family: var(--faze-heading, 'Oswald', 'Arial Narrow', sans-serif); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin: 0; font-size: 1.25rem; }
-.yao-sub { font-family: var(--faze-heading, 'Oswald', 'Arial Narrow', sans-serif); text-transform: uppercase; letter-spacing: .06em; font-size: .85rem; color: var(--y-muted); margin: 20px 0 8px; }
+.yao-h { font-family: var(--y-display); font-weight: 800; text-transform: uppercase; letter-spacing: .03em; margin: 0; font-size: 1.5rem; }
+.yao-sub { font-family: var(--y-display); text-transform: uppercase; letter-spacing: .06em; font-size: .85rem; color: var(--y-muted); margin: 20px 0 8px; }
 .yao-muted { color: var(--y-muted); margin: 0; }
 .yao-error { color: var(--y-low); margin: 0; }
 .yao-tag { display: inline-block; font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--y-muted); border: 1px solid var(--y-line); padding: 2px 6px; border-radius: 4px; margin-top: 6px; }
@@ -28,7 +57,8 @@
 .yao-btn { font: inherit; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; border-radius: 6px; padding: 10px 16px; border: 1px solid var(--y-line); background: var(--y-bg2); color: var(--y-fg); cursor: pointer; }
 .yao-btn:disabled { opacity: .6; cursor: default; }
 .yao-btn--primary { background: var(--y-red); border-color: var(--y-red); }
-.yao-btn--live { background: #fff; color: #000; }
+.yao-btn--primary { color: #fff; }
+.yao-btn--live { background: var(--y-fg); border-color: var(--y-fg); color: #fff; }
 
 .yao-banner { background: var(--y-red); color: #fff; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; animation: yao-pop .5s ease-out; }
 @keyframes yao-pop { from { transform: scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -36,7 +66,7 @@
 .yao-report__head { display: flex; gap: 16px; align-items: center; }
 .yao-summary { margin: 6px 0 0; line-height: 1.4; }
 .yao-score { flex: none; width: 92px; height: 92px; border-radius: 50%; display: grid; place-content: center; text-align: center; border: 4px solid currentColor; }
-.yao-score__num { font-size: 2rem; font-weight: 800; line-height: 1; color: var(--y-fg); }
+.yao-score__num { font-family: var(--y-display); font-size: 2.4rem; font-weight: 800; line-height: 1; color: var(--y-fg); }
 .yao-score__label { font-size: .6rem; letter-spacing: .1em; color: var(--y-muted); }
 .yao-score--elite { color: var(--y-elite); } .yao-score--good { color: var(--y-good); } .yao-score--ok { color: var(--y-ok); } .yao-score--low { color: var(--y-low); }
 
@@ -50,7 +80,7 @@
 .yao-notes { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
 .yao-note { display: grid; grid-template-columns: auto 1fr; gap: 12px; padding: 10px 12px; background: var(--y-bg2); border-left: 3px solid var(--y-line); border-radius: 4px; }
 .yao-note--high { border-left-color: var(--y-red); } .yao-note--medium { border-left-color: var(--y-ok); } .yao-note--low { border-left-color: var(--y-elite); }
-.yao-note__t { font: inherit; font-family: ui-monospace, monospace; background: #000; color: #fff; border: 1px solid var(--y-line); border-radius: 4px; padding: 4px 8px; height: fit-content; cursor: pointer; }
+.yao-note__t { font: inherit; font-family: var(--y-mono); background: var(--y-fg); color: #fff; border: 1px solid var(--y-fg); border-radius: 4px; padding: 4px 8px; height: fit-content; cursor: pointer; }
 .yao-note__t:disabled { cursor: default; }
 .yao-note__meta { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--y-muted); }
 .yao-note__text { margin: 4px 0; }
