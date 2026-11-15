@@ -1,0 +1,81 @@
+{
+  "prospect-great-clip": {
+    "overall_score": 92,
+    "category_scores": { "crosshair_placement": 95, "movement": 91, "spray_control": 90, "utility": 86, "positioning": 93, "decision_making": 94 },
+    "notes": [
+      { "t": "00:04", "category": "utility", "severity": "low", "note": "Self pop-flash over A main before the swing blinds both site anchors.", "fix": "Keep it. Practise the same lineup from the other side so you're not predictable." },
+      { "t": "00:09", "category": "crosshair_placement", "severity": "low", "note": "Crosshair already at head height on default as you clear it, instant one-tap.", "fix": "Nothing to change. This is pro-level pre-aim." },
+      { "t": "00:15", "category": "movement", "severity": "medium", "note": "Clean counter-strafe on the jiggle peek, but you re-peeked the same angle a second time.", "fix": "After getting info on a jiggle, change angle or timing before swinging again." },
+      { "t": "00:23", "category": "decision_making", "severity": "low", "note": "In the 1v3 you play for time on the bomb and isolate each duel instead of forcing.", "fix": "Keep listening for the defuse tap; this clutch structure is exactly right." }
+    ],
+    "drills": [
+      { "name": "Off-angle re-peek drill", "where": "Yprac prefire map (Mirage)", "minutes": 10 }
+    ],
+    "summary": "Pro-level crosshair placement and clutch composure; only leak is re-peeking the same angle."
+  },
+  "prospect-mirage-retake": {
+    "overall_score": 78,
+    "category_scores": { "crosshair_placement": 84, "movement": 72, "spray_control": 80, "utility": 65, "positioning": 79, "decision_making": 82 },
+    "notes": [
+      { "t": "00:05", "category": "utility", "severity": "high", "note": "Retaking B with no flash for the teammate swinging short.", "fix": "Throw a flash for the entry player before calling the retake; utility first, then bodies." },
+      { "t": "00:11", "category": "movement", "severity": "medium", "note": "Shot fired mid-strafe out of kitchen, first bullet misses.", "fix": "Counter-strafe: tap the opposite key to stop fully before the first shot." },
+      { "t": "00:18", "category": "crosshair_placement", "severity": "low", "note": "Good head-level pre-aim on bench.", "fix": "Keep it consistent when moving between angles." }
+    ],
+    "drills": [
+      { "name": "Counter-strafe + one-tap drill", "where": "aim_botz", "minutes": 10 }
+    ],
+    "summary": "Sharp crosshair, but retakes are dry: no utility for the entry."
+  },
+  "prospect-inferno-entry": {
+    "overall_score": 76,
+    "category_scores": { "crosshair_placement": 82, "movement": 70, "spray_control": 77, "utility": 68, "positioning": 74, "decision_making": 79 },
+    "notes": [
+      { "t": "00:03", "category": "positioning", "severity": "high", "note": "Entered banana alone with the team still at the car; death is untradeable.", "fix": "Hold until a teammate is within trade distance, or call for a flash before the swing." },
+      { "t": "00:08", "category": "movement", "severity": "medium", "note": "Wide-swung an angle that only needed a shoulder peek for info.", "fix": "Shoulder peek first to bait the AWP, then decide whether to swing." },
+      { "t": "00:14", "category": "spray_control", "severity": "low", "note": "Solid first 8 bullets of spray transfer on two players.", "fix": "Practise spray transfers at longer range in recoil master." }
+    ],
+    "drills": [
+      { "name": "Trade-spacing deathmatch (stay within 2s of a teammate)", "where": "community retake server", "minutes": 15 }
+    ],
+    "summary": "Good mechanics, but entries come before the team is ready to trade."
+  },
+  "prospect-ancient-awp": {
+    "overall_score": 79,
+    "category_scores": { "crosshair_placement": 86, "movement": 75, "spray_control": 70, "utility": 72, "positioning": 82, "decision_making": 80 },
+    "notes": [
+      { "t": "00:06", "category": "crosshair_placement", "severity": "low", "note": "AWP crosshair parked exactly where heads appear at mid.", "fix": "Keep doing it; vary your position after each kill." },
+      { "t": "00:12", "category": "positioning", "severity": "medium", "note": "Stayed on the same angle after the opening kill and got traded.", "fix": "Reposition after every AWP kill: the enemy knows where you are." },
+      { "t": "00:20", "category": "spray_control", "severity": "high", "note": "Pistol spray after the AWP went wide at mid range.", "fix": "Burst 3 to 4 bullets at range instead of full spraying." }
+    ],
+    "drills": [
+      { "name": "Recoil burst control", "where": "recoil master", "minutes": 10 }
+    ],
+    "summary": "Strong AWP placement, but stays on angles too long and loses rifle/pistol fights."
+  },
+  "prospect-nuke-ramp": {
+    "overall_score": 77,
+    "category_scores": { "crosshair_placement": 80, "movement": 76, "spray_control": 78, "utility": 70, "positioning": 75, "decision_making": 78 },
+    "notes": [
+      { "t": "00:04", "category": "utility", "severity": "medium", "note": "Smoke on ramp landed late, the push was already through.", "fix": "Throw the ramp smoke on the timing call, not when you hear footsteps." },
+      { "t": "00:10", "category": "decision_making", "severity": "medium", "note": "Rotated outside alone with 3 enemies already on ramp.", "fix": "Call info and hold the crossfire with your teammate instead of rotating solo." },
+      { "t": "00:17", "category": "crosshair_placement", "severity": "low", "note": "Good pre-aim through the ramp door.", "fix": "Keep the crosshair slightly off the door frame for the wider peek." }
+    ],
+    "drills": [
+      { "name": "Nuke utility timing walkthrough", "where": "private server with sv_cheats 1", "minutes": 10 }
+    ],
+    "summary": "Consistent aim; utility timing and rotations need work."
+  },
+  "_fallback": {
+    "overall_score": 72,
+    "category_scores": { "crosshair_placement": 75, "movement": 70, "spray_control": 72, "utility": 65, "positioning": 72, "decision_making": 74 },
+    "notes": [
+      { "t": "00:03", "category": "crosshair_placement", "severity": "medium", "note": "Crosshair drops below head level while clearing angles.", "fix": "Keep the crosshair at head height while you walk; pre-aim common spots." },
+      { "t": "00:08", "category": "movement", "severity": "medium", "note": "Shooting while still moving after the peek.", "fix": "Counter-strafe before the first shot." },
+      { "t": "00:14", "category": "utility", "severity": "low", "note": "No utility used before taking the fight.", "fix": "Flash or smoke before entering a contested area." }
+    ],
+    "drills": [
+      { "name": "Counter-strafe + one-tap drill", "where": "aim_botz", "minutes": 10 }
+    ],
+    "summary": "Solid fundamentals; the biggest gains are in counter-strafing and using utility first."
+  }
+}

@@ -1,0 +1,67 @@
+/* Recruiter dashboard. Builds on coaching.css tokens (.yao-panel). */
+.yao-rec { display: grid; gap: 14px; max-width: 1180px; width: calc(100% - 32px); margin: 24px auto 64px; box-sizing: border-box; }
+.yao-rec__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.yao-badge { font-weight: 800; text-transform: uppercase; font-size: .75rem; letter-spacing: .08em; padding: 4px 10px; border-radius: 999px; }
+.yao-badge--new { background: var(--y-red); color: #fff; animation: yao-pulse 1.4s infinite; }
+
+.yao-filters { display: flex; flex-wrap: wrap; gap: 10px; }
+.yao-filters label, .yao-pd__status { display: grid; gap: 4px; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--y-muted); }
+.yao-filters select, .yao-pd__status select { font: inherit; font-size: .9rem; text-transform: capitalize; background: var(--y-bg); color: var(--y-fg); border: 1px solid var(--y-line); border-radius: 6px; padding: 6px 8px; }
+
+.yao-plist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.yao-prow { width: 100%; font: inherit; color: inherit; text-align: left; cursor: pointer; display: grid; grid-template-columns: 36px 40px minmax(120px, 1fr) auto 56px 92px; gap: 12px; align-items: center; background: var(--y-bg2); border: 1px solid var(--y-line); border-radius: 8px; padding: 10px 12px; transition: border-color .2s; }
+.yao-prow:hover { border-color: var(--y-red); }
+.yao-prow--fresh { border-color: var(--y-red); box-shadow: 0 0 0 2px color-mix(in srgb, var(--y-red) 40%, transparent); animation: yao-pop .5s ease-out; }
+.yao-prow__rank { font-weight: 800; color: var(--y-muted); }
+.yao-prow__who { display: grid; min-width: 0; }
+.yao-prow__who .yao-muted { font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.yao-prow__stats { display: flex; gap: 12px; font-size: .85rem; flex-wrap: wrap; }
+.yao-prow__score { font-family: var(--y-display); font-size: 1.9rem; font-weight: 800; text-align: center; }
+.yao-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--y-bg2); object-fit: cover; display: inline-block; }
+.yao-avatar--lg { width: 64px; height: 64px; }
+.yao-lvl { display: inline-block; background: var(--y-red); color: #fff; font-weight: 800; border-radius: 4px; padding: 0 6px; font-size: .8rem; }
+
+.yao-status { text-align: center; text-transform: uppercase; font-size: .7rem; font-weight: 800; letter-spacing: .06em; border-radius: 4px; padding: 4px 6px; border: 1px solid var(--y-line); }
+.yao-status--new { background: var(--y-red); border-color: var(--y-red); color: #fff; }
+.yao-status--reviewing { color: var(--y-ok); border-color: var(--y-ok); }
+.yao-status--contacted { color: var(--y-elite); border-color: var(--y-elite); }
+.yao-status--passed { color: var(--y-muted); }
+
+.yao-pd__head { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.yao-pd__who { flex: 1; min-width: 200px; }
+.yao-pd__who .yao-muted { margin-top: 4px; }
+.yao-pd__score { display: grid; justify-items: center; font-size: .75rem; }
+.yao-pd__report { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; }
+.yao-pd__summary p { line-height: 1.5; margin: 0 0 12px; }
+.yao-pd__actions { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
+
+.yao-crit { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; font-size: .9rem; }
+.yao-crit li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 10px; background: var(--y-bg2); border-radius: 4px; }
+.yao-crit--pass span:first-child { color: var(--y-elite); }
+.yao-crit--fail span:first-child { color: var(--y-low); }
+
+.yao-trends { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.yao-trend { margin: 0; background: var(--y-bg2); border-radius: 8px; padding: 10px 12px; }
+.yao-trend--empty { color: var(--y-muted); font-size: .85rem; }
+.yao-trend__head { display: flex; justify-content: space-between; font-size: .8rem; color: var(--y-muted); margin-bottom: 4px; }
+.yao-trend__head strong { color: var(--y-fg); font-size: 1rem; }
+.yao-trend svg { width: 100%; height: 90px; display: block; }
+.yao-trend__line { fill: none; stroke: var(--y-red); stroke-width: 2; stroke-linejoin: round; }
+.yao-trend__dot { fill: var(--y-red); }
+.yao-trend__threshold { stroke: var(--y-muted); stroke-dasharray: 4 4; stroke-width: 1; }
+.yao-up { color: var(--y-elite); font-size: .75rem; }
+.yao-down { color: var(--y-low); font-size: .75rem; }
+
+.yao-clips { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.yao-clip { background: var(--y-bg2); border-radius: 8px; padding: 12px; }
+.yao-clip__head { display: flex; gap: 10px; align-items: baseline; }
+.yao-clip__score { margin-left: auto; font-weight: 800; font-size: 1.2rem; }
+.yao-clip > .yao-muted { margin: 6px 0; font-size: .9rem; }
+.yao-clip__notes { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .88rem; }
+.yao-clip__notes code { background: var(--y-fg); color: #fff; font-family: var(--y-mono); padding: 1px 5px; border-radius: 3px; }
+
+@media (max-width: 720px) {
+  .yao-prow { grid-template-columns: 28px 40px 1fr 48px; }
+  .yao-prow__stats, .yao-status { grid-column: 3 / -1; }
+  .yao-pd__report { grid-template-columns: 1fr; }
+}
