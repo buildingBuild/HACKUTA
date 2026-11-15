@@ -1,6 +1,7 @@
 // Express app (host-agnostic: index.ts calls listen; a Vercel api/index.ts can export this).
 // SHARED FILE: add your router below, additive only.
 import express from 'express';
+import { createCommunityRouter } from './routes/community.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pool } from './db/client.js';
@@ -35,6 +36,7 @@ app.use('/api/coaching', createCoachingRouter({ db, auth })); // Yao
 app.use('/api/players', createPlayersRouter({ db, auth })); // Yao
 app.use('/api/scouting', createScoutingRouter({ db, auth })); // Yao
 app.use('/api/voice', createVoiceRouter({ db, auth })); // Yao
+app.use('/api', auth.identify, createCommunityRouter({ db, getUserId: req => req.user?.id })); // Dahiya
 app.use('/api', createProfilesRouter({ db, scoutProgress: profileScoutProgress })); // Omar
 
 // Local demo clips (server/demo-clips/*.mp4) until real blob storage is wired.

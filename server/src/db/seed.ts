@@ -1,6 +1,7 @@
 // Demo seed (REQUIREMENTS.md §7.6). SHARED FILE: each owner adds their own seed module
 // and calls it below. Every seed only touches its own handles, so it's safe to re-run.
 // Usage: npm run db:seed
+import { seedCommunity } from '../routes/community.js';
 import { pool } from './client.js';
 import { seed as seedCoachingScouting } from './seed-yao.js';
 
@@ -24,7 +25,7 @@ async function seedFans() {
 try {
   await seedFans();
   await seedCoachingScouting(pool); // Yao: players, 30d stats, clips + reports, prospects, recruiter/admin
-  // Dahiya: await seedCommunity(pool);
+  await seedCommunity(pool); // Dahiya: boards + sourced demo discussions
   // Joe:    await seedClips(pool);
   console.log('✓ seed complete');
 } catch (e) {
