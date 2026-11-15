@@ -189,3 +189,31 @@
   .stat--wide { grid-column: 1 / -1; padding-left: 0 !important; border-left: 0 !important; border-top: 1px solid var(--line); }
   .pf__grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+.btn-ghost-box {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 18px;
+  border: 1.5px solid var(--line);
+  background: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 0.3s, color 0.3s;
+}
+.btn-ghost-box:hover { border-color: var(--faze-red); color: var(--faze-red); }
+.pf__notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -8px 0 0;
+  padding: 10px 14px;
+  border: 1px dashed var(--faze-red);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.pf__notice-dot { width: 6px; height: 6px; flex: none; background: var(--faze-red); }

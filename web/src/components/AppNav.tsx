@@ -1,5 +1,6 @@
 // Top nav + demo login picker. SHARED (Joe): restyle freely, keep the picker for the demo.
 import { useEffect, useState, type ChangeEvent } from 'react';
+import { FazeLogo } from './FazeLogo';
 import { setDemoUserId, type SessionUser } from './session';
 import './AppNav.css';
 
@@ -37,7 +38,8 @@ export function AppNav({ user, path }: Props) {
   return (
     <header className="nav">
       <a className="brand nav__brand" href="/">
-        FaZe<span className="brand__hq">HQ</span>
+        <FazeLogo className="nav__logo" title="FaZe" />
+        <span className="brand__hq">HQ</span>
       </a>
       <nav className="nav__links">
         {links

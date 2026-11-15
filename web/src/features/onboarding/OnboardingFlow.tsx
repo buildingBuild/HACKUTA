@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { FazeLogo } from '../../components/FazeLogo';
+import { AppNav } from '../../components/AppNav';
+import type { SessionUser } from '../../components/session';
+import { saveOnboardingProfile } from '../profile/api';
 import { BuildingHQ } from './BuildingHQ';
 import { ProfilePreview } from './ProfilePreview';
 import { STEP_LINES } from './quotes';
@@ -38,6 +41,9 @@ export function OnboardingFlow() {
   const [index, setIndex] = useState(0); // STEPS.length means finished
   const [leaving, setLeaving] = useState(false);
   const [building, setBuilding] = useState(false);
+  // Real player created via Omar's POST /api/profiles when they hit FaZe Up
+  const [player, setPlayer] = useState<{ user: SessionUser; url: string } | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const timer = useRef<number | undefined>(undefined);
 
   useEffect(() => saveOnboarding(data), [data]);
@@ -68,7 +74,14 @@ export function OnboardingFlow() {
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!canContinue) return;
-    if (step.id === 'review') setBuilding(true); // play the "building your HQ" sequence first
+    if (step.id === 'review') {
+      setBuilding(true); // play the "building your HQ" sequence first
+      // save in parallel; the preview still works if this fails (demo safety)
+      setSaveError(null);
+      saveOnboardingProfile(data)
+        .then((out) => setPlayer({ user: out.user as SessionUser, url: out.profile_url }))
+        .catch((err: Error) => setSaveError(err.message || 'Could not save your profile'));
+    }
     else goTo(index + 1);
   };
 
@@ -86,6 +99,8 @@ export function OnboardingFlow() {
     <div className="onb">
       {building && <BuildingHQ data={data} onDone={finishBuilding} />}
       <FazeLogo className={`watermark ${finished ? 'watermark--done' : ''}`} />
+      {finished && <AppNav user={player?.user ?? null} path={player ? player.url : '/'} />}
+      {!finished && (
       <header className="onb__top">
         <span className="brand">
           <FazeLogo className="brand__logo" title="FaZe" />
@@ -100,12 +115,18 @@ export function OnboardingFlow() {
           </>
         )}
       </header>
+      )}
 
       <main className="onb__stage">
         <div key={index} className={`panel ${leaving ? 'panel--leave' : 'panel--enter'} ${step.id === 'game' && !finished ? 'panel--wide' : ''} ${finished ? 'panel--profile' : ''}`}>
           <span className="panel__bloom" aria-hidden="true" />
           {finished ? (
-            <ProfilePreview data={data} onEdit={() => goTo(STEPS.length - 1)} />
+            <ProfilePreview
+              data={data}
+              onEdit={() => goTo(STEPS.length - 1)}
+              profileUrl={player?.url}
+              saveError={saveError}
+            />
           ) : (
             <form onSubmit={onSubmit} className="panel__form" noValidate>
               {step.id === 'intro' ? (

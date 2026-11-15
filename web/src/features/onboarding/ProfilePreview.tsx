@@ -12,7 +12,15 @@ import './profile-preview.css';
 
 type Tab = 'all' | ClipCategory;
 
-export function ProfilePreview({ data, onEdit }: { data: OnboardingData; onEdit: () => void }) {
+interface Props {
+  data: OnboardingData;
+  onEdit: () => void;
+  /** set once the player is saved (Omar's /u/:handle) */
+  profileUrl?: string;
+  saveError?: string | null;
+}
+
+export function ProfilePreview({ data, onEdit, profileUrl, saveError }: Props) {
   const clips = useMemo(() => makeClips(data), [data]);
   const sources = useMemo(() => linkedSources(data), [data]);
   const game = GAMES.find((g) => g.id === data.game);
@@ -68,11 +76,23 @@ export function ProfilePreview({ data, onEdit }: { data: OnboardingData; onEdit:
           <button type="button" className="btn-square" onClick={onEdit} aria-label="Edit answers" title="Edit answers">
             ←
           </button>
+          {profileUrl && (
+            <a className="btn-ghost-box" href={profileUrl}>
+              Public profile ↗
+            </a>
+          )}
           <button type="button" className="btn" title="Clip upload is the next screen">
             Upload a clip <span className="btn__arrow">→</span>
           </button>
         </div>
       </section>
+
+      {saveError && (
+        <p className="pf__notice rise" style={{ ['--i' as string]: 3 }}>
+          <span className="pf__notice-dot" /> Profile not saved yet: {saveError}. This is a preview; your answers are kept in
+          this browser.
+        </p>
+      )}
 
       <section className="pf__stats rise" style={{ ['--i' as string]: 3 }}>
         <div className="stat">
