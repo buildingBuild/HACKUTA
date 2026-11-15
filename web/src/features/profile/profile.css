@@ -61,6 +61,16 @@
 .pf-level--top { color: var(--pf-red); }
 .pf-level__num { color: var(--pf-text); }
 
+/* ---------- welcome (new player viewing own profile) ---------- */
+.pf-welcome { margin-bottom: 16px; border-left: 4px solid var(--pf-red); }
+.pf-welcome .pf-h2 { font-size: 26px; margin-bottom: 12px; }
+.pf-welcome__steps { margin: 0 0 16px; padding-left: 22px; display: grid; gap: 8px; }
+.pf-welcome__steps li::marker { font-family: var(--pf-display); font-weight: 800; color: var(--pf-red); }
+.pf-welcome__steps li.is-done { color: var(--pf-muted); }
+.pf-welcome__steps li.is-done strong { text-decoration: line-through; text-decoration-color: var(--pf-red); }
+.pf-root a.pf-btn { display: inline-block; text-decoration: none; }
+.pf-root a.pf-btn--primary { color: #fff; }
+
 /* ---------- stat tiles ---------- */
 .pf-tiles { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
 .pf-tile { all: unset; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; padding: 14px; border-radius: 10px; background: var(--pf-surface); border: 1px solid var(--pf-line); cursor: pointer; min-width: 0; }

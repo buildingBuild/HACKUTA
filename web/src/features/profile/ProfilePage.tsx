@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "./profile.css";
+import { getDemoUserId } from "../../components/session";
 import { ApiError, fetchProfile, profileUrl } from "./api";
 import { Avatar, LevelBadge, ScoutProgressBar, StateBox, TrendChart } from "./components";
 import { ShareCard } from "./ShareCard";
@@ -45,6 +46,8 @@ function ProfileView({ p, clipHref }: { p: Profile; clipHref: (id: string) => st
   const [trendKey, setTrendKey] = useState<StatKey>("elo");
   const trendTile = STAT_TILES.find((t) => t.key === trendKey)!;
   const name = p.user.display_name;
+  const isMe = getDemoUserId() === p.user.id;
+  const hasStats = Object.keys(p.stats).length > 0 || p.clip_count > 0 || p.karma !== 0;
 
   return (
     <div className="pf-root">
@@ -73,16 +76,31 @@ function ProfileView({ p, clipHref }: { p: Profile; clipHref: (id: string) => st
             </ul>
           )}
         </div>
-        <div className="pf-hero__level">
-          <LevelBadge level={p.game?.faceit_level ?? null} size="lg" />
-          <div>
-            <div className="pf-hero__elo">{fmtNum(p.game?.faceit_elo)}</div>
-            <div className="pf-eyebrow">FACEIT ELO</div>
+        {p.game?.faceit_elo != null && (
+          <div className="pf-hero__level">
+            <LevelBadge level={p.game.faceit_level} size="lg" />
+            <div>
+              <div className="pf-hero__elo">{fmtNum(p.game.faceit_elo)}</div>
+              <div className="pf-eyebrow">FACEIT ELO</div>
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
-      <section className="pf-tiles" aria-label="Key stats">
+      {isMe && p.clip_count === 0 && (
+        <section className="pf-card pf-welcome" aria-labelledby="pf-welcome-h">
+          <p className="pf-eyebrow">You're on the radar</p>
+          <h2 id="pf-welcome-h" className="pf-h2">Welcome to FaZe HQ, {name}</h2>
+          <ol className="pf-welcome__steps">
+            <li className="is-done"><strong>Profile created.</strong> This page is your public CS2 resume. Share it anywhere.</li>
+            <li><strong>Upload your first clip.</strong> Get AI coaching and a score that counts toward scouting.</li>
+            <li><strong>Climb the bars.</strong> Clear every scouting threshold and FaZe recruiters get your report.</li>
+          </ol>
+          <a className="pf-btn pf-btn--primary" href="/coach">Upload your first clip →</a>
+        </section>
+      )}
+
+      {hasStats && <section className="pf-tiles" aria-label="Key stats">
         {STAT_TILES.map((t) => {
           const s = p.stats[t.key];
           const d = s?.delta_30d ?? null;
@@ -113,7 +131,7 @@ function ProfileView({ p, clipHref }: { p: Profile; clipHref: (id: string) => st
           <span className="pf-tile__value">{fmtCompact(p.karma)}</span>
           <span className="pf-muted pf-tile__sub">community</span>
         </div>
-      </section>
+      </section>}
 
       <div className="pf-grid">
         <div className="pf-col">
