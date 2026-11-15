@@ -1,6 +1,7 @@
 // Local HTTP API for the /rgb page. Binds to 127.0.0.1 only (see index.ts).
 //   GET  /status          -> { ok: true, device: boolean }
 //   POST /effect {type}   -> { played: boolean }   (always 200; 400 on bad JSON)
+//   POST /base {on}       -> { ok: true }          dim-red resting state while the clip plays; off when false
 import http from 'node:http';
 import type { Lights } from './aura.ts';
 import { isEffect, Player } from './effects.ts';
@@ -42,6 +43,7 @@ export function createServer(opts: { lights: Lights | null; reopen?: () => Light
   };
   const safe: Lights = {
     off: () => guard(() => l?.off()),
+    base: () => guard(() => l?.base()),
     color: (r, g, b) => guard(() => l?.color(r, g, b)),
     mode: (m, r, g, b, s) => guard(() => l?.mode(m, r, g, b, s)),
   };
@@ -56,16 +58,21 @@ export function createServer(opts: { lights: Lights | null; reopen?: () => Light
     if (req.method === 'OPTIONS') return send(res, 204);
     revive();
     if (req.method === 'GET' && req.url === '/status') return send(res, 200, { ok: true, device });
-    if (req.method === 'POST' && req.url === '/effect') {
+    if (req.method === 'POST' && (req.url === '/effect' || req.url === '/base')) {
       let raw = '';
       req.on('data', (c) => (raw += c));
       req.on('end', () => {
-        let type: unknown;
+        let body: { type?: unknown; on?: unknown };
         try {
-          type = JSON.parse(raw)?.type;
+          body = JSON.parse(raw) ?? {};
         } catch {
           return send(res, 400, { error: 'invalid JSON' });
         }
+        if (req.url === '/base') {
+          player.setBase(body.on === true);
+          return send(res, 200, { ok: true });
+        }
+        const type = body.type;
         if (!device || typeof type !== 'string' || !isEffect(type)) return send(res, 200, { played: false });
         // play() runs its first step synchronously, so a USB failure shows up in `device` right away.
         player.play(type).catch(() => {});

@@ -1,4 +1,5 @@
-// Effect name -> step sequence. Every effect ends with the lights off; a new effect cancels the running one.
+// Effect name -> step sequence. A new effect cancels the running one. When an effect ends the board returns to
+// the base (dim FaZe red while a clip plays) or, with the base off, switches off.
 import type { Lights } from './aura.ts';
 
 export type EffectName = 'round_win' | 'round_loss' | 'ace' | 'clutch' | 'match_win' | 'match_start';
@@ -13,7 +14,7 @@ const strobe: Step[] = Array.from({ length: 8 }, () => [
 
 export const EFFECTS: Record<EffectName, Step[]> = {
   round_win: [{ do: (l) => l.mode(1, ...RED, 'slow'), ms: 2000 }],
-  round_loss: [{ do: (l) => l.color(60, 0, 0), ms: 1000 }],
+  round_loss: [{ do: (l) => l.off(), ms: 1000 }], // blackout against the dim-red base
   ace: strobe,
   clutch: strobe,
   match_win: [{ do: (l) => l.mode(2, ...RED, 'fast'), ms: 4000 }],
@@ -28,6 +29,7 @@ const realSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export class Player {
   private gen = 0;
+  private baseOn = false;
   constructor(
     private lights: Lights,
     private sleep: (ms: number) => Promise<void> = realSleep,
@@ -42,8 +44,20 @@ export class Player {
       step.do(this.lights);
       await this.sleep(step.ms);
     }
-    if (my === this.gen) this.lights.off();
+    if (my === this.gen) this.rest();
     return true;
+  }
+
+  /** Base on: rest on dim red between effects. Off: lights off. Either way a running effect stops now. */
+  setBase(on: boolean): void {
+    this.gen++;
+    this.baseOn = on;
+    this.rest();
+  }
+
+  private rest(): void {
+    if (this.baseOn) this.lights.base();
+    else this.lights.off();
   }
 
   stop(): void {

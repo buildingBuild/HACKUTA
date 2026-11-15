@@ -10,7 +10,7 @@ Show the "RGB Sync" pillar of FaZe HQ (REQUIREMENTS §5.2) for real at the demo.
 
 - `/rgb` is a real page: a YouTube highlight clip, an on-screen virtual keyboard plus light bar, and a list of the clip's moments.
 - Moments fire in sync with the video's playhead. They fire on both the virtual setup and the real keyboard, through the local companion.
-- After each effect, the keyboard lights go **off**. The companion also turns them off when it quits.
+- While the clip plays, the board rests on **dim FaZe red** (hardware brightness 1). Each effect flashes at full brightness and returns to it. Pausing or ending the clip, or quitting the companion, turns the lights **off**. *(Change requested after first hardware test; originally "off after each effect".)*
 - Marking mode: while the clip plays, press W, A, L or M to record moments, then copy or save them, so the timings can be fine-tuned.
 
 ## Non-goals

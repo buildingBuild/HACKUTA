@@ -7,6 +7,8 @@ export type Speed = 'slow' | 'med' | 'fast';
 
 export interface Lights {
   off(): void;
+  /** Resting state while a clip plays: FaZe red at low hardware brightness. */
+  base(): void;
   color(r: number, g: number, b: number): void;
   mode(m: AuraMode, r: number, g: number, b: number, speed?: Speed): void;
 }
@@ -45,6 +47,11 @@ function open(hid: HidModule): Lights | null {
 
   const lights: Lights = {
     off: () => brightness(0),
+    base: () => {
+      brightness(1);
+      send([0x5d, 0xb3, 0x00, 0, 255, 0, 0, SPEED.med, 0x00, 0x00]);
+      send([0x5d, 0xb4]);
+    },
     color: (r, g, b) => lights.mode(0, r, g, b),
     mode: (m, r, g, b, speed = 'med') => {
       brightness(3);

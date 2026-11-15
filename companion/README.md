@@ -21,8 +21,10 @@ npm test
 |---|---|
 | `GET /status` | `{ ok, device }` |
 | `POST /effect {"type":"round_win"}` | `{ played }` |
+| `POST /base {"on":true}` | `{ ok }`: dim-red resting state while the clip plays; `false` turns it off |
 
 **Notes**
-- The lights go off after every effect, and when you stop the companion with Ctrl+C.
+- While the clip plays, the board rests on dim FaZe red (`POST /base {"on":true}`). Each effect flashes at full brightness, then returns to dim red.
+- Pausing or ending the clip, or stopping the companion with Ctrl+C, turns the lights off.
 - Armoury Crate can stay open. If it ever repaints the keyboard mid-demo, close Armoury Crate.
 - This is not an npm workspace on purpose. `node-hid` is native, so teammates and Railway never install it.

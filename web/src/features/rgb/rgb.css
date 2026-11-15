@@ -47,6 +47,7 @@
 .vk__row { display: flex; gap: 4px; }
 .vk__key { flex: 1; min-width: 0; height: 18px; border-radius: 3px; background: var(--off); }
 .vk__row:last-child .vk__key:nth-child(5) { flex: 5; }
+.vk--base { --off: #4a0010; }
 .vk__bar { height: 6px; margin: 12px -14px 0; border-radius: 0 0 4px 4px; background: var(--off); }
 
 /* The root runs an invisible timer animation; its animationend returns the board to "off". */
@@ -59,7 +60,7 @@
 @keyframes vk-timer { from { outline-color: transparent; } to { outline-color: transparent; } }
 
 .vk--round_win :is(.vk__key, .vk__bar) { animation: vk-breathe 1s ease-in-out 2; }
-.vk--round_loss :is(.vk__key, .vk__bar) { animation: vk-dim 1s linear 1; }
+.vk--round_loss :is(.vk__key, .vk__bar) { animation: vk-dark 1s linear 1; }
 :is(.vk--ace, .vk--clutch) :is(.vk__key, .vk__bar) { animation: vk-strobe 0.25s steps(1) 8; }
 .vk--match_win :is(.vk__key, .vk__bar) { animation: vk-cycle 4s linear 1; }
 .vk--match_win .vk__key[data-zone='1'] { animation-delay: -0.25s; }
@@ -71,7 +72,8 @@
   0%, 100% { background: var(--off); box-shadow: none; }
   50% { background: var(--red); box-shadow: 0 0 10px var(--red); }
 }
-@keyframes vk-dim { from, to { background: #3c0000; } }
+@keyframes vk-dark { from, to { background: #141414; box-shadow: none; } }
+@keyframes vk-solid { from, to { background: var(--red); box-shadow: 0 0 10px var(--red); } }
 @keyframes vk-strobe {
   0% { background: #fff; box-shadow: 0 0 10px #fff; }
   50% { background: var(--red); box-shadow: 0 0 10px var(--red); }
@@ -86,5 +88,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :is(.vk--ace, .vk--clutch) :is(.vk__key, .vk__bar) { animation: vk-dim 2s linear 1; }
+  :is(.vk--ace, .vk--clutch) :is(.vk__key, .vk__bar) { animation: vk-solid 2s linear 1; }
 }

@@ -46,3 +46,15 @@ test('the companion is only probed automatically on a local dev host', () => {
   assert.equal(autoConnect('127.0.0.1'), true);
   assert.equal(autoConnect('fazehq.up.railway.app'), false);
 });
+
+import { sendBase } from './companion';
+
+test('sendBase resolves false when the companion is unreachable', async () => {
+  const real = globalThis.fetch;
+  globalThis.fetch = (() => Promise.reject(new TypeError('Failed to fetch'))) as typeof fetch;
+  try {
+    assert.equal(await sendBase(true), false);
+  } finally {
+    globalThis.fetch = real;
+  }
+});

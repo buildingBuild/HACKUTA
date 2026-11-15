@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Badge, Button, Page, PageHeader } from '../../components/ui';
 import { CLIP } from './clip';
-import { autoConnect, companionStatus, sendEffect } from './companion';
+import { autoConnect, companionStatus, sendBase, sendEffect } from './companion';
 import { crossed, type Cue, type EffectName } from './cues';
 import { VirtualKeyboard, type FiredEffect } from './VirtualKeyboard';
 import { loadYouTube, type YTPlayer } from './youtube';
@@ -34,6 +34,7 @@ export function RgbPage() {
   connectedRef.current = connected;
   const [probing, setProbing] = useState(() => autoConnect(window.location.hostname));
   const [videoError, setVideoError] = useState<string | null>(null);
+  const [playing, setPlaying] = useState(false);
   const [marking, setMarking] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -59,7 +60,8 @@ export function RgbPage() {
           events: {
             onError: (e) => setVideoError(`YouTube error ${e.data}`),
             // Clicking play focuses the cross-origin iframe; hand focus back so marking keys reach the page.
-            onStateChange: () => {
+            onStateChange: (e) => {
+              setPlaying(e.data === YT.PlayerState.PLAYING);
               if (document.activeElement instanceof HTMLIFrameElement) document.activeElement.blur();
             },
           },
@@ -102,6 +104,15 @@ export function RgbPage() {
     };
   }, [probing]);
 
+  // While the clip plays the board rests on dim FaZe red; paused, ended or leaving the page turns it off.
+  useEffect(() => {
+    if (!connected) return;
+    void sendBase(playing);
+    return () => {
+      if (playing) void sendBase(false);
+    };
+  }, [connected, playing]);
+
   // Marking mode: W/A/L/M/C/S drop a cue at the current playhead.
   useEffect(() => {
     if (!marking) return;
@@ -139,7 +150,7 @@ export function RgbPage() {
       <PageHeader
         kicker={<>FaZe HQ · RGB Sync <Badge tone="red">Live</Badge></>}
         title="RGB Sync"
-        lede="Watch FaZe play and your keyboard plays along: red on a round win, a strobe on an ace, a colour sweep when FaZe takes the match."
+        lede="Watch FaZe play and your keyboard plays along: it glows FaZe red through the match, then lights up on a round win, strobes on an ace and sweeps colour when FaZe takes the map."
       />
 
       <div className="rgb">
@@ -154,7 +165,7 @@ export function RgbPage() {
         </section>
 
         <aside className="rgb__side">
-          <VirtualKeyboard effect={effect} onDone={() => setEffect(null)} />
+          <VirtualKeyboard effect={effect} base={playing} onDone={() => setEffect(null)} />
           <div className={`rgb__status ${connected ? 'is-on' : ''}`}>
             <span className="rgb__dot" aria-hidden />
             {connected ? (

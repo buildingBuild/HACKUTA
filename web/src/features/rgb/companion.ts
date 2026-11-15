@@ -36,3 +36,18 @@ export async function sendEffect(type: EffectName): Promise<boolean> {
     return false;
   }
 }
+
+/** Dim-red resting state while the clip plays (on) / lights off (off). */
+export async function sendBase(on: boolean): Promise<boolean> {
+  try {
+    const r = await fetch(`${COMPANION}/base`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ on }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}

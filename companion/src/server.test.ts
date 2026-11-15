@@ -7,11 +7,13 @@ import { createServer } from './server.ts';
 class FakeLights implements Lights {
   calls: string[] = [];
   off() { this.calls.push('off'); }
+  base() { this.calls.push('base'); }
   color() { this.calls.push('color'); }
   mode() { this.calls.push('mode'); }
 }
 class BrokenLights implements Lights {
   off() { throw new Error('usb gone'); }
+  base() { throw new Error('usb gone'); }
   color() { throw new Error('usb gone'); }
   mode() { throw new Error('usb gone'); }
 }
@@ -77,6 +79,7 @@ class FailsAfterFirst implements Lights {
   calls: string[] = [];
   private n = 0;
   off() { this.calls.push('off'); }
+  base() { this.calls.push('base'); }
   color() { this.calls.push('color'); }
   mode() { if (this.n++ > 0) throw new Error('usb hiccup'); this.calls.push('mode'); }
 }
@@ -105,5 +108,17 @@ test('a lost keyboard is reopened on the next status check', async () => {
   } finally {
     app.shutdown();
     app.server.close();
+  }
+});
+
+test('POST /base turns the dim-red base on and off', async () => {
+  const l = new FakeLights();
+  const s = await start(l);
+  try {
+    assert.deepEqual(await (await post(`${s.base}/base`, { on: true })).json(), { ok: true });
+    assert.deepEqual(await (await post(`${s.base}/base`, { on: false })).json(), { ok: true });
+    assert.deepEqual(l.calls, ['base', 'off']);
+  } finally {
+    s.close();
   }
 });

@@ -7,6 +7,7 @@ type Call = [string, ...unknown[]];
 class FakeLights implements Lights {
   calls: Call[] = [];
   off() { this.calls.push(['off']); }
+  base() { this.calls.push(['base']); }
   color(r: number, g: number, b: number) { this.calls.push(['color', r, g, b]); }
   mode(m: number, r: number, g: number, b: number, speed?: string) { this.calls.push(['mode', m, r, g, b, speed]); }
 }
@@ -44,4 +45,39 @@ test('every effect ends with the lights off', async () => {
     await new Player(l, instant).play(name);
     assert.deepEqual(l.calls.at(-1), ['off'], name);
   }
+});
+
+test('with the base on, an effect returns to dim red instead of off', async () => {
+  const l = new FakeLights();
+  const p = new Player(l, instant);
+  p.setBase(true);
+  await p.play('round_win');
+  assert.deepEqual(l.calls[0], ['base']);
+  assert.deepEqual(l.calls.at(-1), ['base']);
+});
+
+test('turning the base off while idle switches the lights off', () => {
+  const l = new FakeLights();
+  const p = new Player(l, instant);
+  p.setBase(true);
+  p.setBase(false);
+  assert.deepEqual(l.calls, [['base'], ['off']]);
+});
+
+test('turning the base off mid-effect ends that effect with the lights off', async () => {
+  const l = new FakeLights();
+  const p = new Player(l, instant);
+  p.setBase(true);
+  const run = p.play('ace');
+  p.setBase(false);
+  await run;
+  assert.deepEqual(l.calls.at(-1), ['off']);
+});
+
+test('a round loss blacks the board out', async () => {
+  const l = new FakeLights();
+  const p = new Player(l, instant);
+  p.setBase(true);
+  await p.play('round_loss');
+  assert.deepEqual(l.calls.slice(1), [['off'], ['base']]);
 });
