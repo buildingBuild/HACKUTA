@@ -7,7 +7,7 @@ import { createCommunityRouter } from '../../../../server/src/routes/community';
 test('community demo contract and interactive journey', async () => {
   const app = express();
   app.use(express.json());
-  app.use('/api', createCommunityRouter({ demoClips: [{ id: 'existing-clip', user_id: 'demo-fan', game: 'cs2', title: 'Existing clutch', blob_url: 'https://example.com/clip.mp4' }] }));
+  app.use('/api', createCommunityRouter({ pulseGenerate: false, demoClips: [{ id: 'existing-clip', user_id: 'demo-fan', game: 'cs2', title: 'Existing clutch', blob_url: 'https://example.com/clip.mp4' }] }));
   const server = app.listen(0, '127.0.0.1');
   await new Promise<void>(resolve => server.on('listening', resolve));
   const address = server.address();

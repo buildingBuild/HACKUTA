@@ -24,6 +24,7 @@ export function App() {
   if (path === '/') {
     return (
       <GridBackground>
+        <AppNav user={user} path={path} />
         <OnboardingFlow />
       </GridBackground>
     );
