@@ -1,3 +1,11 @@
+## Community presentation (current)
+
+The active UI has three tabs: Discussions, Clips, and Events & Drops. Discussions leads with compact filters and editorial threads; the permanent sidebar and visible Pulse entry points are removed. Pulse services and retained components remain available to existing API consumers. Old `?pulse=1` links fall back to Discussions.
+
+Events links to existing Watch Together rooms and challenges. Merchandise highlights read the shared Rewards catalog and reuse its product art, with points/availability taken directly from the response. Redemption stays entirely on Rewards (`/rewards#rw-store-h`); a missing catalog shows an integration notice rather than invented products. The local full-preview adapter currently has no Rewards endpoints. Feed and Rewards links live in a compact footer.
+
+Presentation overrides are feature-scoped in `community-refresh.css`, including responsive layouts and reduced-motion handling. No shared routing, backend, schema or teammate feature files are changed by this refinement. Earlier milestone notes below are historical.
+
 ## V3 integration (current)
 
 Community preserves the latest local Discussions, social Clips, Pulse, Watch Together, events and challenge UI on the V3 shell. Pulse supports injected curated summaries with a deterministic fallback; it does not import removed coaching or voice modules. Clip links point to creator profiles. Upload stays unavailable until the shared uploader is connected.

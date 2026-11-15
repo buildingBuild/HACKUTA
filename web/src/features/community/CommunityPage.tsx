@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { createCommunityApi } from './api';
 import type { Clip, Comment, Community, Sort, Thread, User } from './types';
 import './community.css';
+import './community-refresh.css';
 import { WatchTogether } from './WatchTogether';
-import { PulseView, PulsePreview } from './PulseView';
 import { ClipFeed } from './ClipFeed';
 import { ClipPlayer } from './ClipPlayer';
 import { TOPICS, TOPIC_BOARD, threadTopic, sortThreads, discussionText, type Topic } from './discussions';
-import { SECTIONS, EventsSection, AroundSection, type Section } from './CommunitySections';
+import { SECTIONS, EventsSection, type Section } from './CommunitySections';
 
 export interface CommunityPageProps {
   currentUser?: User;
@@ -29,7 +29,7 @@ function Votes({ score, value, disabled, onVote }: { score: number; value: numbe
 export default function CommunityPage({ currentUser, clips = [], apiBase = '/api', initialBoard = 'faze-cs2', initialClipId = '', uploadUrl }: CommunityPageProps) {
   const api = useMemo(() => createCommunityApi(currentUser?.id, apiBase), [currentUser?.id, apiBase]);
   const [boards, setBoards] = useState<Community[]>([]);
-  const [section, setSection] = useState<Section>(new URLSearchParams(location.search).has('watch') || new URLSearchParams(location.search).get('view') === 'watch' ? 'Watch Together' : new URLSearchParams(location.search).get('view') === 'clips' ? 'Clips' : 'Discussions');
+  const [section, setSection] = useState<Section>(new URLSearchParams(location.search).has('watch') || new URLSearchParams(location.search).get('view') === 'watch' ? 'Watch Together' : new URLSearchParams(location.search).get('view') === 'clips' ? 'Clips' : new URLSearchParams(location.search).get('view') === 'events' ? 'Events & Drops' : 'Discussions');
   const [filter, setFilter] = useState<Topic | 'All'>(new URLSearchParams(location.search).get('topic') === 'Challenges' ? 'Challenges' : 'All');
   const [topic, setTopic] = useState<Topic>(TOPICS.find(t => TOPIC_BOARD[t] === initialBoard) ?? 'General');
   const [sort, setSort] = useState<Sort>('hot');
@@ -56,7 +56,6 @@ export default function CommunityPage({ currentUser, clips = [], apiBase = '/api
   const [reason, setReason] = useState('');
   const initialThread = new URLSearchParams(location.search).get('thread');
   const roomId = new URLSearchParams(location.search).get('watch') || undefined;
-  const [pulseOpen,setPulseOpen] = useState(new URLSearchParams(location.search).has('pulse'));
   useEffect(()=>{if(!initialThread)return;let live=true;api.thread(initialThread).then(r=>{if(live)setActive(r.data);}).catch(e=>{if(live)setError(e.message);});return()=>{live=false;};},[api,initialThread]);
   const availableClips = clips.filter(c => c.user_id === currentUser?.id && c.game === 'cs2');
   // Thread state holds the last explicitly sorted snapshot. Votes update rows in place.
@@ -125,15 +124,14 @@ export default function CommunityPage({ currentUser, clips = [], apiBase = '/api
     </div>;
   }
   return <section className="cq" aria-label="FaZe HQ community">
-    <header className="cq-header"><h1>Find your people.</h1>{mode === 'demo' && <details className="cq-demo-info"><summary>Demo Mode ⓘ</summary><p>Seeded discussions. Changes live in server memory and reset on restart; they are not saved to TigerData.</p></details>}</header>
+    <header className="cq-header"><h1>Community<span>.</span></h1>{mode === 'demo' && <details className="cq-demo-info"><summary>Demo Mode ⓘ</summary><p>Seeded discussions. Changes live in server memory and reset on restart; they are not saved to TigerData.</p></details>}</header>
     {!currentUser && <div className="cq-banner">Choose an account in the shared login to post, reply, or vote.</div>}
-    <nav className="cq-section-tabs" aria-label="Community sections">{SECTIONS.map(name => <button key={name} disabled={busy} aria-current={section === name ? 'page' : undefined} onClick={() => { setSection(name); setPulseOpen(false); window.history.replaceState(null,'','/community'); setActive(null); setComposer(false); }}>{name}</button>)}</nav>
+    <nav className="cq-section-tabs" aria-label="Community sections">{SECTIONS.map(name => <button key={name} disabled={busy} aria-current={section === name || (section === 'Watch Together' && name === 'Events & Drops') ? 'page' : undefined} onClick={() => { setSection(name); window.history.replaceState(null,'',name === 'Discussions' ? '/community' : `/community?view=${name === 'Clips' ? 'clips' : 'events'}`); setActive(null); setComposer(false); }}>{name}</button>)}</nav>
     <div className="cq-layout">
-    <main className="cq-main">
+    <main key={section} className="cq-main">
       {error && <div role="alert" className="cq-error">{error} <button onClick={() => setRevision(v => v + 1)}>Reload feed</button></div>}
       {notice && <div role="status" className="cq-banner">{notice}</div>}
-      {section === 'Watch Together' ? <WatchTogether api={api} user={currentUser} roomId={roomId} /> : pulseOpen ? <PulseView api={api}/> : section === 'Clips' ? <ClipFeed clips={clips} user={currentUser} api={api} uploadUrl={uploadUrl} onThreadChanged={thread => { setThreads(old => old.some(t => t.id === thread.id) ? old.map(t => t.id === thread.id ? thread : t) : [thread,...old]); }} /> : section === 'Events & Drops' ? <EventsSection discuss={challenge => { setSection('Discussions'); setPulseOpen(false); window.history.replaceState(null,'','/community'); setFilter(challenge ? 'Challenges' : 'All'); setActive(null); }} /> : !active ? <>
-        <PulsePreview api={api} open={()=>{setPulseOpen(true);window.history.replaceState(null,'','/community?pulse=1');}}/>
+      {section === 'Watch Together' ? <WatchTogether api={api} user={currentUser} roomId={roomId} /> : section === 'Clips' ? <ClipFeed clips={clips} user={currentUser} api={api} uploadUrl={uploadUrl} onThreadChanged={thread => { setThreads(old => old.some(t => t.id === thread.id) ? old.map(t => t.id === thread.id ? thread : t) : [thread,...old]); }} /> : section === 'Events & Drops' ? <EventsSection discuss={challenge => { setSection('Discussions'); window.history.replaceState(null,'','/community'); setFilter(challenge ? 'Challenges' : 'All'); setActive(null); }} /> : !active ? <>
         <div className="cq-filter-bar"><div className="cq-filter-heading"><div className="cq-topic-filters" aria-label="Filter discussions by topic">{(['All', ...TOPICS] as const).map(t => <button key={t} aria-pressed={filter === t} onClick={() => setFilter(t)}>{t === 'All' ? 'All topics' : `#${t}`}</button>)}</div><button className="cq-primary cq-create-thread" disabled={!currentUser || busy} aria-expanded={composer} onClick={() => setComposer(!composer)}>+ Create thread</button></div><div className="cq-tabs" aria-label="Sort discussions">{(['hot','new','top'] as Sort[]).map(s => <button key={s} aria-pressed={sort === s} onClick={() => setSort(s)}>{s === 'hot' ? '↗ ' : ''}{s[0].toUpperCase() + s.slice(1)}</button>)}<span>{visibleThreads.length} discussions</span></div></div>
         {composer && <form className="cq-panel cq-form" onSubmit={e => { e.preventDefault(); void perform(async () => { const r = await api.create(TOPIC_BOARD[topic], { title, body: `#${topic}\n\n${body}`, type: topic === 'Challenges' ? 'challenge' : kind, clip_id: clipId || null }); setThreads(old => [r.data, ...old]); setFilter(threadTopic(r.data, boards)); setComposer(false); setTitle(''); setBody(''); setClipId(''); setActive(r.data); }); }}>
           <h3>Start a conversation</h3><label>Topic<select disabled={busy} value={topic} onChange={e => { const next = e.target.value as Topic; setTopic(next); setKind(next === 'Challenges' ? 'challenge' : 'post'); }}>{TOPICS.map(t => <option key={t}>{t}</option>)}</select></label><label>Title<input required maxLength={180} value={title} onChange={e => setTitle(e.target.value)} placeholder="What’s on your mind?" /></label><label>Body<textarea required maxLength={10000} rows={5} value={body} onChange={e => setBody(e.target.value)} placeholder="Give the community something to talk about." /></label>
@@ -149,7 +147,7 @@ export default function CommunityPage({ currentUser, clips = [], apiBase = '/api
         <h3 className="cq-comments-heading">{comments.length} comments</h3>{commentsLoading ? <p role="status">Loading replies…</p> : comments.filter(c => !c.parent_id).map(c => renderComment(c))}
 
       </>}
-    </main><aside className="cq-sidebar"><AroundSection /><section className="cq-feature cq-featured-challenge"><span className="cq-eyebrow">FEATURED CHALLENGE</span><h3>Recreate the Classic</h3><button onClick={() => { setSection('Discussions'); setPulseOpen(false); window.history.replaceState(null,'','/community'); setFilter('Challenges'); setActive(null); }}>View challenge →</button></section></aside></div>
+    </main></div><footer className="cq-community-footer"><a href="/feed">Explore the Feed ↗</a><a href="/rewards#rw-store-h">FaZe Points & rewards ↗</a></footer>
     {report && <div className="cq-modal"><form role="dialog" aria-modal="true" aria-labelledby="cq-report-title" className="cq-panel cq-form" onSubmit={e => { e.preventDefault(); void perform(async () => { const r = await api.report(report.type, report.id, reason); setNotice(r.data.message); setReport(null); setReason(''); }); }}><h3 id="cq-report-title">Report content</h3><label>Reason<textarea autoFocus required maxLength={500} value={reason} onChange={e => setReason(e.target.value)} /></label><div className="cq-actions"><button className="cq-primary" disabled={busy}>Submit report</button><button type="button" onClick={() => { setReport(null); setReason(''); }}>Cancel</button></div></form></div>}
   </section>;
 }
