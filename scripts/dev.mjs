@@ -1,6 +1,13 @@
 // Runs the API (:3001) and web (:5173) together, cross-platform, no extra deps.
 // Usage: npm run dev
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+
+// On Windows, killing the npm shell leaves node children holding the ports: kill the tree.
+const killTree = (p) => {
+  if (p.exitCode !== null || !p.pid) return;
+  if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(p.pid), '/T', '/F'], { stdio: 'ignore' });
+  else p.kill('SIGTERM');
+};
 
 const procs = [
   ['server', ['run', 'dev', '-w', 'server'], '\x1b[31m'],
@@ -14,10 +21,15 @@ const procs = [
   pipe(p.stderr, process.stderr);
   p.on('exit', (code) => {
     console.log(`${tag}exited (${code})`);
-    procs.forEach((x) => x !== p && x.kill());
+    procs.forEach((x) => x !== p && killTree(x));
     process.exit(code ?? 0);
   });
   return p;
 });
 
-process.on('SIGINT', () => procs.forEach((p) => p.kill()));
+const shutdown = () => {
+  procs.forEach(killTree);
+  process.exit(0);
+};
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
