@@ -77,7 +77,7 @@ export function OnboardingFlow() {
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!canContinue) return;
+    if (!canContinue || building) return;
     if (step.id === 'review') {
       setBuilding(true); // play the "building your HQ" sequence first
       setClipsLoading(!!(data.twitch || data.youtube || data.folder?.trim()));
@@ -89,13 +89,26 @@ export function OnboardingFlow() {
           // signed in now: kick off real clip analysis for everything they linked (runs in the background)
           // already-analyzed sources come back from the cache instantly; fresh ones keep running in the background
           void analyzeOnboarding(data)
-            .then(() => userClips(out.user.id))
-            .then((c) => c.length && setRealClips(c))
-            .catch(() => {})
+            .then(async (results) => {
+              const clips = await userClips(out.user.id);
+              if (clips.length) {
+                setRealClips(clips);
+                return;
+              }
+              const failed = results.find((r) => r.status === 'rejected');
+              if (failed?.status === 'rejected') throw failed.reason;
+              if (results.length) throw new Error('Your videos are queued for analysis. Your clips will appear on Home when processing finishes.');
+              setRealClips([]);
+            })
+            .catch((err: Error) => {
+              setSaveError(err.message || 'Could not load your clips. Please try again.');
+              setBuilding(false);
+            })
             .finally(() => setClipsLoading(false));
         })
         .catch((err: Error) => {
           setSaveError(err.message || 'Could not save your profile');
+          setBuilding(false);
           setClipsLoading(false);
         });
     }
@@ -172,6 +185,7 @@ export function OnboardingFlow() {
                       ? `Drop your ${GAMES.find((g) => g.id === data.game)?.code ?? ''} gamertag.`.replace('  ', ' ')
                       : HEADINGS[step.id]}
                   </h2>
+                  {saveError && step.id === 'review' && <p className="onb__error" role="alert">{saveError}</p>}
                   <div className="panel__body">
                     {step.id === 'game' && <GameStep data={data} update={update} />}
                     {step.id === 'gamertag' && <GamertagStep data={data} update={update} />}

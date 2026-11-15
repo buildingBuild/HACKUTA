@@ -16,6 +16,7 @@ export interface TimelineEvent {
   /** Crest star number (1-5) when this win put a star on the badge. */
   star?: number;
   source?: string;
+  sourceLinks?: { label: string; url: string }[];
 }
 
 export interface Era {
@@ -58,6 +59,7 @@ export const ERAS: Era[] = [
         blurb: 'ClipZ, House Cat and Resistance start a trickshot crew on YouTube. The first upload goes live May 31.',
         kind: 'people',
         source: 'Wikipedia · FaZe Clan YouTube',
+        sourceLinks: [{"label": "Wikipedia", "url": "https://en.wikipedia.org/wiki/FaZe_Clan"}, {"label": "FaZe Clan YouTube", "url": "https://www.youtube.com/watch?v=BvpbYhQWEDA"}],
       },
       {
         id: 'temperrr',
@@ -67,6 +69,7 @@ export const ERAS: Era[] = [
         more: '“How to Temperrr Shot” does 5.75M views and teaches a generation of Xbox 360 players.',
         kind: 'people',
         source: 'FaZe Clan YouTube · Tubefilter',
+        sourceLinks: [{"label": "FaZe Clan YouTube", "url": "https://www.youtube.com/watch?v=oYiMzAoGx1Y"}, {"label": "Tubefilter", "url": "https://www.tubefilter.com/2018/04/26/what-is-faze-clan-gaming-youtube-twitch/"}],
       },
       {
         id: 'our-war',
@@ -75,6 +78,7 @@ export const ERAS: Era[] = [
         blurb: 'The whole roster’s best clips cut to one track and dropped like an album. Around fifty more follow.',
         kind: 'content',
         source: 'FaZe Clan YouTube',
+        sourceLinks: [{"label": "FaZe Clan YouTube", "url": "https://www.youtube.com/watch?v=WeFjqjCtGt8"}],
       },
       {
         id: 'community-montage',
@@ -83,6 +87,7 @@ export const ERAS: Era[] = [
         blurb: 'Community montages, ILLCAMS and Top 5 Trickshots turn fans’ clips into FaZe content. 100K subscribers in eleven months.',
         kind: 'content',
         source: 'FaZe Clan YouTube',
+        sourceLinks: [{"label": "FaZe Clan YouTube", "url": "https://www.youtube.com/watch?v=4IzDJtYhVto"}],
       },
     ],
   },
@@ -100,6 +105,7 @@ export const ERAS: Era[] = [
         blurb: '12.1 million views. Still the biggest video FaZe has ever made.',
         kind: 'content',
         source: 'FaZe Clan YouTube',
+        sourceLinks: [{"label": "FaZe Clan YouTube", "url": "https://www.youtube.com/watch?v=CBM-NZdWyk4"}],
       },
       {
         id: 'bo2',
@@ -108,6 +114,7 @@ export const ERAS: Era[] = [
         blurb: 'Pamaj’s sniper montage hits 8M and Apex lands the first BO2 trickshot killcam — all within 48 hours of launch.',
         kind: 'content',
         source: 'FaZe Clan YouTube',
+        sourceLinks: [{"label": "FaZe Clan YouTube", "url": "https://www.youtube.com/watch?v=r5hZ7K11ldg"}],
       },
       {
         id: 'rug',
@@ -116,6 +123,7 @@ export const ERAS: Era[] = [
         blurb: 'The future face of FaZe on YouTube, and a 13-year run.',
         kind: 'people',
         source: 'Wikipedia',
+        sourceLinks: [{"label": "Wikipedia", "url": "https://en.wikipedia.org/wiki/FaZe_Rug"}],
       },
       {
         id: 'faze5-2013',
@@ -124,6 +132,7 @@ export const ERAS: Era[] = [
         blurb: 'Fans earn roster spots by sending clips — and FaZe meets OpTic for the first time, starting CoD’s defining rivalry.',
         kind: 'esports',
         source: 'FaZe Clan YouTube · Dot Esports',
+        sourceLinks: [{"label": "FaZe Clan YouTube", "url": "https://www.youtube.com/watch?v=ZNEyvdELj8U"}, {"label": "Dot Esports", "url": "https://dotesports.com/call-of-duty/news/optic-gaming-vs-faze-clan-call-of-duty-11056"}],
       },
     ],
   },
@@ -141,6 +150,7 @@ export const ERAS: Era[] = [
         blurb: 'Plainview, New York. A trickshot channel becomes a lifestyle brand.',
         kind: 'culture',
         source: 'Wikipedia',
+        sourceLinks: [{"label": "Wikipedia", "url": "https://en.wikipedia.org/wiki/FaZe_Clan"}],
       },
       {
         id: 'optic-double',
@@ -149,6 +159,7 @@ export const ERAS: Era[] = [
         blurb: 'Gfinity Summer Championship 4–3, then MLG Pro League 4–1. The rivalry becomes finals.',
         kind: 'trophy',
         source: 'Liquipedia',
+        sourceLinks: [{"label": "Liquipedia", "url": "https://liquipedia.net/callofduty/FaZe_Clan"}],
       },
       {
         id: 'superteam',
@@ -157,6 +168,7 @@ export const ERAS: Era[] = [
         blurb: 'FaZe buys into CS, then signs NiKo, GuardiaN and olofmeister next to rain and karrigan.',
         kind: 'esports',
         source: 'Liquipedia · HLTV',
+        sourceLinks: [{"label": "Liquipedia", "url": "https://liquipedia.net/counterstrike/FaZe_Clan/History"}, {"label": "HLTV", "url": "https://www.hltv.org/news/19821/faze-secure-the-services-of-niko"}],
       },
       {
         id: 'eleague',
@@ -165,6 +177,7 @@ export const ERAS: Era[] = [
         blurb: 'Astralis beaten 2–0 for $500K. FaZe is now a Counter-Strike power.',
         kind: 'trophy',
         source: 'Wikipedia',
+        sourceLinks: [{"label": "Wikipedia", "url": "https://en.wikipedia.org/wiki/FaZe_Clan"}],
       },
     ],
   },
@@ -182,6 +195,7 @@ export const ERAS: Era[] = [
         blurb: 'FaZe signs Brazil’s Team Fontt — the branch that would one day carry two stars.',
         kind: 'esports',
         source: 'PCGamesN',
+        sourceLinks: [{"label": "PCGamesN", "url": "https://www.pcgamesn.com/rainbow-six-siege/rainbow-six-siege-faze-clan-team-fontt-six-invitational"}],
       },
       {
         id: 'tfue',
@@ -190,6 +204,7 @@ export const ERAS: Era[] = [
         blurb: 'Fortnite’s rising star becomes the biggest streamer on the roster.',
         kind: 'people',
         source: 'Wikipedia',
+        sourceLinks: [{"label": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Tfue"}],
       },
       {
         id: 'lawsuit',
@@ -198,6 +213,7 @@ export const ERAS: Era[] = [
         blurb: 'Its biggest streamer calls his contract “grossly oppressive.” FaZe countersues, and esports’ first big player-contract fight settles in 2020.',
         kind: 'setback',
         source: 'Forbes · ESPN',
+        sourceLinks: [{"label": "Forbes", "url": "https://www.forbes.com/sites/davidthier/2019/05/21/tfue-is-suing-faze-clan-in-an-explosive-lawsuit-thats-rocking-the-esports-world/"}, {"label": "ESPN", "url": "https://www.espn.com/gaming/story/_/id/27304886/faze-countersues-tfue-files-suit-new-york"}],
       },
       {
         id: 'nyc',
@@ -206,6 +222,7 @@ export const ERAS: Era[] = [
         blurb: '10,000+ fans line up for a pop-up during the Fortnite World Cup and the NYPD has to close it. Gaming’s first rockstar crowd.',
         kind: 'culture',
         source: 'Newsweek',
+        sourceLinks: [{"label": "Newsweek", "url": "https://www.newsweek.com/faze-clan-pop-store-fortnite-tfue-1452227"}],
       },
       {
         id: 'billion',
@@ -214,6 +231,7 @@ export const ERAS: Era[] = [
         blurb: 'Forbes ranks FaZe #4 in esports, with more social followers than the Cowboys and Yankees combined. The channel passes a billion views.',
         kind: 'culture',
         source: 'Forbes',
+        sourceLinks: [{"label": "Forbes", "url": "https://www.forbes.com/sites/christinasettimi/2019/11/05/awful-business-or-the-new-gold-rush-the-most-valuable-companies-in-esports-are-surging/"}],
       },
     ],
   },
@@ -231,6 +249,7 @@ export const ERAS: Era[] = [
         blurb: 'The first esports org ever on the cover: Nickmercs, Swagg, Rug and Temperrr next to Kyler Murray and Bronny James.',
         kind: 'culture',
         source: 'Businesswire',
+        sourceLinks: [{"label": "Businesswire", "url": "https://www.businesswire.com/news/home/20210610005834/en/FaZe-Clan-Reaches-Beyond-World-of-Esports-Onto-Cover-of-Sports-Illustrated%E2%80%99s-July-Issue"}],
       },
       {
         id: 'save-the-kids',
@@ -239,6 +258,7 @@ export const ERAS: Era[] = [
         blurb: 'Members promote a crypto token that crashes within days. FaZe fires Kay and suspends three others.',
         kind: 'setback',
         source: 'CoinDesk',
+        sourceLinks: [{"label": "CoinDesk", "url": "https://www.coindesk.com/markets/2021/07/02/esports-organization-faze-clan-drops-1-member-suspends-3-following-alleged-crypto-scam"}],
       },
       {
         id: 'cdl-2021',
@@ -248,6 +268,7 @@ export const ERAS: Era[] = [
         kind: 'trophy',
         star: 1,
         source: 'Dot Esports',
+        sourceLinks: [{"label": "Dot Esports", "url": "https://dotesports.com/call-of-duty/news/atlanta-faze-win-cod-champs-2021"}],
       },
       {
         id: 'antwerp',
@@ -258,6 +279,7 @@ export const ERAS: Era[] = [
         kind: 'trophy',
         star: 2,
         source: 'HLTV',
+        sourceLinks: [{"label": "HLTV", "url": "https://www.hltv.org/news/33882/faze-defeat-navi-2-0-to-win-pgl-major-antwerp"}],
       },
       {
         id: 'nasdaq',
@@ -266,6 +288,7 @@ export const ERAS: Era[] = [
         blurb: 'A trickshot crew from Long Island goes public, listed next to the biggest companies in the world.',
         kind: 'culture',
         source: 'CNBC',
+        sourceLinks: [{"label": "CNBC", "url": "https://www.cnbc.com/2022/07/20/faze-clan-goes-public-in-725-million-spac-a-deal-for-creator-economy.html"}],
       },
       {
         id: 'crash',
@@ -274,6 +297,7 @@ export const ERAS: Era[] = [
         blurb: 'Shares unlock, the stock collapses, layoffs follow and the CEO is fired. Then GameSquare buys FaZe for ~$17M and the founders take back the wheel.',
         kind: 'setback',
         source: 'Kotaku · Bloomberg',
+        sourceLinks: [{"label": "Kotaku", "url": "https://kotaku.com/faze-clan-stock-rain-apex-banks-rug-swagg-esports-1850268478"}, {"label": "Bloomberg", "url": "https://www.bloomberg.com/news/articles/2023-10-20/faze-clan-is-being-acquired-by-a-company-backed-by-jerry-jones"}],
       },
       {
         id: 'halo',
@@ -283,6 +307,7 @@ export const ERAS: Era[] = [
         kind: 'trophy',
         star: 3,
         source: 'Halo Waypoint',
+        sourceLinks: [{"label": "Halo Waypoint", "url": "https://www.halowaypoint.com/news/halowc2023"}],
       },
     ],
   },
@@ -300,6 +325,7 @@ export const ERAS: Era[] = [
         blurb: 'FaZe, OpTic and 100 Thieves back on Xbox 360s — fourteen years to the day after the first upload.',
         kind: 'content',
         source: 'Dexerto',
+        sourceLinks: [{"label": "Dexerto", "url": "https://www.dexerto.com/call-of-duty/faze-banks-humiliates-nadeshot-in-rust-sniping-1v1-final-result-2752701/"}],
       },
       {
         id: 'si-2025',
@@ -309,6 +335,7 @@ export const ERAS: Era[] = [
         kind: 'trophy',
         star: 4,
         source: 'EsportsInsider',
+        sourceLinks: [{"label": "EsportsInsider", "url": "https://esportsinsider.com/2025/02/faze-clan-r6-six-invitational-2025-champions"}],
       },
       {
         id: 'exodus',
@@ -317,6 +344,7 @@ export const ERAS: Era[] = [
         blurb: 'Adapt, Rug, Apex, Swagg and more walk out in four days after stalled contract talks — the biggest roster exit in FaZe history. Esports, run separately, keeps winning.',
         kind: 'setback',
         source: 'Tubefilter · Dexerto',
+        sourceLinks: [{"label": "Tubefilter", "url": "https://www.tubefilter.com/2025/12/27/faze-clan-creators-quit-contract-terms/"}, {"label": "Dexerto", "url": "https://www.dexerto.com/entertainment/whats-happened-to-faze-members-suddenly-quit-faze-clan-lacy-silky-adapt-and-more-3298059/"}],
       },
       {
         id: 'si-2026',
@@ -326,6 +354,7 @@ export const ERAS: Era[] = [
         kind: 'trophy',
         star: 5,
         source: 'Gamereactor',
+        sourceLinks: [{"label": "Gamereactor", "url": "https://www.gamereactor.eu/faze-clan-crowned-six-invitational-2026-champions-1675483/"}],
       },
       {
         id: 'cdl-2026',
@@ -334,6 +363,7 @@ export const ERAS: Era[] = [
         blurb: '5–2 over OpTic Texas for a second Call of Duty League title. The rivalry is still FaZe’s.',
         kind: 'trophy',
         source: 'Liquipedia',
+        sourceLinks: [{"label": "Liquipedia", "url": "https://liquipedia.net/callofduty/FaZe_Vegas"}],
       },
       {
         id: 'ewc-2026',
@@ -342,6 +372,7 @@ export const ERAS: Era[] = [
         blurb: 'Esports World Cup champions. Major, Six Invitational and EWC — a sweep no org had ever held.',
         kind: 'trophy',
         source: 'GameSquare IR',
+        sourceLinks: [{"label": "GameSquare IR", "url": "https://investors.gamesquare.com/news/news-details/2026/FaZe-Esports-a-GameSquare-Company-Wins-Rainbow-Six-Championship-at-2026-Esports-World-Cup/default.aspx"}],
       },
     ],
   },

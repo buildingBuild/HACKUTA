@@ -38,7 +38,8 @@ function EventNode({ ev, side, dim, open, active, onToggle }: NodeProps) {
       data-reveal
     >
       <Branch side={side} />
-      <button type="button" className="tl-card" aria-expanded={open} onClick={() => onToggle(ev.id)}>
+      <div className="tl-card">
+      <button type="button" className="tl-card__toggle" aria-expanded={open} onClick={() => onToggle(ev.id)}>
         <span className="tl-card__top">
           <span className="tl-card__date">{ev.date}</span>
           <span className={`tl-tag kind-${ev.kind}`}>{KIND_LABEL[ev.kind]}</span>
@@ -50,13 +51,19 @@ function EventNode({ ev, side, dim, open, active, onToggle }: NodeProps) {
         </span>
         <span className="tl-card__title">{ev.title}</span>
         <span className="tl-card__blurb">{ev.blurb}</span>
+      </button>
         {open && (ev.more || ev.source) && (
           <span className="tl-card__more">
             {ev.more && <span>{ev.more}</span>}
-            {ev.source && <span className="tl-card__src">Source · {ev.source}</span>}
+            {ev.source && <span className="tl-card__src">Source · {ev.sourceLinks?.length ? ev.sourceLinks.map((source, i) => (
+              <span key={source.url}>
+                {i > 0 && ' · '}
+                <a href={source.url} target="_blank" rel="noopener noreferrer">{source.label}</a>
+              </span>
+            )) : ev.source}</span>}
           </span>
         )}
-      </button>
+      </div>
     </li>
   );
 }

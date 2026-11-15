@@ -42,7 +42,7 @@
 .fd-sub { margin: 12px 0 0; font-size: 14px; color: var(--ink-2); }
 
 .fd-filters { display: flex; flex-wrap: wrap; gap: 6px; }
-.fd-filters button {
+.fd-filters button, .fd-filters a {
   padding: 9px 14px;
   border: 1.5px solid var(--line);
   background: rgba(255, 255, 255, 0.9);
@@ -55,9 +55,9 @@
   cursor: pointer;
   transition: border-color 0.25s, background 0.25s, color 0.25s;
 }
-.fd-filters button:hover { border-color: var(--ink); color: var(--ink); }
+.fd-filters button:hover, .fd-filters a:hover { border-color: var(--ink); color: var(--ink); }
 .fd-filters button.is-on { background: var(--ink); border-color: var(--ink); color: var(--paper); }
-.fd-filters button:focus-visible { outline: 2px solid var(--faze-red); outline-offset: 3px; }
+.fd-filters button:focus-visible, .fd-filters a:focus-visible { outline: 2px solid var(--faze-red); outline-offset: 3px; }
 
 /* masonry grid: tiles span rows based on their measured height */
 .fd-grid {
@@ -702,3 +702,5 @@
 .fd-yt__kind { z-index: 5; }
 .fd-watch__badge { z-index: 5; }
 .fd-watch__media .fd-pv__frame { pointer-events: none !important; }
+
+.fd-filters a { display: inline-flex; align-items: center; text-decoration: none; }

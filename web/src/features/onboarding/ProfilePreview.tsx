@@ -17,32 +17,43 @@ type Tab = 'all' | ClipCategory;
 export const WEEKS = 20;
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-/**
- * Contribution-style grid of when their imported clips happened (column = week, row = weekday).
- * Mocked from the gamertag like the rest of the preview: busier on weekends, ramping up lately,
- * and today is always lit (they just joined). Replace with real clip dates once ingestion lands.
- */
-export function activityGrid(seed: string) {
-  let s = [...seed].reduce((a, c) => a + c.charCodeAt(0), 11) || 1;
-  const r = () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646;
+/** Stable demo contribution history per profile, combined with saved clip dates. */
+export function activityGrid(clips: readonly RealClip[], seed = "demo") {
   const n = WEEKS * 7;
-  const counts = Array.from({ length: n }, (_, i) => {
-    const day = i % 7;
-    const week = Math.floor(i / 7);
-    const weekend = day === 0 || day === 5 || day === 6 ? 0.35 : 0;
-    const recency = (week / WEEKS) * 0.3;
-    const p = 0.18 + weekend + recency;
-    return r() < p ? 1 + Math.floor(r() * (weekend ? 5 : 3)) : 0;
-  });
-  counts[n - 1] = Math.max(counts[n - 1], 2); // joined today
+  const dayNumber = (date: Date) => Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000;
+  const today = dayNumber(new Date());
+  const counts = Array<number>(n).fill(0);
+  const byDay = Array<number>(7).fill(0);
+  for (const clip of clips) {
+    if (!clip.created_at) continue;
+    const date = new Date(clip.created_at);
+    if (!Number.isFinite(date.getTime())) continue;
+    const index = dayNumber(date) - (today - n + 1);
+    if (index < 0 || index >= n) continue;
+    counts[index]++;
+    byDay[date.getDay()]++;
+  }
+  // Demo history: keep the same populated days on every visit for this player.
+  let state = [...seed].reduce((n, c) => (Math.imul(n, 31) + c.charCodeAt(0)) >>> 0, 17);
+  const random = () => {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+  const target = 10 + Math.floor(random() * 21);
+  const empty = counts.map((count, index) => ({ count, index })).filter((day) => !day.count);
+  for (let i = empty.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [empty[i], empty[j]] = [empty[j], empty[i]];
+  }
+  const missing = Math.max(0, target - counts.filter(Boolean).length);
+  for (const { index } of empty.slice(0, missing)) counts[index] = 1 + Math.floor(random() * 6);
   const active = counts.filter(Boolean).length;
   let streak = 0;
   let run = 0;
-  for (const c of counts) {
-    run = c ? run + 1 : 0;
+  for (const count of counts) {
+    run = count ? run + 1 : 0;
     streak = Math.max(streak, run);
   }
-  const byDay = DAYS.map((_, d) => counts.filter((_, i) => i % 7 === d).reduce((a, b) => a + b, 0));
   const topDay = DAYS[byDay.indexOf(Math.max(...byDay))];
   const cells = counts.map((c) => (c === 0 ? 0 : c === 1 ? 1 : c <= 2 ? 2 : c <= 4 ? 3 : 4));
   return { cells, active, streak, topDay };
@@ -74,7 +85,7 @@ export function ProfilePreview({ data, onEdit, profileUrl, saveError, real }: Pr
   const realAvg = hasReal ? Math.round(real!.reduce((a, c) => a + (c.ai_score ?? 0), 0) / real!.length) : 0;
   const realBest = hasReal ? real![0] : null;
   const realShown = hasReal ? real!.filter((c) => realTab === 'all' || c.category === realTab) : [];
-  const activity = useMemo(() => activityGrid(data.gamertag), [data.gamertag]);
+  const activity = useMemo(() => activityGrid(real ?? [], data.gamertag), [real, data.gamertag]);
 
   const tabs: { id: Tab; label: string; count: number }[] = [
     { id: 'all', label: 'All clips', count: clips.length },
@@ -160,7 +171,7 @@ export function ProfilePreview({ data, onEdit, profileUrl, saveError, real }: Pr
             ))}
           </div>
           <span className="stat__sub">
-            {activity.active} active days in {WEEKS} weeks · best streak {activity.streak} · most active on {activity.topDay}s
+            {activity.active} {activity.active === 1 ? 'day' : 'days'} of clip contributions
           </span>
         </div>
       </section>

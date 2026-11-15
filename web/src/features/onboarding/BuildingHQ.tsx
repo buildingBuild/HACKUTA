@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FazeLogo } from '../../components/FazeLogo';
 import { platformOf, type RealClip } from '../clips/api';
-import { ClipFrame } from './ClipFrame';
 import { linkedSources, makeClips } from './clips';
 import type { OnboardingData } from './types';
 import './building.css';
@@ -42,7 +41,7 @@ export function BuildingHQ({ data, real, waiting, onDone }: { data: OnboardingDa
 
   const sources = useMemo(() => linkedSources(data), [data]);
 
-  const total = real?.length || 14 + sources.length * 9;
+  const total = real?.length ?? 0;
 
   // same seeded clips the profile shows next; shuffle only the entrance order
   const clips = useMemo(() => makeClips(data, TILE_COUNT), [data]);
@@ -50,13 +49,14 @@ export function BuildingHQ({ data, real, waiting, onDone }: { data: OnboardingDa
 
   // phase timeline
   useEffect(() => {
+    if (waiting) return;
     const t = [
       window.setTimeout(() => setPhase('analyze'), 2700),
       window.setTimeout(() => setPhase('reveal'), 4300),
       window.setTimeout(onDone, 6600),
     ];
     return () => t.forEach(window.clearTimeout);
-  }, [onDone]);
+  }, [onDone, waiting]);
 
   // clip counter ticking up during the scan
   useEffect(() => {
@@ -80,7 +80,7 @@ export function BuildingHQ({ data, real, waiting, onDone }: { data: OnboardingDa
         : 'HQ online';
 
   return (
-    <div className={`hq hq--${phase}`} onClick={onDone} role="status" aria-live="polite">
+    <div className={`hq hq--${phase}`} onClick={waiting ? undefined : onDone} role="status" aria-live="polite">
       <header className="hq__bar">
         <span className="hq__status">
           <span className="hq__dot" />
@@ -103,19 +103,8 @@ export function BuildingHQ({ data, real, waiting, onDone }: { data: OnboardingDa
           const span = SPANS[c.id] ?? [1, 1];
           const style = { gridColumn: `span ${span[0]}`, gridRow: `span ${span[1]}` };
           if (real?.length) return <RealTile key={c.id} clip={real[c.id % real.length]} delay={delay} scored={phase !== 'scan'} style={style} />;
-          // still fetching their real clips: blank scanning tile, never demo clips
-          if (waiting) return <figure key={c.id} className="frame frame--pending" style={{ ['--d' as string]: `${delay}ms`, ['--rot' as string]: '0deg', ...style }} />;
-          return (
-            <ClipFrame
-              key={c.id}
-              clip={c}
-              gamertag={data.gamertag}
-              delay={delay}
-              scored={phase !== 'scan'}
-              scoreDelay={delay * 0.6}
-              style={{ gridColumn: `span ${span[0]}`, gridRow: `span ${span[1]}` }}
-            />
-          );
+          // Never present synthetic clips as results from linked accounts.
+          return <figure key={c.id} className="frame frame--pending" style={{ ['--d' as string]: `${delay}ms`, ['--rot' as string]: '0deg', ...style }} />;
         })}
       </div>
 
@@ -127,7 +116,7 @@ export function BuildingHQ({ data, real, waiting, onDone }: { data: OnboardingDa
         </p>
       </div>
 
-      <span className="hq__skip">click to skip</span>
+      <span className="hq__skip">{waiting ? 'Loading your clips…' : 'click to skip'}</span>
     </div>
   );
 }

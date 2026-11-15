@@ -117,3 +117,6 @@ a.nav__item:hover, button.nav__item:hover, .nav__item.is-on { background: var(--
   .nav { flex-wrap: wrap; gap: 10px 20px; }
   .nav__links { order: 3; flex-basis: 100%; flex-wrap: wrap; }
 }
+
+.nav__points { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.nav__points strong { color: var(--faze-red); font-variant-numeric: tabular-nums; }

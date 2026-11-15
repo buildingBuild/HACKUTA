@@ -149,7 +149,7 @@ function HQView({ p, refresh }: { p: Profile; refresh: () => void }) {
   const shown = reel.filter((c) => tab === 'all' || c.category === tab);
   const avg = has ? Math.round(reel.reduce((a, c) => a + (c.ai_score ?? 0), 0) / reel.length) : 0;
   const sources = [...new Set(reel.map(platformOf))];
-  const activity = useMemo(() => activityGrid(p.user.handle), [p.user.handle]);
+  const activity = useMemo(() => activityGrid(clips ?? [], p.user.handle), [clips, p.user.handle]);
   const hasStats = Object.keys(p.stats).length > 0;
   const mosaic = reel.filter((c) => c.thumbnail_url).slice(0, 8);
 
@@ -249,7 +249,7 @@ function HQView({ p, refresh }: { p: Profile; refresh: () => void }) {
             ))}
           </div>
           <small>
-            {activity.active} active days · best streak {activity.streak}
+            {activity.active} {activity.active === 1 ? 'day' : 'days'} of clip contributions
           </small>
         </div>
       </section>

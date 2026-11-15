@@ -33,6 +33,7 @@ export function analyzeOnboarding(a: { twitch: string; youtube: string; folder: 
 }
 
 export interface RealClip {
+  created_at?: string;
   id: string;
   title: string | null;
   category: 'pro' | 'funny' | 'content' | null;
