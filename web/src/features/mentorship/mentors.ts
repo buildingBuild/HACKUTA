@@ -1,7 +1,7 @@
 import type { Path } from './catalog';
 export const mentors = [
- {id:'review',name:'Review mentor',specialty:'Focused reviews',description:'Example review-led offering for gameplay or content.',sessions:{gaming:['vod-review','fundamentals'],creator:['channel-audit','editing-feedback']},hours:[1,2]},
- {id:'workshop',name:'Workshop mentor',specialty:'Practice & planning',description:'Example workshop offering for teams or creators.',sessions:{gaming:['fundamentals','team-strategy'],creator:['editing-feedback','streaming']},hours:[2]},
+ {id:'review',name:'jcobbb',specialty:'Focused reviews',description:'Example review-led offering for gameplay or content.',sessions:{gaming:['vod-review','fundamentals'],creator:['channel-audit','editing-feedback']},hours:[1,2]},
+ {id:'workshop',name:'JBOEN',specialty:'Practice & planning',description:'Example workshop offering for teams or creators.',sessions:{gaming:['fundamentals','team-strategy'],creator:['editing-feedback','streaming']},hours:[2]},
 ] as const;
 export type Mentor=typeof mentors[number];
 export function mentorFor(id:string|undefined){return mentors.find(m=>m.id===id);}

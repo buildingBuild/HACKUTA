@@ -1,4 +1,4 @@
-// Top nav: Home · Feed · Coaching · Leaderboards · Timeline · Rewards, plus the user menu (Profile, Recruiting, Admin,
+// Top nav: Home · Feed · Coaching · Leaderboards · Rewards · Timeline, plus the user menu (Profile, Recruiting, Admin,
 // demo login, sign out). SHARED (Joe): restyle freely, keep the demo login picker for judging.
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { FazeLogo } from './FazeLogo';
@@ -16,8 +16,8 @@ const MAIN = [
   { href: '/feed', label: 'Feed', match: (p: string) => p === '/feed' },
   { href: '/coaching', label: 'Coaching', match: (p: string) => p === '/coaching' },
   { href: '/leaderboards', label: 'Leaderboards', match: (p: string) => p.startsWith('/leaderboards') },
-  { href: '/timeline', label: 'Timeline', match: (p: string) => p === '/timeline' },
   { href: '/rewards', label: 'Rewards', match: (p: string) => p === '/rewards' },
+  { href: '/timeline', label: 'Timeline', match: (p: string) => p === '/timeline' },
 ];
 
 // Pages that make sense for any account: stay put when switching demo users.
