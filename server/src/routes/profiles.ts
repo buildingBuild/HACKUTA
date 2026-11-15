@@ -265,10 +265,10 @@ async function loadProfile(db: Db, opts: ProfilesRouterOptions, user: UserRow) {
   const clips = await rows<Record<string, unknown>>(
     db,
     `SELECT c.id, c.title, c.map, c.side, c.thumbnail_url, c.blob_url, c.social_post_url, c.status, c.created_at,
-            r.overall_score, r.category_scores, r.summary
+            r.overall_score, r.category_scores, r.summary, r.notes
        FROM clips c
        LEFT JOIN LATERAL (
-         SELECT cr.overall_score, cr.category_scores,
+         SELECT cr.overall_score, cr.category_scores, cr.notes,
                 COALESCE(to_jsonb(cr)->>'summary', cr.category_scores->>'summary') AS summary
            FROM coaching_reports cr WHERE cr.clip_id = c.id ORDER BY cr.created_at DESC LIMIT 1
        ) r ON true
@@ -336,6 +336,8 @@ async function loadProfile(db: Db, opts: ProfilesRouterOptions, user: UserRow) {
       id: c.id, title: c.title, map: c.map, side: c.side, thumbnail_url: c.thumbnail_url, blob_url: c.blob_url,
       social_post_url: c.social_post_url, status: c.status, created_at: c.created_at,
       overall_score: num(c.overall_score), summary: c.summary ?? null,
+      // Timestamped AI coaching moments (REQUIREMENTS §7.3 notes) for the clip review player.
+      notes: Array.isArray(c.notes) ? c.notes : [],
     })),
     clip_count: clips.length,
     avg_clip_score: avgClipScore,

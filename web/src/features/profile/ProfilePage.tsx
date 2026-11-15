@@ -1,6 +1,8 @@
 import { useState } from "react";
 import "./profile.css";
-import { getDemoUserId } from "../../components/session";
+import { getDemoUserId, useSessionUser } from "../../components/session";
+import { ClipReview } from "./ClipReview";
+import { RecruiterLens } from "./RecruiterLens";
 import { ApiError, fetchProfile, profileUrl } from "./api";
 import { StateBox, TrendChart } from "./components";
 import { ScoutDossier } from "./ScoutDossier";
@@ -56,6 +58,9 @@ function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (id: stri
   const hasStats = Object.keys(p.stats).length > 0 || p.clip_count > 0 || p.karma !== 0;
   const celebration = useScoutCelebration(p.scout);
   const faceitNick = p.game?.faceit_nickname ?? null;
+  const { user: viewer } = useSessionUser();
+  const isStaff = viewer?.role === "recruiter" || viewer?.role === "admin";
+  const showReview = (isStaff || isMe) && p.clips.some((c) => c.blob_url && c.notes.length > 0);
   const level = p.game?.faceit_level ?? null;
   const elo = p.game?.faceit_elo ?? null;
   const meta = [
@@ -108,6 +113,8 @@ function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (id: stri
           </div>
         )}
       </header>
+
+      {isStaff && <RecruiterLens scout={p.scout} displayName={name} />}
 
       {isMe && p.clip_count === 0 && (
         <section className="pf-panel pf-welcome pf-rise" aria-labelledby="pf-welcome-h">
@@ -175,6 +182,8 @@ function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (id: stri
       )}
 
       <ScoutDossier scout={p.scout} dossier={p.dossier} />
+
+      {showReview && <ClipReview clips={p.clips} title={isStaff ? "Review the plays" : "Your flagged moments"} />}
 
       <div className="pf-grid">
         <div className="pf-col">

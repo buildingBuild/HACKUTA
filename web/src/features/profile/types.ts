@@ -26,7 +26,11 @@ export type ProfileClip = {
   created_at: string;
   overall_score: number | null;
   summary: string | null;
+  notes: ClipNote[];
 };
+
+/** One timestamped AI coaching moment (REQUIREMENTS.md §7.3). */
+export type ClipNote = { t: string; category: string; severity: "low" | "medium" | "high"; note: string; fix?: string };
 
 export type Profile = {
   user: { id: string; handle: string; display_name: string; avatar_url: string | null; role: string; bio: string | null; created_at: string };
