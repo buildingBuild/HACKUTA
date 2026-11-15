@@ -14,3 +14,5 @@ server/demo-clips/*
 server/bin/
 server/media/
 CLIP_PIPELINE.md
+# superpowers execution scratch
+.superpowers/

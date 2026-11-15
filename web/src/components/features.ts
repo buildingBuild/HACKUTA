@@ -37,11 +37,11 @@ export const FEATURES: FeatureInfo[] = [
     tagline: 'When FaZe wins a round, every gamer’s RGB setup turns red.',
     cta: 'Sync your setup',
     mark: 'RGB',
-    status: 'soon',
+    status: 'live',
     bullets: [
-      'Keyboard, mouse and room lights react live during FaZe matches.',
-      'Red pulse on a round win, strobe on an ace, a crest sweep on a match win.',
-      'Works with OpenRGB, Razer Chroma, Philips Hue and Govee.',
+      'Watch a FaZe clip and your keyboard lights up with every round.',
+      'Red pulse on a round win, strobe on an ace, a colour sweep on a match win.',
+      'No RGB gear? The virtual setup plays along.',
     ],
   },
   {

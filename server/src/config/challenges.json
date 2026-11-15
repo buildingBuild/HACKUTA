@@ -1,0 +1,14 @@
+{
+  "_comment": "FaZe Points challenges (owner: Omar). period: daily (resets 00:00 UTC) | weekly (resets Monday 00:00 UTC); each can be claimed once per period. metric: clips | clip_reactions | threads | comments. clip_reactions counts upvotes on Community posts sharing clips posted in the same period. Max earnable is about 565 points a week, so big rewards take months.",
+  "welcome_bonus": 50,
+  "challenges": [
+    { "id": "daily-clip", "period": "daily", "title": "Post a clip", "blurb": "Upload one clip today.", "metric": "clips", "target": 1, "points": 20 },
+    { "id": "daily-reactions", "period": "daily", "title": "Get 5 reactions", "blurb": "On a clip you posted today.", "metric": "clip_reactions", "target": 5, "points": 15 },
+    { "id": "daily-comments", "period": "daily", "title": "Leave 3 comments", "blurb": "Jump into any thread.", "metric": "comments", "target": 3, "points": 10 },
+    { "id": "daily-thread", "period": "daily", "title": "Start a thread", "blurb": "Kick off a discussion.", "metric": "threads", "target": 1, "points": 10 },
+    { "id": "weekly-clips", "period": "weekly", "title": "Post 5 clips", "blurb": "A week of highlights.", "metric": "clips", "target": 5, "points": 60 },
+    { "id": "weekly-reactions", "period": "weekly", "title": "Get 25 reactions", "blurb": "On clips you posted this week.", "metric": "clip_reactions", "target": 25, "points": 60 },
+    { "id": "weekly-threads", "period": "weekly", "title": "Start 3 threads", "blurb": "Give the fam something to talk about.", "metric": "threads", "target": 3, "points": 30 },
+    { "id": "weekly-comments", "period": "weekly", "title": "Leave 15 comments", "blurb": "Be part of the conversation.", "metric": "comments", "target": 15, "points": 30 }
+  ]
+}

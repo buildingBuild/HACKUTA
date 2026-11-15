@@ -45,7 +45,7 @@ server/src/routes/clips.ts       Joe
 server/src/db/                   Shared: schema.sql, leaderboards.sql, migrate.ts, seed.ts, client.ts
 server/src/config/               scouting-rules.json (Yao)
 server/src/lib/faceit/, lib/scouting/, lib/live/   Yao
-companion/                       Phase 2 local app (Yao)
+companion/                       Local RGB companion (Yao): standalone package, NOT an npm workspace (native node-hid). cd companion && npm install && npm start
 scripts/                         Smoke tests
 ```
 

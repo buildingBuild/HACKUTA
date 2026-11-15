@@ -1,0 +1,93 @@
+/* RGB Sync page (owner: Yao). Effect timings mirror companion/src/effects.ts. */
+.rgb { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.rgb__video { position: relative; aspect-ratio: 16 / 9; background: var(--ink); overflow: hidden; }
+.rgb__video > div, .rgb__video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.rgb__video-error { position: absolute; inset: auto 0 0 0; margin: 0; padding: 10px 14px; background: rgba(0, 0, 0, 0.75); color: var(--paper); font-size: 13px; }
+.rgb__clip { margin: 10px 0 0; color: var(--muted); font-size: 14px; }
+.rgb__clip strong { color: var(--ink); }
+
+.rgb__side { display: grid; gap: 14px; }
+.rgb__status { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); font-size: 14px; }
+.rgb__status small { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; }
+.rgb__status code { font-family: var(--font-mono); font-size: 11px; }
+.rgb__link { padding: 0; border: 0; background: none; color: var(--faze-red); font: inherit; text-decoration: underline; cursor: pointer; }
+.rgb__dot { flex: none; width: 10px; height: 10px; margin-top: 4px; border-radius: 50%; background: var(--muted); }
+.rgb__status.is-on { border-color: var(--faze-red); }
+.rgb__status.is-on .rgb__dot { background: var(--faze-red); box-shadow: 0 0 0 4px var(--faze-red-soft); }
+.rgb__now { margin: 0; font-size: 15px; }
+.rgb__try > div { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.rgb__chip {
+  padding: 6px 10px; border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.rgb__chip:hover { border-color: var(--faze-red); color: var(--faze-red); }
+
+.rgb__cues { margin-top: 32px; }
+.rgb__cues-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.rgb__cues-head h2 { margin: 0; font-size: 22px; }
+.rgb__cues-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.rgb__hint { color: var(--muted); font-size: 13px; }
+.rgb__hint kbd { padding: 1px 5px; border: 1px solid var(--line); font-family: var(--font-mono); font-size: 11px; }
+.rgb__list { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; }
+.rgb__list button {
+  display: flex; width: 100%; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line);
+  background: transparent; color: var(--ink); cursor: pointer; text-align: left;
+}
+.rgb__list button:hover, .rgb__list button.is-last { border-color: var(--faze-red); }
+.rgb__t { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.rgb__tag { font-family: var(--font-display); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; font-size: 14px; }
+.rgb__tag--kill, .rgb__tag--round_win, .rgb__tag--ace, .rgb__tag--clutch, .rgb__tag--match_win { color: var(--faze-red); }
+.rgb__empty { color: var(--muted); font-size: 14px; }
+
+@media (max-width: 860px) { .rgb { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- Virtual keyboard ---- */
+.vk { --off: #1d1d1f; --red: #e4002b; padding: 14px 14px 0; background: #0c0c0d; border-radius: 10px 10px 4px 4px; transition: box-shadow 0.2s; }
+/* Exaggerated for the stage: the whole board throws a red glow while an effect plays. */
+.vk:not(.vk--idle) { box-shadow: 0 0 0 2px var(--red), 0 0 40px rgba(228, 0, 43, 0.55); }
+.vk__deck { display: grid; gap: 4px; }
+.vk__row { display: flex; gap: 4px; }
+.vk__key { flex: 1; min-width: 0; height: 18px; border-radius: 3px; background: var(--off); }
+.vk__row:last-child .vk__key:nth-child(5) { flex: 5; }
+.vk--base { --off: #4a0010; }
+.vk__bar { height: 6px; margin: 12px -14px 0; border-radius: 0 0 4px 4px; background: var(--off); }
+
+/* The root runs an invisible timer animation; its animationend returns the board to "off". */
+.vk--kill, .vk--round_win, .vk--round_loss, .vk--ace, .vk--clutch, .vk--match_win, .vk--match_start { animation: vk-timer linear forwards; }
+.vk--kill { animation-duration: 0.5s; }
+.vk--round_win { animation-duration: 2.2s; }
+.vk--round_loss { animation-duration: 1s; }
+.vk--ace, .vk--clutch { animation-duration: 3s; }
+.vk--match_win { animation-duration: 4.5s; }
+.vk--match_start { animation-duration: 1s; }
+@keyframes vk-timer { from { outline-color: transparent; } to { outline-color: transparent; } }
+
+.vk--kill :is(.vk__key, .vk__bar) { animation: vk-kill 0.5s steps(1) 1; }
+.vk--round_win :is(.vk__key, .vk__bar) { animation: vk-flash 0.32s linear 5, vk-solid 0.6s linear 1.6s 1; }
+.vk--round_loss :is(.vk__key, .vk__bar) { animation: vk-dark 1s linear 1; }
+:is(.vk--ace, .vk--clutch) :is(.vk__key, .vk__bar) { animation: vk-strobe 0.25s steps(1) 12; }
+.vk--match_win :is(.vk__key, .vk__bar) { animation: vk-strobe 0.25s steps(1) 12, vk-solid 1.5s linear 3s 1; }
+.vk--match_start :is(.vk__key, .vk__bar) { animation: vk-start 1s steps(1) 1; }
+
+@keyframes vk-flash {
+  0%, 62% { background: var(--red); box-shadow: 0 0 14px var(--red); }
+  63%, 100% { background: #141414; box-shadow: none; }
+}
+@keyframes vk-kill {
+  0% { background: #fff; box-shadow: 0 0 18px #fff; }
+  20% { background: var(--red); box-shadow: 0 0 14px var(--red); }
+}
+@keyframes vk-dark { from, to { background: #141414; box-shadow: none; } }
+@keyframes vk-solid { from, to { background: var(--red); box-shadow: 0 0 10px var(--red); } }
+@keyframes vk-strobe {
+  0% { background: #fff; box-shadow: 0 0 10px #fff; }
+  50% { background: var(--red); box-shadow: 0 0 10px var(--red); }
+}
+@keyframes vk-start {
+  0% { background: #fff; box-shadow: 0 0 10px #fff; }
+  40% { background: var(--red); box-shadow: 0 0 10px var(--red); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.vk--ace, .vk--clutch) :is(.vk__key, .vk__bar) { animation: vk-solid 2s linear 1; }
+}

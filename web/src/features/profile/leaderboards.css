@@ -123,3 +123,9 @@
 @media (prefers-reduced-motion: reduce) {
   .lbx-step, .lbx-row { animation: none; }
 }
+
+/* phones: all four tabs visible as a 2x2 grid instead of a hidden sideways scroll */
+@media (max-width: 560px) {
+  .lbx-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 0; overflow: visible; }
+  .lbx-tab { padding: 10px 6px 8px; font-size: 16px; text-align: center; white-space: normal; }
+}

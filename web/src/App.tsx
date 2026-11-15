@@ -6,8 +6,11 @@
 //   /community/*            Community (Dahiya)                       public, writes need sign-in
 //   /feed                   FaZe Feed, experimental masonry (Joe)    public
 //   /leaderboards           public leaderboards (Omar)               public
+//   /timeline               FaZe history as a tree (Omar)            public
+//   /rewards                FaZe Points: challenges + store (Omar)   public, earning needs sign-in
 //   /u/:handle, /me         fan profile (Omar)                       public
-//   /hud /rgb /guessr /wall Phase 2 features (branded placeholders)  public
+//   /rgb                    RGB Sync: clip-synced keyboard lighting  public
+//   /hud /guessr /wall      Phase 2 features (branded placeholders)  public
 //   /recruiting/*           Recruiting tab (Yao)                     recruiter + admin
 //   /admin                  admin area (Phase 2 director console)    admin
 import type { ReactNode } from 'react';
@@ -26,6 +29,9 @@ import { HomePage } from './features/home/HomePage';
 import { OnboardingFlow } from './features/onboarding/OnboardingFlow';
 import { LeaderboardsPage, ProfilePage } from './features/profile';
 import { RecruitingPage } from './features/recruiting/RecruitingPage';
+import { RgbPage } from './features/rgb/RgbPage';
+import { TimelinePage, TimelineTeaser } from './features/timeline';
+import { RewardsPage } from './features/rewards';
 
 const match = (path: string, pattern: RegExp) => path.match(pattern)?.[1];
 
@@ -49,7 +55,16 @@ export function App() {
   if (path === '/') {
     // Home is your own profile. Signed out -> onboarding; staff -> their workspace.
     if (loading) page = <Page><Loading /></Page>;
-    else if (user && user.role === 'user') page = <ProfilePage handle={user.handle} />;
+    else if (user && user.role === 'user')
+      page = (
+        <>
+          <ProfilePage handle={user.handle} />
+          {/* Omar's FaZe history teaser (was on the old showcase Home) */}
+          <div className="home-teaser">
+            <TimelineTeaser />
+          </div>
+        </>
+      );
     else {
       window.location.replace(user ? homeFor(user) : '/join');
       page = null;
@@ -62,6 +77,9 @@ export function App() {
   } else if (path === '/community' || path.startsWith('/community/')) page = loading ? null : <CommunityRoute user={user} />;
   else if (path === '/feed') page = loading ? null : <FeedPage user={user} />;
   else if (path === '/leaderboards') page = <LeaderboardsPage highlightHandle={user?.handle} />;
+  else if (path === '/rgb') page = <RgbPage />;
+  else if (path === '/timeline') page = <TimelinePage />;
+  else if (path === '/rewards') page = <RewardsPage />;
   else if (feature) page = <ComingSoon feature={feature} />;
   else if (path === '/recruiter') {
     window.location.replace('/recruiting');
