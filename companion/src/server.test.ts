@@ -72,3 +72,38 @@ test('shutdown turns the lights off', () => {
   createServer({ lights: l }).shutdown();
   assert.deepEqual(l.calls, ['off']);
 });
+
+class FailsAfterFirst implements Lights {
+  calls: string[] = [];
+  private n = 0;
+  off() { this.calls.push('off'); }
+  color() { this.calls.push('color'); }
+  mode() { if (this.n++ > 0) throw new Error('usb hiccup'); this.calls.push('mode'); }
+}
+
+test('after a mid-session HID error the server still tries to turn the lights off', async () => {
+  const l = new FailsAfterFirst();
+  const s = await start(l);
+  try {
+    await post(`${s.base}/effect`, { type: 'round_win' });
+    await post(`${s.base}/effect`, { type: 'round_win' }); // this one throws
+    assert.equal(l.calls.at(-1), 'off');
+  } finally {
+    s.close();
+  }
+});
+
+test('a lost keyboard is reopened on the next status check', async () => {
+  const fresh = new FakeLights();
+  const app = createServer({ lights: new BrokenLights(), reopen: () => fresh });
+  await new Promise<void>((r) => app.server.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${(app.server.address() as AddressInfo).port}`;
+  try {
+    await post(`${base}/effect`, { type: 'round_win' });
+    assert.deepEqual(await (await fetch(`${base}/status`)).json(), { ok: true, device: true });
+    assert.deepEqual(await (await post(`${base}/effect`, { type: 'ace' })).json(), { played: true });
+  } finally {
+    app.shutdown();
+    app.server.close();
+  }
+});

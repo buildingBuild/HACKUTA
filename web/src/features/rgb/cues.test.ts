@@ -38,3 +38,11 @@ test('sendEffect resolves false when the companion is unreachable', async () => 
     globalThis.fetch = real;
   }
 });
+
+import { autoConnect } from './companion';
+
+test('the companion is only probed automatically on a local dev host', () => {
+  assert.equal(autoConnect('localhost'), true);
+  assert.equal(autoConnect('127.0.0.1'), true);
+  assert.equal(autoConnect('fazehq.up.railway.app'), false);
+});

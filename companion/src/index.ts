@@ -4,8 +4,12 @@ import { createServer } from './server.ts';
 
 const PORT = 7777;
 const lights = openAura();
-if (lights) lights.off();
-const app = createServer({ lights });
+try {
+  lights?.off();
+} catch {
+  /* reported as not found via /status once the first call fails */
+}
+const app = createServer({ lights, reopen: () => openAura() });
 app.server.listen(PORT, '127.0.0.1', () => {
   console.log(`RGB companion on http://127.0.0.1:${PORT} (keyboard: ${lights ? 'found' : 'not found'})`);
 });

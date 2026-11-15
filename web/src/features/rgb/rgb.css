@@ -10,6 +10,7 @@
 .rgb__status { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); font-size: 14px; }
 .rgb__status small { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; }
 .rgb__status code { font-family: var(--font-mono); font-size: 11px; }
+.rgb__link { padding: 0; border: 0; background: none; color: var(--faze-red); font: inherit; text-decoration: underline; cursor: pointer; }
 .rgb__dot { flex: none; width: 10px; height: 10px; margin-top: 4px; border-radius: 50%; background: var(--muted); }
 .rgb__status.is-on { border-color: var(--faze-red); }
 .rgb__status.is-on .rgb__dot { background: var(--faze-red); box-shadow: 0 0 0 4px var(--faze-red-soft); }

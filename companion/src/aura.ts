@@ -22,13 +22,24 @@ const report = (bytes: number[]) => {
   return buf;
 };
 
-/** Open the keyboard, or null if this machine has no ASUS Aura laptop keyboard. */
-export function openAura(): Lights | null {
-  const info = HID.devices().find(
+type HidModule = Pick<typeof HID, 'devices' | 'HID'>;
+
+/** Open the keyboard, or null if this machine has none or it can't be opened (busy, access denied). */
+export function openAura(hid: HidModule = HID): Lights | null {
+  try {
+    return open(hid);
+  } catch (e) {
+    console.warn('[companion] could not open keyboard:', (e as Error).message);
+    return null;
+  }
+}
+
+function open(hid: HidModule): Lights | null {
+  const info = hid.devices().find(
     (d) => d.vendorId === VID && d.productId === PID && d.usagePage === 0xff31 && d.usage === 0x79 && d.path,
   );
   if (!info?.path) return null;
-  const dev = new HID.HID(info.path);
+  const dev = new hid.HID(info.path);
   const send = (bytes: number[]) => dev.sendFeatureReport(report(bytes));
   const brightness = (level: 0 | 1 | 2 | 3) => send([0x5d, 0xba, 0xc5, 0xc4, level]);
 

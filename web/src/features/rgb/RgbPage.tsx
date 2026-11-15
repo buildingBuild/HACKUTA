@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Badge, Button, Page, PageHeader } from '../../components/ui';
 import { CLIP } from './clip';
-import { companionStatus, sendEffect } from './companion';
+import { autoConnect, companionStatus, sendEffect } from './companion';
 import { crossed, type Cue, type EffectName } from './cues';
 import { VirtualKeyboard, type FiredEffect } from './VirtualKeyboard';
 import { loadYouTube, type YTPlayer } from './youtube';
@@ -30,13 +30,16 @@ export function RgbPage() {
   const [effect, setEffect] = useState<FiredEffect>(null);
   const [last, setLast] = useState<Cue | null>(null);
   const [connected, setConnected] = useState(false);
+  const connectedRef = useRef(false);
+  connectedRef.current = connected;
+  const [probing, setProbing] = useState(() => autoConnect(window.location.hostname));
   const [videoError, setVideoError] = useState<string | null>(null);
   const [marking, setMarking] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const fire = useCallback((type: EffectName) => {
     setEffect({ name: type, key: performance.now() });
-    void sendEffect(type);
+    if (connectedRef.current) void sendEffect(type);
   }, []);
 
   // YouTube player + playhead loop: fire every cue the playhead crosses during normal playback.
@@ -51,8 +54,15 @@ export function RgbPage() {
           videoId: CLIP.videoId,
           width: '100%',
           height: '100%',
-          playerVars: { rel: 0, playsinline: 1, modestbranding: 1 },
-          events: { onError: (e) => setVideoError(`YouTube error ${e.data}`) },
+          // disablekb: YouTube's own shortcuts (L skips, M mutes, C captions) would swallow the marking keys.
+          playerVars: { rel: 0, playsinline: 1, modestbranding: 1, disablekb: 1 },
+          events: {
+            onError: (e) => setVideoError(`YouTube error ${e.data}`),
+            // Clicking play focuses the cross-origin iframe; hand focus back so marking keys reach the page.
+            onStateChange: () => {
+              if (document.activeElement instanceof HTMLIFrameElement) document.activeElement.blur();
+            },
+          },
         });
         const tick = () => {
           const p = player.current;
@@ -79,8 +89,9 @@ export function RgbPage() {
     };
   }, [fire]);
 
-  // Companion status (optional local app).
+  // Companion status (optional local app). Polls only once probing is on (auto on localhost, else on click).
   useEffect(() => {
+    if (!probing) return;
     let alive = true;
     const poll = () => companionStatus().then((ok) => alive && setConnected(ok));
     poll();
@@ -89,7 +100,7 @@ export function RgbPage() {
       alive = false;
       clearInterval(id);
     };
-  }, []);
+  }, [probing]);
 
   // Marking mode: W/A/L/M/C/S drop a cue at the current playhead.
   useEffect(() => {
@@ -152,7 +163,13 @@ export function RgbPage() {
               <span>
                 Keyboard not connected: showing virtual setup
                 <small>
-                  Run <code>cd companion &amp;&amp; npm start</code> on a laptop with an ASUS Aura keyboard.
+                  Run <code>cd companion &amp;&amp; npm start</code> on a laptop with an ASUS Aura keyboard
+                  {probing ? '.' : ', then '}
+                  {!probing && (
+                    <button type="button" className="rgb__link" onClick={() => setProbing(true)}>
+                      connect my keyboard
+                    </button>
+                  )}
                 </small>
               </span>
             )}
@@ -196,7 +213,7 @@ export function RgbPage() {
         </div>
         {marking && (
           <p className="rgb__hint">
-            While the clip plays press <kbd>W</kbd> round win · <kbd>A</kbd> ace · <kbd>L</kbd> round loss · <kbd>C</kbd> clutch ·{' '}
+            Click anywhere on the page (not the video) once, then while the clip plays press <kbd>W</kbd> round win · <kbd>A</kbd> ace · <kbd>L</kbd> round loss · <kbd>C</kbd> clutch ·{' '}
             <kbd>M</kbd> match win · <kbd>S</kbd> match start. Then copy the cues into <code>web/src/features/rgb/clip.ts</code>.
           </p>
         )}

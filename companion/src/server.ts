@@ -12,8 +12,9 @@ const CORS = {
   'access-control-allow-methods': 'GET, POST, OPTIONS',
 };
 
-export function createServer(opts: { lights: Lights | null }) {
-  let device = opts.lights !== null;
+export function createServer(opts: { lights: Lights | null; reopen?: () => Lights | null }) {
+  let l = opts.lights;
+  let device = l !== null;
   // Every driver call goes through here: a USB error marks the keyboard gone instead of crashing the server.
   const guard = (fn: () => void) => {
     if (!device) return;
@@ -22,9 +23,23 @@ export function createServer(opts: { lights: Lights | null }) {
     } catch (e) {
       device = false;
       console.warn('[companion] keyboard error, disabling:', (e as Error).message);
+      try {
+        l?.off(); // don't leave the keyboard stuck lit
+      } catch {
+        /* really gone */
+      }
     }
   };
-  const l = opts.lights;
+  // A lost keyboard (unplugged, sleep/resume) is retried on the next request.
+  const revive = () => {
+    if (device || !opts.reopen) return;
+    try {
+      l = opts.reopen();
+      device = l !== null;
+    } catch {
+      device = false;
+    }
+  };
   const safe: Lights = {
     off: () => guard(() => l?.off()),
     color: (r, g, b) => guard(() => l?.color(r, g, b)),
@@ -39,6 +54,7 @@ export function createServer(opts: { lights: Lights | null }) {
 
   const server = http.createServer((req, res) => {
     if (req.method === 'OPTIONS') return send(res, 204);
+    revive();
     if (req.method === 'GET' && req.url === '/status') return send(res, 200, { ok: true, device });
     if (req.method === 'POST' && req.url === '/effect') {
       let raw = '';
@@ -65,7 +81,7 @@ export function createServer(opts: { lights: Lights | null }) {
     shutdown() {
       player.stop();
       try {
-        opts.lights?.off();
+        l?.off();
       } catch {
         /* keyboard already gone */
       }
