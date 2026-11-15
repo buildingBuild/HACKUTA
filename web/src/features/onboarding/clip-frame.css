@@ -1,0 +1,144 @@
+/* Generated clip frame (used by the HQ collage and the profile preview) */
+/* a single clip frame */
+.frame {
+  position: relative;
+  margin: 0;
+  overflow: hidden;
+  background: #111;
+  box-shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.6);
+  animation: frame-in 0.75s var(--ease-out) both;
+  animation-delay: var(--d);
+}
+@keyframes frame-in {
+  0% { opacity: 0; transform: translateY(40px) scale(0.6) rotate(var(--rot)); filter: blur(10px); }
+  70% { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; transform: none; }
+}
+.frame__scene {
+  position: absolute;
+  inset: -10%;
+  background:
+    radial-gradient(ellipse 60% 50% at 70% 35%, color-mix(in srgb, var(--bg2) 55%, transparent), transparent 70%),
+    linear-gradient(160deg, var(--bg2) -40%, var(--bg1) 55%, #0b0b0b 110%);
+  animation: frame-pan 7s ease-in-out infinite alternate;
+  animation-delay: var(--sd);
+}
+@keyframes frame-pan { to { transform: translate(-4%, 3%) scale(1.06); } }
+.frame__grain {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.55));
+  pointer-events: none;
+}
+.frame__cross {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  background:
+    linear-gradient(#7CFC9A, #7CFC9A) center / 2px 14px no-repeat,
+    linear-gradient(#7CFC9A, #7CFC9A) center / 14px 2px no-repeat;
+  opacity: 0.85;
+  mix-blend-mode: screen;
+}
+.frame__feed {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  gap: 3px;
+  justify-items: end;
+}
+.frame__feed span {
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.55);
+  border-right: 2px solid var(--faze-red);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: #ddd;
+  white-space: nowrap;
+}
+.frame__feed b { color: #ffb4b4; font-weight: 500; }
+.frame__meta {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.frame__meta img {
+  width: 16px;
+  height: 16px;
+  padding: 2px;
+  background: #fff;
+  border-radius: 3px;
+  object-fit: contain;
+}
+.frame__title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.frame__time { opacity: 0.7; }
+.frame__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.15);
+}
+.frame__bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--faze-red);
+  transform-origin: left;
+  animation: frame-play 4s linear both;
+  animation-delay: calc(var(--d) + 0.4s);
+}
+@keyframes frame-play { from { transform: scaleX(0); } to { transform: scaleX(var(--p)); } }
+
+/* red lock flash when a frame lands */
+.frame__lock {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--faze-red);
+  opacity: 0;
+  animation: frame-lock 0.9s var(--ease-out) both;
+  animation-delay: calc(var(--d) + 0.45s);
+  pointer-events: none;
+}
+@keyframes frame-lock { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+/* AI score stamps in during "analyze" */
+.frame__score {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  min-width: 34px;
+  padding: 4px 6px;
+  background: var(--faze-red);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1;
+  text-align: center;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+  opacity: 0;
+  transform: scale(1.8);
+}
+.frame--scored .frame__score {
+  animation: score-stamp 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  animation-delay: var(--sdelay, 0ms);
+}
+@keyframes score-stamp { to { opacity: 1; transform: none; } }
+

@@ -1,0 +1,18 @@
+// FaZe "F" mark, cleaned from the brand SVG. Colors via `currentColor`.
+const D =
+  'm1120.5 32.5a4003.59 4003.59 0 0 1 -105 108h-344v254l366 2a24554.546 24554.546 0 0 0 -130 133.5 6475.91 6475.91 0 0 0 -160 2 32118.572 32118.572 0 0 1 -222.5 193.5 67311.02 67311.02 0 0 1 -.5-367c-59.67.333-119.337 0-179-1a857.46 857.46 0 0 0 -60.5-70 3422.717 3422.717 0 0 1 -45.5-54l282-2v-94h-363l-88-103c1.453-1.325 1.12-2.158-1-2.5 350.5-.833 700.834-.666 1051 .5z';
+
+export function FazeLogo({ className, title }: { className?: string; title?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="60 26 1066 770"
+      fill="currentColor"
+      role={title ? 'img' : undefined}
+      aria-hidden={title ? undefined : true}
+      aria-label={title}
+    >
+      <path d={D} />
+    </svg>
+  );
+}

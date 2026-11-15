@@ -265,10 +265,10 @@ async function loadProfile(db: Db, opts: ProfilesRouterOptions, user: UserRow) {
   const clips = await rows<Record<string, unknown>>(
     db,
     `SELECT c.id, c.title, c.map, c.side, c.thumbnail_url, c.blob_url, c.social_post_url, c.status, c.created_at,
-            r.overall_score, r.category_scores, r.summary
+            r.overall_score, r.category_scores, r.summary, r.notes
        FROM clips c
        LEFT JOIN LATERAL (
-         SELECT cr.overall_score, cr.category_scores,
+         SELECT cr.overall_score, cr.category_scores, cr.notes,
                 COALESCE(to_jsonb(cr)->>'summary', cr.category_scores->>'summary') AS summary
            FROM coaching_reports cr WHERE cr.clip_id = c.id ORDER BY cr.created_at DESC LIMIT 1
        ) r ON true
@@ -336,12 +336,124 @@ async function loadProfile(db: Db, opts: ProfilesRouterOptions, user: UserRow) {
       id: c.id, title: c.title, map: c.map, side: c.side, thumbnail_url: c.thumbnail_url, blob_url: c.blob_url,
       social_post_url: c.social_post_url, status: c.status, created_at: c.created_at,
       overall_score: num(c.overall_score), summary: c.summary ?? null,
+      // Timestamped AI coaching moments (REQUIREMENTS §7.3 notes) for the clip review player.
+      notes: Array.isArray(c.notes) ? c.notes : [],
     })),
     clip_count: clips.length,
     avg_clip_score: avgClipScore,
     karma: Number(k?.karma ?? 0),
     elo_rank: rank ? { rank: Number(rank.rank), total: Number(rank.total) } : null,
     scout,
+    dossier: await loadDossier(db, uid),
+  };
+}
+
+// ---------- scout dossier (recruiter view: how they compare, form, skill profile) ----------
+
+const DOSSIER_METRICS = [
+  { metric: "elo", label: "ELO", digits: 0 },
+  { metric: "kd", label: "K/D", digits: 2 },
+  { metric: "adr", label: "ADR", digits: 1 },
+  { metric: "hs_pct", label: "HS%", digits: 0 },
+  { metric: "kr", label: "K/R", digits: 2 },
+  { metric: "win_rate", label: "Win rate", digits: 0 },
+] as const;
+
+const SKILL_LABELS: Record<string, string> = {
+  crosshair_placement: "Crosshair placement",
+  movement: "Movement",
+  spray_control: "Spray control",
+  utility: "Utility",
+  positioning: "Positioning & trades",
+  decision_making: "Decision making",
+};
+
+async function loadDossier(db: Db, uid: string) {
+  const metricNames = DOSSIER_METRICS.map((m) => m.metric);
+
+  // Percentile of this player's latest value vs every player's latest value (players only).
+  const pctRows = await rows<{ metric: string; value: number; pct: number; pool: number }>(
+    db,
+    `WITH latest AS (
+       SELECT DISTINCT ON (ps.user_id, ps.metric) ps.user_id, ps.metric, ps.value
+         FROM player_stats ps JOIN users u ON u.id = ps.user_id AND u.role = 'user'
+        WHERE ps.metric = ANY($2)
+        ORDER BY ps.user_id, ps.metric, ps.time DESC)
+     SELECT metric, value, pct, pool FROM (
+       SELECT user_id, metric, value,
+              cume_dist() OVER (PARTITION BY metric ORDER BY value) AS pct,
+              count(*) OVER (PARTITION BY metric) AS pool
+         FROM latest) x
+      WHERE user_id = $1`,
+    [uid, metricNames],
+  );
+  const pctBy = new Map(pctRows.map((r) => [r.metric, r]));
+  const percentiles = DOSSIER_METRICS.flatMap((m) => {
+    const r = pctBy.get(m.metric);
+    if (!r) return [];
+    // "Better than X%" = share of the rest of the pool at or below this value.
+    const pool = Number(r.pool);
+    const better = pool > 1 ? Math.round(((Number(r.pct) * pool - 1) / (pool - 1)) * 100) : null;
+    return [{ metric: m.metric, label: m.label, digits: m.digits, value: Number(r.value), better_than_pct: better, pool }];
+  });
+
+  // 30-day form: change + consistency (coefficient of variation of daily K/D and ADR).
+  const formRows = await rows<{ metric: string; first: number; last: number; mean: number; sd: number | null; days: number }>(
+    db,
+    `WITH daily AS (
+       SELECT metric, date_trunc('day', time) AS d, avg(value) AS v
+         FROM player_stats WHERE user_id = $1 AND metric = ANY($2) AND time >= now() - interval '30 days'
+        GROUP BY metric, d)
+     SELECT metric,
+            (array_agg(v ORDER BY d ASC))[1] AS first, (array_agg(v ORDER BY d DESC))[1] AS last,
+            avg(v) AS mean, stddev_samp(v) AS sd, count(*)::int AS days
+       FROM daily GROUP BY metric`,
+    [uid, ["elo", "kd", "adr", "hs_pct"]],
+  );
+  const f = new Map(formRows.map((r) => [r.metric, r]));
+  const delta = (m: string) => (f.get(m) ? Number(f.get(m)!.last) - Number(f.get(m)!.first) : null);
+  const cvs = ["kd", "adr"].flatMap((m) => {
+    const r = f.get(m);
+    return r && r.sd != null && Number(r.mean) > 0 && Number(r.days) >= 5 ? [Number(r.sd) / Number(r.mean)] : [];
+  });
+  const cv = cvs.length ? cvs.reduce((a, b) => a + b, 0) / cvs.length : null;
+  const form = {
+    days_tracked: Math.max(0, ...formRows.map((r) => Number(r.days))),
+    elo_delta: delta("elo"),
+    kd_delta: delta("kd"),
+    adr_delta: delta("adr"),
+    hs_delta: delta("hs_pct"),
+    consistency: cv === null ? null : cv < 0.04 ? "high" : cv < 0.08 ? "steady" : "streaky",
+    consistency_cv: cv,
+  };
+
+  // AI skill profile: mean of each coaching category over the latest report per clip.
+  const skillRows = await rows<{ key: string; avg: number; n: number }>(
+    db,
+    `WITH latest AS (
+       SELECT DISTINCT ON (c.id) r.category_scores
+         FROM clips c JOIN coaching_reports r ON r.clip_id = c.id
+        WHERE c.user_id = $1 ORDER BY c.id, r.created_at DESC)
+     SELECT kv.key, avg((kv.value)::numeric)::float AS avg, count(*)::int AS n
+       FROM latest, jsonb_each_text(latest.category_scores) kv
+      WHERE kv.value ~ '^[0-9.]+$'
+      GROUP BY kv.key`,
+    [uid],
+  );
+  const categories = skillRows
+    .filter((s) => s.key in SKILL_LABELS)
+    .map((s) => ({ key: s.key, label: SKILL_LABELS[s.key]!, avg: Math.round(Number(s.avg) * 10) / 10, clips: Number(s.n) }))
+    .sort((a, b) => b.avg - a.avg);
+
+  return {
+    percentiles,
+    form,
+    skills: {
+      categories,
+      strongest: categories[0]?.key ?? null,
+      weakest: categories.length > 1 ? categories[categories.length - 1]!.key : null,
+      clips_analyzed: Math.max(0, ...categories.map((c) => c.clips)),
+    },
   };
 }
 

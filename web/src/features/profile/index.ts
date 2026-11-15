@@ -4,6 +4,8 @@
 //   <Route path="/leaderboards" element={<LeaderboardsPage />} />
 export { ProfilePage } from "./ProfilePage";
 export { LeaderboardsPage } from "./LeaderboardsPage";
+export { ProspectBoard } from "./ProspectBoard";
+export { ClipReview } from "./ClipReview";
 export { ScoutProgressBar, LevelBadge, TrendChart } from "./components";
 export { fetchProfile, fetchLeaderboard, profileUrl, cardUrl, saveOnboardingProfile, checkHandle, ApiError } from "./api";
 export type { OnboardingAnswers, CreatedProfile } from "./api";
