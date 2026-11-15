@@ -1,0 +1,38 @@
+{
+  "name": "yao-sandbox",
+  "private": true,
+  "type": "module",
+  "description": "TEMPORARY harness for Yao's coaching/scouting work. Delete once Joe's scaffold lands (see sandbox/README.md).",
+  "scripts": {
+    "link": "node link-modules.mjs",
+    "db:migrate": "tsx --env-file=../.env migrate.ts",
+    "db:seed": "tsx --env-file=../.env seed-yao.ts",
+    "server": "tsx watch --env-file=../.env server.ts",
+    "web": "vite --config web/vite.config.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:engine": "tsx test-engine.ts",
+    "smoke:gemini": "tsx --env-file=../.env smoke-gemini.ts",
+    "smoke:elevenlabs": "tsx --env-file=../.env smoke-elevenlabs.ts",
+    "smoke:faceit": "node --env-file=../.env ../scripts/test-faceit.mjs"
+  },
+  "dependencies": {
+    "@elevenlabs/react": "^0.6.0",
+    "@google/genai": "^1.0.0",
+    "express": "^4.21.2",
+    "pg": "^8.13.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.0",
+    "@types/pg": "^8.11.10",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11"
+  }
+}

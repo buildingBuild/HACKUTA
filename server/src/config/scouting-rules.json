@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "player_v1",
+      "track": "player",
+      "enabled": true,
+      "label": "Player track: FACEIT 10 elite",
+      "window": "last_20",
+      "all": [
+        { "metric": "faceit_level", "op": ">=", "value": 10, "label": "FACEIT level" },
+        { "metric": "elo", "op": ">=", "value": 2500, "label": "FACEIT ELO" },
+        { "metric": "kd", "op": ">=", "value": 1.25, "label": "K/D (last 20)" },
+        { "metric": "hs_pct", "op": ">=", "value": 50, "label": "HS% (last 20)" },
+        { "metric": "adr", "op": ">=", "value": 85, "label": "ADR (last 20)" },
+        { "metric": "avg_clip_score", "op": ">=", "value": 80, "label": "Avg AI clip score (last 5)" }
+      ]
+    },
+    {
+      "id": "creator_v1",
+      "track": "creator",
+      "enabled": false,
+      "label": "Creator track: fast-growing creator",
+      "window": "last_30d",
+      "all": [
+        { "metric": "follower_growth_30d_pct", "op": ">=", "value": 20, "label": "30-day follower growth %" },
+        { "metric": "engagement_rate", "op": ">=", "value": 5, "label": "Engagement rate %" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+// Gemini clip analysis. Video goes Blob URL -> server -> Gemini (never through
+// our API body from the browser). Small clips are sent inline, larger ones via
+// the Files API.
+import { GoogleGenAI, createPartFromBase64, createPartFromUri, type Part } from '@google/genai';
+import { CoachingReportSchema, coachingJsonSchema, type CoachingReport } from './coachingSchema.js';
+import { buildCoachingPrompt, buildRepairPrompt, type PlayerContext } from './prompt.js';
+
+const INLINE_LIMIT_BYTES = 18 * 1024 * 1024; // Gemini inline request cap is ~20MB total
+
+export const geminiModel = () => process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+
+let client: GoogleGenAI | null = null;
+function ai(): GoogleGenAI {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY is not set');
+  client ??= new GoogleGenAI({ apiKey });
+  return client;
+}
+
+function guessMime(url: string, header?: string | null): string {
+  if (header && header.startsWith('video/')) return header.split(';')[0];
+  if (/\.webm(\?|$)/i.test(url)) return 'video/webm';
+  if (/\.mov(\?|$)/i.test(url)) return 'video/quicktime';
+  return 'video/mp4';
+}
+
+const isYouTube = (url: string) => /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//i.test(url);
+
+/** Turns a clip URL (blob storage, YouTube, or local file:// path) into a Gemini Part. */
+async function videoPart(url: string): Promise<Part> {
+  // Gemini can read public YouTube URLs directly.
+  if (isYouTube(url)) return { fileData: { fileUri: url, mimeType: 'video/mp4' } };
+
+  let bytes: Buffer;
+  let mime: string;
+  if (url.startsWith('file://') || /^[a-zA-Z]:[\\/]/.test(url) || url.startsWith('/')) {
+    const { readFile } = await import('node:fs/promises');
+    const { fileURLToPath } = await import('node:url');
+    const p = url.startsWith('file://') ? fileURLToPath(url) : url;
+    bytes = await readFile(p);
+    mime = guessMime(p);
+  } else {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Could not download clip (${res.status})`);
+    bytes = Buffer.from(await res.arrayBuffer());
+    mime = guessMime(url, res.headers.get('content-type'));
+  }
+
+  if (bytes.byteLength <= INLINE_LIMIT_BYTES) {
+    return createPartFromBase64(bytes.toString('base64'), mime);
+  }
+
+  // Large clip: Files API upload, then wait for processing.
+  const uploaded = await ai().files.upload({
+    file: new Blob([new Uint8Array(bytes)], { type: mime }),
+    config: { mimeType: mime },
+  });
+  let file = uploaded;
+  for (let i = 0; i < 30 && file.state === 'PROCESSING'; i++) {
+    await new Promise((r) => setTimeout(r, 2000));
+    file = await ai().files.get({ name: file.name! });
+  }
+  if (file.state !== 'ACTIVE' || !file.uri) throw new Error(`Gemini file not ready (${file.state})`);
+  return createPartFromUri(file.uri, file.mimeType ?? mime);
+}
+
+function parseReport(text: string): { ok: true; report: CoachingReport } | { ok: false; error: string } {
+  let json: unknown;
+  try {
+    json = JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, ''));
+  } catch (e) {
+    return { ok: false, error: `invalid JSON: ${(e as Error).message}` };
+  }
+  const parsed = CoachingReportSchema.safeParse(json);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ') };
+  return { ok: true, report: parsed.data };
+}
+
+/**
+ * Analyze a clip with Gemini. Validates with zod and retries once with a repair
+ * prompt. Throws on failure; callers fall back to the cache (see coachingService).
+ */
+export async function analyzeClip(clipUrl: string, ctx: PlayerContext): Promise<CoachingReport> {
+  const model = geminiModel();
+  const video = await videoPart(clipUrl);
+  const config = {
+    responseMimeType: 'application/json',
+    responseJsonSchema: coachingJsonSchema,
+    temperature: 0.4,
+  };
+
+  const first = await ai().models.generateContent({
+    model,
+    contents: [{ role: 'user', parts: [video, { text: buildCoachingPrompt(ctx) }] }],
+    config,
+  });
+  const firstText = first.text ?? '';
+  const r1 = parseReport(firstText);
+  if (r1.ok) return r1.report;
+
+  const second = await ai().models.generateContent({
+    model,
+    contents: [{ role: 'user', parts: [{ text: buildRepairPrompt(firstText, r1.error) }] }],
+    config,
+  });
+  const r2 = parseReport(second.text ?? '');
+  if (r2.ok) return r2.report;
+  throw new Error(`Gemini output failed validation twice: ${r2.error}`);
+}
+
+/** Plain text generation (scout report summaries). */
+export async function generateText(prompt: string): Promise<string> {
+  const res = await ai().models.generateContent({
+    model: geminiModel(),
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    config: { temperature: 0.6 },
+  });
+  const text = res.text?.trim();
+  if (!text) throw new Error('Gemini returned empty text');
+  return text;
+}
+
+export function withTimeout<T>(p: Promise<T>, ms: number, label = 'operation'): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    p.then(
+      (v) => (clearTimeout(t), resolve(v)),
+      (e) => (clearTimeout(t), reject(e)),
+    );
+  });
+}
