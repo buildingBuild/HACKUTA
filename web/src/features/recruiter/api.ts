@@ -47,6 +47,13 @@ export const getProspect = (id: string) => api<ProspectDetailData>(`/api/scoutin
 export const setProspectStatus = (id: string, status: ProspectStatus) =>
   api<{ id: string; status: ProspectStatus }>(`/api/scouting/prospects/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
 
+export interface RuleCriterion { metric: string; op: string; value: number; label?: string }
+export interface Rule { id: string; track: 'player' | 'creator'; enabled: boolean; label?: string; window?: string; all: RuleCriterion[] }
+export interface RulesFile { version: number; rules: Rule[] }
+
+export const getRules = () => api<RulesFile>('/api/scouting/rules');
+export const saveRules = (rules: Rule[]) => api<RulesFile>('/api/scouting/rules', { method: 'PUT', body: JSON.stringify({ rules }) });
+
 /** Generates (or returns cached) ElevenLabs briefing audio. On 503 the error body carries `text` for browser TTS. */
 export const getBriefing = (reportId: string) =>
   api<{ audio_url: string; text: string; cached: boolean }>(`/api/voice/briefing/${reportId}`, { method: 'POST' });

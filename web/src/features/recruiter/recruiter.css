@@ -1,67 +1,123 @@
-/* Recruiter dashboard. Builds on coaching.css tokens (.yao-panel). */
-.yao-rec { display: grid; gap: 14px; max-width: 1180px; width: calc(100% - 32px); margin: 24px auto 64px; box-sizing: border-box; }
-.yao-rec__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-.yao-badge { font-weight: 800; text-transform: uppercase; font-size: .75rem; letter-spacing: .08em; padding: 4px 10px; border-radius: 999px; }
-.yao-badge--new { background: var(--y-red); color: #fff; animation: yao-pulse 1.4s infinite; }
+/* Recruiter dashboard (owner: Yao). Builds on coaching.css primitives (.yao-page tokens). */
 
-.yao-filters { display: flex; flex-wrap: wrap; gap: 10px; }
-.yao-filters label, .yao-pd__status { display: grid; gap: 4px; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--y-muted); }
-.yao-filters select, .yao-pd__status select { font: inherit; font-size: .9rem; text-transform: capitalize; background: var(--y-bg); color: var(--y-fg); border: 1px solid var(--y-line); border-radius: 6px; padding: 6px 8px; }
+/* ---------- status counters ---------- */
+.yao-counters { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid var(--y-line); background: var(--y-glass); margin: 0 0 20px; }
+.yao-counter {
+  display: grid; gap: 2px; justify-items: start; padding: 14px 16px; border: 0; background: transparent; cursor: pointer;
+  text-align: left; color: var(--y-ink); transition: background 0.2s;
+}
+.yao-counter + .yao-counter { border-left: 1px solid var(--y-line); }
+.yao-counter:hover { background: var(--y-red-soft); }
+.yao-counter.is-on { background: var(--y-ink); color: var(--y-paper); }
+.yao-counter.is-on .yao-label { color: rgba(255, 255, 255, 0.7); }
+.yao-counter__n { font-family: var(--y-display); font-weight: 800; font-size: 36px; line-height: 1; }
+.yao-counter--new .yao-counter__n { color: var(--y-red); }
+.yao-counter--new.is-on .yao-counter__n { color: var(--y-paper); }
 
-.yao-plist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.yao-prow { width: 100%; font: inherit; color: inherit; text-align: left; cursor: pointer; display: grid; grid-template-columns: 36px 40px minmax(120px, 1fr) auto 56px 92px; gap: 12px; align-items: center; background: var(--y-bg2); border: 1px solid var(--y-line); border-radius: 8px; padding: 10px 12px; transition: border-color .2s; }
-.yao-prow:hover { border-color: var(--y-red); }
-.yao-prow--fresh { border-color: var(--y-red); box-shadow: 0 0 0 2px color-mix(in srgb, var(--y-red) 40%, transparent); animation: yao-pop .5s ease-out; }
-.yao-prow__rank { font-weight: 800; color: var(--y-muted); }
-.yao-prow__who { display: grid; min-width: 0; }
-.yao-prow__who .yao-muted { font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.yao-prow__stats { display: flex; gap: 12px; font-size: .85rem; flex-wrap: wrap; }
-.yao-prow__score { font-family: var(--y-display); font-size: 1.9rem; font-weight: 800; text-align: center; }
-.yao-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--y-bg2); object-fit: cover; display: inline-block; }
-.yao-avatar--lg { width: 64px; height: 64px; }
-.yao-lvl { display: inline-block; background: var(--y-red); color: #fff; font-weight: 800; border-radius: 4px; padding: 0 6px; font-size: .8rem; }
+.yao-filters { display: flex; flex-wrap: wrap; gap: 24px; margin: 0 0 18px; }
+.yao-filters .yao-field { width: 140px; }
 
-.yao-status { text-align: center; text-transform: uppercase; font-size: .7rem; font-weight: 800; letter-spacing: .06em; border-radius: 4px; padding: 4px 6px; border: 1px solid var(--y-line); }
-.yao-status--new { background: var(--y-red); border-color: var(--y-red); color: #fff; }
-.yao-status--reviewing { color: var(--y-ok); border-color: var(--y-ok); }
-.yao-status--contacted { color: var(--y-elite); border-color: var(--y-elite); }
-.yao-status--passed { color: var(--y-muted); }
+/* ---------- prospects table ---------- */
+.yao-table { border-top: 1.5px solid var(--y-ink); }
+.yao-trow {
+  width: 100%; display: grid; grid-template-columns: 44px minmax(180px, 2fr) 120px repeat(3, 64px) 72px 110px; gap: 12px; align-items: center;
+  padding: 12px 8px; border: 0; border-bottom: 1px solid var(--y-line); background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer;
+  transition: background 0.2s, padding 0.25s var(--y-ease);
+}
+.yao-trow:not(.yao-trow--head):hover { background: var(--y-red-soft); padding-left: 14px; }
+.yao-trow--head { cursor: default; font-family: var(--y-mono); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--y-muted); padding-top: 10px; padding-bottom: 10px; }
+.yao-trow--fresh { background: var(--y-red-soft); box-shadow: inset 3px 0 0 var(--y-red); animation: yao-rise 0.6s var(--y-ease) both; }
+.yao-trow__rank { font-family: var(--y-mono); font-size: 12px; color: var(--y-muted); }
+.yao-trow__who { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.yao-trow__who > span:last-child { display: grid; gap: 2px; min-width: 0; }
+.yao-trow__who strong { font-family: var(--y-display); font-weight: 700; font-size: 20px; text-transform: uppercase; letter-spacing: 0.02em; }
+.yao-trow__who .yao-label { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
+.yao-trow__score { font-family: var(--y-display); font-weight: 900; font-size: 30px; line-height: 1; }
 
-.yao-pd__head { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-.yao-pd__who { flex: 1; min-width: 200px; }
-.yao-pd__who .yao-muted { margin-top: 4px; }
-.yao-pd__score { display: grid; justify-items: center; font-size: .75rem; }
-.yao-pd__report { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; }
-.yao-pd__summary p { line-height: 1.5; margin: 0 0 12px; }
-.yao-pd__actions { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
+.yao-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--y-line); object-fit: cover; display: inline-block; flex: none; border: 1px solid var(--y-line); }
+.yao-avatar--lg { width: 76px; height: 76px; }
+.yao-lvl {
+  display: inline-grid; place-items: center; min-width: 30px; height: 22px; padding: 0 6px; background: var(--y-red); color: var(--y-paper);
+  font-family: var(--y-display); font-weight: 800; font-size: 14px; letter-spacing: 0.04em;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+}
 
-.yao-crit { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; font-size: .9rem; }
-.yao-crit li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 10px; background: var(--y-bg2); border-radius: 4px; }
-.yao-crit--pass span:first-child { color: var(--y-elite); }
-.yao-crit--fail span:first-child { color: var(--y-low); }
+.yao-status { display: inline-block; padding: 4px 9px; border: 1px solid var(--y-line); font-family: var(--y-mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; }
+.yao-status--new { background: var(--y-red); border-color: var(--y-red); color: var(--y-paper); }
+.yao-status--reviewing { border-color: var(--y-ink); color: var(--y-ink); }
+.yao-status--contacted { background: var(--y-ink); border-color: var(--y-ink); color: var(--y-paper); }
+.yao-status--passed { border-style: dashed; color: var(--y-muted); }
 
-.yao-trends { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
-.yao-trend { margin: 0; background: var(--y-bg2); border-radius: 8px; padding: 10px 12px; }
-.yao-trend--empty { color: var(--y-muted); font-size: .85rem; }
-.yao-trend__head { display: flex; justify-content: space-between; font-size: .8rem; color: var(--y-muted); margin-bottom: 4px; }
-.yao-trend__head strong { color: var(--y-fg); font-size: 1rem; }
-.yao-trend svg { width: 100%; height: 90px; display: block; }
-.yao-trend__line { fill: none; stroke: var(--y-red); stroke-width: 2; stroke-linejoin: round; }
-.yao-trend__dot { fill: var(--y-red); }
-.yao-trend__threshold { stroke: var(--y-muted); stroke-dasharray: 4 4; stroke-width: 1; }
-.yao-up { color: var(--y-elite); font-size: .75rem; }
-.yao-down { color: var(--y-low); font-size: .75rem; }
+/* ---------- rules editor ---------- */
+.yao-rules { margin-bottom: 20px; }
+.yao-rules__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.yao-rule { border: 1px solid var(--y-line); padding: 14px; }
+.yao-rule.is-off { opacity: 0.55; border-style: dashed; }
+.yao-rule__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
+.yao-rule__head strong { font-family: var(--y-display); font-weight: 700; font-size: 18px; text-transform: uppercase; }
+.yao-rule__head .yao-chip { cursor: pointer; background: transparent; }
+.yao-rule__head .yao-chip[aria-pressed='true'] { background: var(--y-ink); color: var(--y-paper); border-color: var(--y-ink); }
+.yao-rule__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.yao-rule__list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.yao-rule__val { display: flex; align-items: center; gap: 6px; }
+.yao-rule__val .yao-input { width: 76px; text-align: right; font-family: var(--y-display); font-weight: 700; font-size: 18px; padding: 2px 0; }
+.yao-rule__val .yao-input:disabled { color: var(--y-ink); border-bottom-color: transparent; }
 
-.yao-clips { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.yao-clip { background: var(--y-bg2); border-radius: 8px; padding: 12px; }
-.yao-clip__head { display: flex; gap: 10px; align-items: baseline; }
-.yao-clip__score { margin-left: auto; font-weight: 800; font-size: 1.2rem; }
-.yao-clip > .yao-muted { margin: 6px 0; font-size: .9rem; }
-.yao-clip__notes { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .88rem; }
-.yao-clip__notes code { background: var(--y-fg); color: #fff; font-family: var(--y-mono); padding: 1px 5px; border-radius: 3px; }
+/* ---------- prospect detail ---------- */
+.yao-pd__who { display: flex; gap: 18px; align-items: center; }
+.yao-pd__score { display: grid; justify-items: end; gap: 2px; }
+.yao-pd__score strong { font-family: var(--y-display); font-weight: 900; font-size: 88px; line-height: 0.85; color: var(--y-red); }
+.yao-pd__grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.yao-pd__summary { margin: 0 0 18px; font-size: 17px; line-height: 1.6; color: var(--y-ink-2); }
+.yao-seg--wide { display: flex; }
+.yao-seg--wide button { flex: 1; padding: 11px 8px; }
+.yao-seg button:disabled { cursor: wait; }
 
-@media (max-width: 720px) {
-  .yao-prow { grid-template-columns: 28px 40px 1fr 48px; }
-  .yao-prow__stats, .yao-status { grid-column: 3 / -1; }
-  .yao-pd__report { grid-template-columns: 1fr; }
+.yao-crit { list-style: none; margin: 0; padding: 0; display: grid; }
+.yao-crit li { display: grid; grid-template-columns: 20px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--y-line); }
+.yao-crit li:first-child { border-top: 1px solid var(--y-line); }
+.yao-crit__mark { font-weight: 700; }
+.is-pass .yao-crit__mark { color: var(--y-up); }
+.is-fail .yao-crit__mark { color: var(--y-red); }
+.yao-crit__val strong { font-family: var(--y-display); font-weight: 800; font-size: 20px; }
+
+.yao-trends { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--y-line); background: var(--y-glass); }
+.yao-trend { margin: 0; padding: 14px 16px; display: grid; gap: 4px; min-width: 0; }
+.yao-trend + .yao-trend { border-left: 1px solid var(--y-line); }
+.yao-trend__head { display: flex; justify-content: space-between; align-items: center; }
+.yao-trend__value { font-family: var(--y-display); font-weight: 800; font-size: 34px; line-height: 1; }
+.yao-trend__delta { font-family: var(--y-mono); font-size: 11px; }
+.yao-trend__delta.is-up { color: var(--y-up); }
+.yao-trend__delta.is-down { color: var(--y-red); }
+.yao-trend svg { width: 100%; height: 72px; display: block; margin: 4px 0; overflow: visible; }
+.yao-trend__line { fill: none; stroke: var(--y-ink); stroke-width: 1.75; stroke-linejoin: round; }
+.yao-trend__line.is-below { stroke: var(--y-red); }
+.yao-trend__area { fill: var(--y-red-soft); }
+.yao-trend__threshold { stroke: var(--y-red); stroke-dasharray: 4 4; stroke-width: 1; }
+
+.yao-pclips { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.yao-pclip { display: block; height: 100%; padding: 16px; border: 1px solid var(--y-line); background: var(--y-glass); color: inherit; text-decoration: none; transition: border-color 0.2s, transform 0.25s var(--y-ease); }
+.yao-pclip:hover { border-color: var(--y-red); transform: translateY(-2px); }
+.yao-pclip__head { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 14px; align-items: center; }
+.yao-pclip__summary { margin: 12px 0; color: var(--y-ink-2); font-size: 14.5px; line-height: 1.5; }
+.yao-pclip__notes { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 13.5px; }
+.yao-pclip__notes li { display: grid; grid-template-columns: auto auto 1fr; gap: 8px; align-items: baseline; }
+.yao-pclip__notes code { font-family: var(--y-mono); font-size: 11px; background: var(--y-ink); color: var(--y-paper); padding: 2px 6px; }
+
+@media (max-width: 920px) {
+  .yao-pd__grid { grid-template-columns: 1fr; }
+  .yao-trends { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .yao-trend:nth-child(3) { border-left: 0; }
+  .yao-trend:nth-child(n + 3) { border-top: 1px solid var(--y-line); }
+  .yao-trow { grid-template-columns: 32px minmax(0, 1fr) 72px 96px; }
+  .yao-trow > :nth-child(3), .yao-trow > :nth-child(4), .yao-trow > :nth-child(5), .yao-trow > :nth-child(6) { display: none; }
+}
+@media (max-width: 640px) {
+  .yao-counters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .yao-counter:nth-child(4) { border-left: 0; }
+  .yao-counter:nth-child(n + 4) { border-top: 1px solid var(--y-line); }
+  .yao-pd__score { justify-items: start; }
+  .yao-pd__score strong { font-size: 64px; }
+  .yao-pd__who { align-items: flex-start; }
+  .yao-filters .yao-field { width: calc(50% - 12px); }
 }
