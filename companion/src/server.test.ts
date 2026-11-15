@@ -46,7 +46,7 @@ test('OPTIONS preflight returns 204 with allow-origin *', async () => {
 test('POST /effect plays on the keyboard', async () => {
   const l = new FakeLights();
   const s = await start(l);
-  const r = await post(`${s.base}/effect`, { type: 'round_win' });
+  const r = await post(`${s.base}/effect`, { type: 'match_win' });
   assert.deepEqual(await r.json(), { played: true });
   assert.equal(l.calls[0], 'mode');
   s.close();
@@ -88,8 +88,8 @@ test('after a mid-session HID error the server still tries to turn the lights of
   const l = new FailsAfterFirst();
   const s = await start(l);
   try {
-    await post(`${s.base}/effect`, { type: 'round_win' });
-    await post(`${s.base}/effect`, { type: 'round_win' }); // this one throws
+    await post(`${s.base}/effect`, { type: 'match_win' });
+    await post(`${s.base}/effect`, { type: 'match_win' }); // this one throws
     assert.equal(l.calls.at(-1), 'off');
   } finally {
     s.close();

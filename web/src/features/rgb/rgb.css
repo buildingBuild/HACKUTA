@@ -52,14 +52,14 @@
 
 /* The root runs an invisible timer animation; its animationend returns the board to "off". */
 .vk--round_win, .vk--round_loss, .vk--ace, .vk--clutch, .vk--match_win, .vk--match_start { animation: vk-timer linear forwards; }
-.vk--round_win { animation-duration: 2s; }
+.vk--round_win { animation-duration: 1.6s; }
 .vk--round_loss { animation-duration: 1s; }
 .vk--ace, .vk--clutch { animation-duration: 2s; }
 .vk--match_win { animation-duration: 4s; }
 .vk--match_start { animation-duration: 1s; }
 @keyframes vk-timer { from { outline-color: transparent; } to { outline-color: transparent; } }
 
-.vk--round_win :is(.vk__key, .vk__bar) { animation: vk-breathe 1s ease-in-out 2; }
+.vk--round_win :is(.vk__key, .vk__bar) { animation: vk-flash 0.4s linear 4; }
 .vk--round_loss :is(.vk__key, .vk__bar) { animation: vk-dark 1s linear 1; }
 :is(.vk--ace, .vk--clutch) :is(.vk__key, .vk__bar) { animation: vk-strobe 0.25s steps(1) 8; }
 .vk--match_win :is(.vk__key, .vk__bar) { animation: vk-cycle 4s linear 1; }
@@ -68,9 +68,9 @@
 .vk--match_win .vk__key[data-zone='3'] { animation-delay: -0.75s; }
 .vk--match_start :is(.vk__key, .vk__bar) { animation: vk-start 1s steps(1) 1; }
 
-@keyframes vk-breathe {
-  0%, 100% { background: var(--off); box-shadow: none; }
-  50% { background: var(--red); box-shadow: 0 0 10px var(--red); }
+@keyframes vk-flash {
+  0%, 62% { background: var(--red); box-shadow: 0 0 10px var(--red); }
+  63%, 100% { background: var(--off); box-shadow: none; }
 }
 @keyframes vk-dark { from, to { background: #141414; box-shadow: none; } }
 @keyframes vk-solid { from, to { background: var(--red); box-shadow: 0 0 10px var(--red); } }
