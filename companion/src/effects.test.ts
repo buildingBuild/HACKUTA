@@ -31,12 +31,12 @@ test('a new effect cancels the running one and lights still end off', async () =
   const l = new FakeLights();
   const p = new Player(l, instant);
   const first = p.play('ace');
-  const second = p.play('match_win');
+  const second = p.play('round_loss');
   await Promise.all([first, second]);
-  const winIdx = l.calls.findIndex((c) => c[0] === 'mode' && c[1] === 2);
-  assert.ok(winIdx >= 0, 'match_win ran');
+  const winIdx = l.calls.findIndex((c) => c[0] === 'off');
+  assert.ok(winIdx >= 0, 'round_loss ran');
   const afterWin = l.calls.slice(winIdx + 1);
-  assert.ok(!afterWin.some((c) => c[0] === 'color' && c[1] === 255 && c[2] === 255), 'no ace white flash after match_win started');
+  assert.ok(!afterWin.some((c) => c[0] === 'color' && c[1] === 255 && c[2] === 255), 'no ace white flash after round_loss started');
   assert.deepEqual(l.calls.at(-1), ['off']);
 });
 
@@ -98,6 +98,29 @@ test('while the base is on and idle it is re-applied, so other lighting apps can
 
 test('a long effect step is re-applied during its hold', async () => {
   const l = new FakeLights();
-  await new Player(l, instant, 1000).play('match_win');
-  assert.equal(l.calls.filter((c) => c[0] === 'mode' && c[1] === 2).length, 4);
+  await new Player(l, instant, 500).play('match_win'); // final red hold is 1500 ms -> applied 3 times
+  const tail = l.calls.slice(-4);
+  assert.deepEqual(tail, [['color', 255, 0, 0], ['color', 255, 0, 0], ['color', 255, 0, 0], ['off']]);
+});
+
+test('a kill punches white, then full red, then rests', async () => {
+  const l = new FakeLights();
+  const p = new Player(l, instant);
+  p.setBase(true);
+  await p.play('kill');
+  assert.deepEqual(l.calls.slice(1), [['color', 255, 255, 255], ['color', 255, 0, 0], ['base']]);
+});
+
+test('round win flashes against a full blackout for maximum contrast', async () => {
+  const l = new FakeLights();
+  const p = new Player(l, instant);
+  p.setBase(true);
+  await p.play('round_win');
+  assert.ok(l.calls.filter((c) => c[0] === 'off').length >= 5, 'blackout gaps between flashes');
+});
+
+test('match win is on-brand red/white, not a rainbow', async () => {
+  const l = new FakeLights();
+  await new Player(l, instant).play('match_win');
+  assert.ok(!l.calls.some((c) => c[0] === 'mode' && c[1] === 2), 'no colour cycle');
 });

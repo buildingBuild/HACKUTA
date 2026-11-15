@@ -4,28 +4,34 @@
 // re-applied every `keepAliveMs` while idle on the base or holding a long step.
 import type { Lights } from './aura.ts';
 
-export type EffectName = 'round_win' | 'round_loss' | 'ace' | 'clutch' | 'match_win' | 'match_start';
+export type EffectName = 'kill' | 'round_win' | 'round_loss' | 'ace' | 'clutch' | 'match_win' | 'match_start';
 /** `rest` returns the board to its resting state (dim-red base, or off). */
 export type Step = { do: (l: Lights, rest: () => void) => void; ms: number };
 
 const RED = [255, 0, 0] as const;
 const WHITE = [255, 255, 255] as const;
-const strobe: Step[] = Array.from({ length: 8 }, () => [
-  { do: (l: Lights) => l.color(...WHITE), ms: 125 },
-  { do: (l: Lights) => l.color(...RED), ms: 125 },
-]).flat();
-// Brighten to full red and drop back to the resting state: the "flash" on a FaZe round win.
-const flash: Step[] = Array.from({ length: 4 }, () => [
-  { do: (l: Lights) => l.color(...RED), ms: 250 },
-  { do: (_l: Lights, rest: () => void) => rest(), ms: 150 },
+const strobe = (n: number): Step[] =>
+  Array.from({ length: n }, () => [
+    { do: (l: Lights) => l.color(...WHITE), ms: 125 },
+    { do: (l: Lights) => l.color(...RED), ms: 125 },
+  ]).flat();
+// Full red against a full blackout: the round-win flash, exaggerated for a stage demo.
+const flash: Step[] = Array.from({ length: 5 }, () => [
+  { do: (l: Lights) => l.color(...RED), ms: 200 },
+  { do: (l: Lights) => l.off(), ms: 120 },
 ]).flat();
 
 export const EFFECTS: Record<EffectName, Step[]> = {
-  round_win: flash,
+  // A FaZe kill: a white punch, then full red, then back to the base.
+  kill: [
+    { do: (l) => l.color(...WHITE), ms: 100 },
+    { do: (l) => l.color(...RED), ms: 400 },
+  ],
+  round_win: [...flash, { do: (l) => l.color(...RED), ms: 600 }],
   round_loss: [{ do: (l) => l.off(), ms: 1000 }], // blackout against the dim-red base
-  ace: strobe,
-  clutch: strobe,
-  match_win: [{ do: (l) => l.mode(2, ...RED, 'fast'), ms: 4000 }],
+  ace: strobe(12),
+  clutch: strobe(12),
+  match_win: [...strobe(12), { do: (l) => l.color(...RED), ms: 1500 }],
   match_start: [
     { do: (l) => l.color(...WHITE), ms: 400 },
     { do: (l) => l.color(...RED), ms: 600 },

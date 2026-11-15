@@ -10,6 +10,7 @@ import { loadYouTube, type YTPlayer } from './youtube';
 import './rgb.css';
 
 const LABEL: Record<EffectName, string> = {
+  kill: 'Kill',
   match_start: 'Match start',
   round_win: 'Round win',
   round_loss: 'Round loss',
@@ -17,7 +18,7 @@ const LABEL: Record<EffectName, string> = {
   clutch: 'Clutch',
   match_win: 'Match win',
 };
-const MARK_KEYS: Record<string, EffectName> = { w: 'round_win', a: 'ace', l: 'round_loss', m: 'match_win', c: 'clutch', s: 'match_start' };
+const MARK_KEYS: Record<string, EffectName> = { k: 'kill', w: 'round_win', a: 'ace', l: 'round_loss', m: 'match_win', c: 'clutch', s: 'match_start' };
 const fmt = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 const sortCues = (c: Cue[]) => [...c].sort((a, b) => a.t - b.t);
 
@@ -150,7 +151,7 @@ export function RgbPage() {
       <PageHeader
         kicker={<>FaZe HQ · RGB Sync <Badge tone="red">Live</Badge></>}
         title="RGB Sync"
-        lede="Watch FaZe play and your keyboard plays along: it glows FaZe red through the match, then lights up on a round win, strobes on an ace and sweeps colour when FaZe takes the map."
+        lede="Watch FaZe play and your keyboard plays along: it glows FaZe red through the clip, punches white-hot on every FaZe kill and goes off on a clutch."
       />
 
       <div className="rgb">
@@ -224,7 +225,7 @@ export function RgbPage() {
         </div>
         {marking && (
           <p className="rgb__hint">
-            Click anywhere on the page (not the video) once, then while the clip plays press <kbd>W</kbd> round win · <kbd>A</kbd> ace · <kbd>L</kbd> round loss · <kbd>C</kbd> clutch ·{' '}
+            Click anywhere on the page (not the video) once, then while the clip plays press <kbd>K</kbd> kill · <kbd>W</kbd> round win · <kbd>A</kbd> ace · <kbd>L</kbd> round loss · <kbd>C</kbd> clutch ·{' '}
             <kbd>M</kbd> match win · <kbd>S</kbd> match start. Then copy the cues into <code>web/src/features/rgb/clip.ts</code>.
           </p>
         )}

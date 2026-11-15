@@ -48,7 +48,7 @@ test('POST /effect plays on the keyboard', async () => {
   const s = await start(l);
   const r = await post(`${s.base}/effect`, { type: 'match_win' });
   assert.deepEqual(await r.json(), { played: true });
-  assert.equal(l.calls[0], 'mode');
+  assert.equal(l.calls[0], 'color');
   s.close();
 });
 
@@ -80,8 +80,8 @@ class FailsAfterFirst implements Lights {
   private n = 0;
   off() { this.calls.push('off'); }
   base() { this.calls.push('base'); }
-  color() { this.calls.push('color'); }
-  mode() { if (this.n++ > 0) throw new Error('usb hiccup'); this.calls.push('mode'); }
+  color() { if (this.n++ > 0) throw new Error('usb hiccup'); this.calls.push('color'); }
+  mode() { this.calls.push('mode'); }
 }
 
 test('after a mid-session HID error the server still tries to turn the lights off', async () => {
@@ -118,6 +118,15 @@ test('POST /base turns the dim-red base on and off', async () => {
     assert.deepEqual(await (await post(`${s.base}/base`, { on: true })).json(), { ok: true });
     assert.deepEqual(await (await post(`${s.base}/base`, { on: false })).json(), { ok: true });
     assert.deepEqual(l.calls, ['base', 'off']);
+  } finally {
+    s.close();
+  }
+});
+
+test('POST /effect accepts a kill', async () => {
+  const s = await start(new FakeLights());
+  try {
+    assert.deepEqual(await (await post(`${s.base}/effect`, { type: 'kill' })).json(), { played: true });
   } finally {
     s.close();
   }
