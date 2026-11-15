@@ -41,6 +41,26 @@ export type Profile = {
   karma: number;
   elo_rank: { rank: number; total: number } | null;
   scout: ScoutProgress;
+  dossier: Dossier;
+};
+
+export type Dossier = {
+  percentiles: { metric: string; label: string; digits: number; value: number; better_than_pct: number | null; pool: number }[];
+  form: {
+    days_tracked: number;
+    elo_delta: number | null;
+    kd_delta: number | null;
+    adr_delta: number | null;
+    hs_delta: number | null;
+    consistency: "high" | "steady" | "streaky" | null;
+    consistency_cv: number | null;
+  };
+  skills: {
+    categories: { key: string; label: string; avg: number; clips: number }[];
+    strongest: string | null;
+    weakest: string | null;
+    clips_analyzed: number;
+  };
 };
 
 export type LeaderboardType = "elo" | "clip-score" | "improvement" | "creator-growth" | "karma";
