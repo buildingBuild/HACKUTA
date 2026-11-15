@@ -6,6 +6,7 @@ import { pool } from './client.js';
 import { seedFanHub } from './seed-fanhub.js';
 import { seed as seedPlayers } from './seed-yao.js';
 import { seedJoe } from './seed-joe.js';
+import { seedRewards } from './seed-rewards.js';
 
 // §7.5 demo login picker accounts that aren't owned by a feature seed.
 const FANS = [
@@ -41,6 +42,7 @@ try {
   await seedFanHub(pool); // V3: backdated threads, comments and votes across every board
   // Joe:    await seedClips(pool);
   await seedJoe(pool); // Joe: top-20 leaderboard fans + meme/anime profile pictures (web/public/avatars)
+  await seedRewards(pool); // Omar: FaZe Points store catalog + og_fan points history
   await refreshAggregates();
   console.log('✓ seed complete');
 } catch (e) {

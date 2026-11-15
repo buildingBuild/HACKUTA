@@ -6,6 +6,7 @@
 //   /feed                   FaZe Feed, experimental masonry (Joe)    public
 //   /leaderboards           public leaderboards (Omar)               public
 //   /timeline               FaZe history as a tree (Omar)            public
+//   /rewards                FaZe Points: challenges + store (Omar)   public, earning needs sign-in
 //   /u/:handle, /me         fan profile (Omar)                       public
 //   /rgb                    RGB Sync: clip-synced keyboard lighting  public
 //   /hud /guessr /wall      Phase 2 features (branded placeholders)  public
@@ -29,6 +30,7 @@ import { LeaderboardsPage, ProfilePage } from './features/profile';
 import { RecruitingPage } from './features/recruiting/RecruitingPage';
 import { RgbPage } from './features/rgb/RgbPage';
 import { TimelinePage } from './features/timeline';
+import { RewardsPage } from './features/rewards';
 
 const match = (path: string, pattern: RegExp) => path.match(pattern)?.[1];
 
@@ -59,6 +61,7 @@ export function App() {
   else if (path === '/leaderboards') page = <LeaderboardsPage highlightHandle={user?.handle} />;
   else if (path === '/rgb') page = <RgbPage />;
   else if (path === '/timeline') page = <TimelinePage />;
+  else if (path === '/rewards') page = <RewardsPage />;
   else if (feature) page = <ComingSoon feature={feature} />;
   else if (path === '/recruiter') {
     window.location.replace('/recruiting');
