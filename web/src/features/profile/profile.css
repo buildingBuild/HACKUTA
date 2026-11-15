@@ -94,7 +94,13 @@ a.pf-badge:hover { border-color: var(--pf-red); color: var(--pf-red); }
 @keyframes pf-node-pulse { 0%, 100% { box-shadow: 0 0 0 5px var(--pf-red-soft); } 50% { box-shadow: 0 0 0 12px rgba(228, 0, 43, 0); } }
 
 /* ---------- stat strip (ruled, no boxes) ---------- */
-.pf-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-bottom: 1px solid var(--pf-line); margin-bottom: 40px; }
+.pf-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-bottom: 1px solid var(--pf-line); margin-bottom: 0; }
+
+/* trend sits directly under the strip it's driven by */
+.pf-trend { padding: 22px 0 28px; border-bottom: 1px solid var(--pf-line); margin-bottom: 40px; }
+.pf-trend__head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
+.pf-trend__head .pf-kicker { margin: 0; order: 2; }
+.pf-trend .pf-chart svg { height: 170px; }
 .pf-stat { all: unset; box-sizing: border-box; position: relative; display: flex; flex-direction: column; gap: 6px; padding: 20px 18px 18px; cursor: pointer; min-width: 0;
   border-right: 1px solid var(--pf-line); transition: background 0.25s; }
 .pf-stat:last-child { border-right: 0; }

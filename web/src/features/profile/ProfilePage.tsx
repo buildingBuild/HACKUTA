@@ -164,20 +164,20 @@ function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (id: stri
         </section>
       )}
 
+      {hasStats && (
+        <section className="pf-trend pf-rise" aria-labelledby="pf-trend-h" aria-live="polite">
+          <div className="pf-trend__head">
+            <p className="pf-kicker"><span className="pf-kicker__bar" />Trend<span className="pf-kicker__dim">· pick a stat above</span></p>
+            <h2 id="pf-trend-h" className="pf-display pf-h2">{trendTile.label} · last 30 days</h2>
+          </div>
+          <TrendChart points={p.trends[trendKey] ?? []} digits={trendTile.digits} label={trendTile.label} height={170} />
+        </section>
+      )}
+
       <ScoutDossier scout={p.scout} dossier={p.dossier} />
 
       <div className="pf-grid">
         <div className="pf-col">
-          {hasStats && (
-            <section className="pf-panel pf-rise" aria-labelledby="pf-trend-h">
-              <div className="pf-panel__head">
-                <p className="pf-kicker"><span className="pf-kicker__bar" />Trend</p>
-                <h2 id="pf-trend-h" className="pf-display pf-h2">{trendTile.label} · 30 days</h2>
-              </div>
-              <TrendChart points={p.trends[trendKey] ?? []} digits={trendTile.digits} label={trendTile.label} height={150} />
-            </section>
-          )}
-
           <section className="pf-panel pf-rise" aria-labelledby="pf-clips-h">
             <div className="pf-panel__head">
               <p className="pf-kicker"><span className="pf-kicker__bar" />Highlight reel<span className="pf-kicker__dim">· ranked by AI coaching score</span></p>
