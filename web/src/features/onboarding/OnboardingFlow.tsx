@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { FazeLogo } from '../../components/FazeLogo';
 import { STEP_LINES } from './quotes';
-import { loadOnboarding, saveOnboarding } from './storage';
-import { ConsoleStep, GamertagStep, GameStep, IntroStep, ReviewStep, StreamingStep } from './Steps';
+import { saveOnboarding } from './storage';
+import { AccountsStep, GamertagStep, GameStep, IntroStep, ReviewStep } from './Steps';
 import { Ticker } from './Ticker';
 import { TraceLine } from './TraceLine';
-import { STEPS, type OnboardingData, type StepId, type StepStatus } from './types';
+import { EMPTY_DATA, GAMES, STEPS, type OnboardingData, type StepId, type StepStatus } from './types';
 import './onboarding.css';
 
 const EXIT_MS = 420;
@@ -13,8 +14,7 @@ const HEADINGS: Record<StepId, string> = {
   intro: '',
   game: "What's your game?",
   gamertag: 'Drop your tag.',
-  streaming: 'Where do you stream?',
-  console: 'Console accounts.',
+  accounts: 'Bring your highlights.',
   review: 'Lock it in.',
 };
 
@@ -24,17 +24,15 @@ function hasValue(id: StepId, d: OnboardingData): boolean {
       return d.game !== null;
     case 'gamertag':
       return d.gamertag.trim().length >= 2;
-    case 'streaming':
-      return Boolean(d.twitch.trim() || d.youtube.trim());
-    case 'console':
-      return Boolean(d.psn.trim() || d.xbox.trim());
+    case 'accounts':
+      return Boolean(d.twitch.trim() || d.youtube.trim() || d.psn.trim() || d.xbox.trim());
     default:
       return true;
   }
 }
 
 export function OnboardingFlow() {
-  const [data, setData] = useState<OnboardingData>(loadOnboarding);
+  const [data, setData] = useState<OnboardingData>(() => ({ ...EMPTY_DATA })); // fresh each visit
   const [index, setIndex] = useState(0); // STEPS.length means finished
   const [leaving, setLeaving] = useState(false);
   const timer = useRef<number | undefined>(undefined);
@@ -71,13 +69,15 @@ export function OnboardingFlow() {
 
   const optionalEmpty = !step.required && !filled && step.id !== 'intro' && step.id !== 'review';
   const primaryLabel =
-    step.id === 'intro' ? 'Start' : step.id === 'review' ? 'FaZe up' : optionalEmpty ? 'Skip for now' : 'Continue';
+    step.id === 'intro' ? 'Enter HQ' : step.id === 'review' ? 'FaZe up' : optionalEmpty ? 'Skip for now' : 'Continue';
 
   return (
     <div className="onb">
+      <FazeLogo className={`watermark ${finished ? 'watermark--done' : ''}`} />
       <header className="onb__top">
         <span className="brand">
-          FaZe<span className="brand__hq">HQ</span>
+          <FazeLogo className="brand__logo" title="FaZe" />
+          <span className="brand__hq">HQ</span>
         </span>
         <TraceLine steps={STEPS} statuses={statuses} />
         <span className="onb__count">
@@ -86,7 +86,7 @@ export function OnboardingFlow() {
       </header>
 
       <main className="onb__stage">
-        <div key={index} className={`panel ${leaving ? 'panel--leave' : 'panel--enter'}`}>
+        <div key={index} className={`panel ${leaving ? 'panel--leave' : 'panel--enter'} ${step.id === 'game' && !finished ? 'panel--wide' : ''}`}>
           <span className="panel__bloom" aria-hidden="true" />
           {finished ? (
             <DoneScreen data={data} onEdit={() => goTo(STEPS.length - 1)} />
@@ -96,6 +96,7 @@ export function OnboardingFlow() {
                 <IntroStep />
               ) : (
                 <>
+                  {step.id !== 'accounts' && (
                   <p className="kicker rise" style={{ ['--i' as string]: 0 }}>
                     <span className="kicker__bar" />
                     {step.required ? (
@@ -109,14 +110,16 @@ export function OnboardingFlow() {
                     )}
                     <span className="kicker__line">{STEP_LINES[step.id]}</span>
                   </p>
+                  )}
                   <h2 className="heading rise" style={{ ['--i' as string]: 1 }}>
-                    {HEADINGS[step.id]}
+                    {step.id === 'gamertag'
+                      ? `Drop your ${GAMES.find((g) => g.id === data.game)?.code ?? ''} gamertag.`.replace('  ', ' ')
+                      : HEADINGS[step.id]}
                   </h2>
                   <div className="panel__body">
                     {step.id === 'game' && <GameStep data={data} update={update} />}
                     {step.id === 'gamertag' && <GamertagStep data={data} update={update} />}
-                    {step.id === 'streaming' && <StreamingStep data={data} update={update} />}
-                    {step.id === 'console' && <ConsoleStep data={data} update={update} />}
+                    {step.id === 'accounts' && <AccountsStep data={data} update={update} />}
                     {step.id === 'review' && (
                       <ReviewStep data={data} jump={(id) => goTo(STEPS.findIndex((s) => s.id === id))} />
                     )}
@@ -125,29 +128,31 @@ export function OnboardingFlow() {
               )}
 
               <div className="actions rise" style={{ ['--i' as string]: 6 }}>
-                {index > 0 && (
-                  <button type="button" className="btn-ghost" onClick={() => goTo(index - 1)}>
-                    ← Back
-                  </button>
-                )}
-                <button
-                  type="submit"
-                  className={`btn ${optionalEmpty ? 'btn--outline' : ''}`}
-                  disabled={!canContinue}
-                >
-                  {primaryLabel} <span className="btn__arrow">→</span>
-                </button>
-                <span className="actions__hint">
-                  {canContinue ? (
-                    <>
-                      press <kbd>Enter</kbd>
-                    </>
-                  ) : step.id === 'game' ? (
-                    'pick one to continue'
-                  ) : (
-                    'need at least 2 characters'
+                <div className="btn-group">
+                  {index > 0 && (
+                    <button
+                      type="button"
+                      className="btn-square"
+                      onClick={() => goTo(index - 1)}
+                      aria-label="Back"
+                      title="Back"
+                    >
+                      ←
+                    </button>
                   )}
-                </span>
+                  <button
+                    type="submit"
+                    className={`btn ${optionalEmpty ? 'btn--outline' : ''} ${step.id === 'intro' ? 'btn--xl' : ''}`}
+                    disabled={!canContinue}
+                  >
+                    {primaryLabel} <span className="btn__arrow">→</span>
+                  </button>
+                </div>
+                {!canContinue && (
+                  <span className="actions__hint actions__hint--warn">
+                    {step.id === 'game' ? 'Pick a game to continue' : 'Needs at least 2 characters'}
+                  </span>
+                )}
               </div>
             </form>
           )}
@@ -165,7 +170,7 @@ function DoneScreen({ data, onEdit }: { data: OnboardingData; onEdit: () => void
   return (
     <div className="done">
       <p className="kicker rise" style={{ ['--i' as string]: 0 }}>
-        <span className="kicker__bar" /> Profile locked
+        <span className="kicker__bar" /> Welcome to HQ
       </p>
       <h1 className="done__title rise" style={{ ['--i' as string]: 1 }}>
         FaZe up,
@@ -173,18 +178,20 @@ function DoneScreen({ data, onEdit }: { data: OnboardingData; onEdit: () => void
         <span className="done__tag">{data.gamertag}.</span>
       </h1>
       <p className="lede rise" style={{ ['--i' as string]: 2 }}>
-        You're on the radar<span className="intro__star">*</span>
+        You're in<span className="intro__star">*</span>
       </p>
       <p className="footnote rise" style={{ ['--i' as string]: 3 }}>
-        * Scouting starts with your first clip.
+        * Threads, clips, coaching. Start with your first clip.
       </p>
       <div className="actions rise" style={{ ['--i' as string]: 4 }}>
-        <button type="button" className="btn-ghost" onClick={onEdit}>
-          ← Edit answers
-        </button>
-        <button type="button" className="btn" title="Clip upload is the next screen we build">
-          Upload your first clip <span className="btn__arrow">→</span>
-        </button>
+        <div className="btn-group">
+          <button type="button" className="btn-square" onClick={onEdit} aria-label="Edit answers" title="Edit answers">
+            ←
+          </button>
+          <button type="button" className="btn" title="Clip upload is the next screen we build">
+            Upload your first clip <span className="btn__arrow">→</span>
+          </button>
+        </div>
       </div>
     </div>
   );

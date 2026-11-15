@@ -35,9 +35,16 @@ export function Field({ label, value, onChange, onBlur, placeholder, prefix, hin
           maxLength={maxLength}
         />
         <span className="field__check" aria-hidden="true">✓</span>
+        {hint && (
+          <span className="field__info" tabIndex={0} aria-describedby={`${id}-tip`}>
+            i
+            <span role="tooltip" id={`${id}-tip`} className="field__tip">
+              {hint}
+            </span>
+          </span>
+        )}
       </div>
       <span className="field__underline" aria-hidden="true" />
-      {hint && <span className="field__hint">{hint}</span>}
     </div>
   );
 }
