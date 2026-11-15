@@ -59,3 +59,8 @@
   .nav__links { order: 3; flex-basis: 100%; overflow-x: auto; }
   .nav__login-label { display: none; }
 }
+
+/* logo mark instead of text (matches onboarding) */
+.nav__brand { display: inline-flex; align-items: flex-start; gap: 6px; }
+.nav__logo { width: 40px; height: auto; color: var(--faze-red); }
+.nav__brand .brand__hq { margin-left: 0; vertical-align: baseline; color: var(--ink); font-weight: 900; }

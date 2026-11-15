@@ -1,4 +1,6 @@
+import { useEffect, useRef } from 'react';
 import { Field } from './Field';
+import { GameCard } from './GameCard';
 import { toHandle } from './storage';
 import { GAMES, type OnboardingData, type StepId } from './types';
 
@@ -10,23 +12,22 @@ interface StepProps {
 }
 
 const ROADMAP = [
-  { title: 'Set up', desc: 'Pick your game, drop your tag, link your channels.' },
-  { title: 'Get coached', desc: 'Upload clips. AI breaks down your aim, movement and utility.' },
-  { title: 'Get scouted', desc: 'Cross the threshold and recruiters get your report.' },
+  { title: 'Join the fam', desc: 'Old heads and new fans.' },
+  { title: 'Post your plays', desc: 'Share clips. Get AI coaching.' },
+  { title: 'Get connected', desc: 'Squad up. Get seen by recruiters.' },
 ];
 
 export function IntroStep() {
   return (
     <div className="intro">
       <p className="kicker rise" style={{ ['--i' as string]: 0 }}>
-        <span className="kicker__bar" /> FaZe HQ · Talent intake
+        <span className="kicker__bar" /> FaZe HQ · Home base
       </p>
       <h1 className="intro__title rise" style={{ ['--i' as string]: 1 }}>
         FaZe up<span className="intro__star">*</span>
       </h1>
       <p className="lede rise" style={{ ['--i' as string]: 2 }}>
-        Your scouting profile starts here. Every clip you upload gets broken down by an AI coach and
-        scored. Hit the bar, and your scout report goes straight to recruiters.
+        Home for FaZe fans. Day ones and new blood.
       </p>
       <ol className="roadmap rise" style={{ ['--i' as string]: 3 }}>
         {ROADMAP.map((r, i) => (
@@ -47,25 +48,15 @@ export function IntroStep() {
 export function GameStep({ data, update }: StepProps) {
   return (
     <div className="game-grid" role="radiogroup" aria-label="Game">
-      {GAMES.map((g, i) => {
-        const selected = data.game === g.id;
-        return (
-          <button
-            key={g.id}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            disabled={!g.live}
-            className={`game-card rise ${selected ? 'game-card--on' : ''} ${g.live ? '' : 'game-card--soon'} ${i === 0 ? 'game-card--hero' : ''}`}
-            style={{ ['--i' as string]: i + 2 }}
-            onClick={() => update({ game: g.id })}
-          >
-            <span className="game-card__code">{g.code}</span>
-            <span className="game-card__name">{g.name}</span>
-            <span className="game-card__tag">{g.live ? (selected ? 'Locked' : 'Live') : 'Soon'}</span>
-          </button>
-        );
-      })}
+      {GAMES.map((g, i) => (
+        <GameCard
+          key={g.id}
+          game={g}
+          index={i}
+          selected={data.game === g.id}
+          onSelect={() => update({ game: g.id })}
+        />
+      ))}
     </div>
   );
 }
@@ -76,6 +67,7 @@ export function GamertagStep({ data, update }: StepProps) {
     <div className="rise" style={{ ['--i' as string]: 2 }}>
       <Field
         label={cs2 ? 'FACEIT nickname' : 'Gamertag'}
+        icon={cs2 ? '/brand/social/faceit.svg' : undefined}
         value={data.gamertag}
         onChange={(v) => update({ gamertag: v.replace(/\s/g, '') })}
         placeholder="your_tag"
@@ -87,42 +79,53 @@ export function GamertagStep({ data, update }: StepProps) {
   );
 }
 
-export function StreamingStep({ data, update }: StepProps) {
+export function AccountsStep({ data, update }: StepProps) {
   return (
-    <div className="field-stack">
+    <div className="field-grid">
       <div className="rise" style={{ ['--i' as string]: 2 }}>
         <Field
           label="Twitch"
+          icon="/brand/social/twitch.svg"
           prefix="twitch.tv/"
           value={data.twitch}
           onChange={(v) => update({ twitch: v })}
           onBlur={() => update({ twitch: toHandle(data.twitch) })}
           placeholder="channel"
+          hint="We'll pull your Twitch clips and VOD highlights."
           autoFocus
         />
       </div>
       <div className="rise" style={{ ['--i' as string]: 3 }}>
         <Field
           label="YouTube"
-          prefix="youtube.com/@"
+          icon="/brand/social/youtube.svg"
+          prefix="@"
           value={data.youtube}
           onChange={(v) => update({ youtube: v })}
           onBlur={() => update({ youtube: toHandle(data.youtube) })}
           placeholder="handle"
+          hint="We'll pull your YouTube videos and Shorts."
         />
       </div>
-    </div>
-  );
-}
-
-export function ConsoleStep({ data, update }: StepProps) {
-  return (
-    <div className="field-stack">
-      <div className="rise" style={{ ['--i' as string]: 2 }}>
-        <Field label="PSN ID" value={data.psn} onChange={(v) => update({ psn: v })} placeholder="psn_id" autoFocus />
+      <div className="rise" style={{ ['--i' as string]: 4 }}>
+        <Field
+          label="PSN ID"
+          icon="/brand/social/playstation.svg"
+          value={data.psn}
+          onChange={(v) => update({ psn: v })}
+          placeholder="psn_id"
+          hint="We'll pull your PlayStation captures."
+        />
       </div>
-      <div className="rise" style={{ ['--i' as string]: 3 }}>
-        <Field label="Xbox gamertag" value={data.xbox} onChange={(v) => update({ xbox: v })} placeholder="gamertag" />
+      <div className="rise" style={{ ['--i' as string]: 5 }}>
+        <Field
+          label="Xbox gamertag"
+          icon="/brand/social/xbox.svg"
+          value={data.xbox}
+          onChange={(v) => update({ xbox: v })}
+          placeholder="gamertag"
+          hint="We'll pull your Xbox game clips."
+        />
       </div>
     </div>
   );
@@ -133,27 +136,115 @@ interface ReviewProps {
   jump: (id: StepId) => void;
 }
 
+interface OrbitNode {
+  key: string;
+  label: string;
+  value: string;
+  icon: string;
+  step: StepId;
+}
+
+const CRUISE = 7.5; // deg/s, one lap every ~48s
+const CHARGE = 16; // deg/s while hovering FaZe Up (gentle spin-up)
+
+/** Everything they linked, orbiting the FaZe Up button. Click a node to edit it. */
 export function ReviewStep({ data, jump }: ReviewProps) {
   const game = GAMES.find((g) => g.id === data.game);
-  const rows: { label: string; value: string; step: StepId }[] = [
-    { label: 'Game', value: game?.name ?? '', step: 'game' },
-    { label: data.game === 'cs2' ? 'FACEIT' : 'Gamertag', value: data.gamertag, step: 'gamertag' },
-    { label: 'Twitch', value: data.twitch && `twitch.tv/${data.twitch}`, step: 'streaming' },
-    { label: 'YouTube', value: data.youtube && `@${data.youtube}`, step: 'streaming' },
-    { label: 'PSN', value: data.psn, step: 'console' },
-    { label: 'Xbox', value: data.xbox, step: 'console' },
+  const nodes: OrbitNode[] = [
+    { key: 'game', label: 'Game', value: game?.code ?? '', icon: data.game === 'cs2' ? '/brand/social/counterstrike.svg' : game?.logo ?? '', step: 'game' },
+    { key: 'faceit', label: data.game === 'cs2' ? 'FACEIT' : 'Gamertag', value: data.gamertag, icon: '/brand/social/faceit.svg', step: 'gamertag' },
+    { key: 'twitch', label: 'Twitch', value: data.twitch, icon: '/brand/social/twitch.svg', step: 'accounts' },
+    { key: 'youtube', label: 'YouTube', value: data.youtube && `@${data.youtube}`, icon: '/brand/social/youtube.svg', step: 'accounts' },
+    { key: 'psn', label: 'PSN', value: data.psn, icon: '/brand/social/playstation.svg', step: 'accounts' },
+    { key: 'xbox', label: 'Xbox', value: data.xbox, icon: '/brand/social/xbox.svg', step: 'accounts' },
   ];
+  const linked = nodes.filter((n) => n.value).length;
+
+  // Rotation is driven here (not CSS) so speed can ease smoothly:
+  // cruise normally, glide to a stop over a node, spin up over FaZe Up.
+  const orbitRef = useRef<HTMLDivElement>(null);
+  const targetSpeed = useRef(CRUISE);
+  useEffect(() => {
+    const el = orbitRef.current;
+    if (!el) return;
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let angle = 0;
+    let speed = still ? 0 : CRUISE;
+    let last = performance.now();
+    let raf = 0;
+    const frame = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      const target = still ? 0 : targetSpeed.current;
+      speed += (target - speed) * (1 - Math.exp(-dt * 2.6)); // smooth ease toward target
+      angle = (angle + speed * dt) % 360;
+      el.style.setProperty('--rot', `${angle}deg`);
+      raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+  const setSpeed = (v: number) => () => {
+    targetSpeed.current = v;
+  };
+
   return (
-    <dl className="review">
-      {rows.map((r, i) => (
-        <div key={r.label} className="review__row rise" style={{ ['--i' as string]: i + 2 }}>
-          <dt>{r.label}</dt>
-          <dd className={r.value ? '' : 'review__empty'}>{r.value || 'Skipped, link later'}</dd>
-          <button type="button" className="review__edit" onClick={() => jump(r.step)}>
-            Edit
-          </button>
+    <>
+    <p className="lede review__lede rise" style={{ ['--i' as string]: 2 }}>
+      We pull your clips from everywhere and break down every play, so you know exactly how to level up. The
+      community sees your grind. <strong className="review__punch">FaZe notices.</strong>
+    </p>
+    <div className="orbit-wrap rise" style={{ ['--i' as string]: 3 }}>
+      <div className="orbit" ref={orbitRef}>
+        <span className="radar" aria-hidden="true">
+          <span className="radar__sweep" />
+          <span className="radar__ping" />
+          <span className="radar__ping radar__ping--late" />
+        </span>
+        <div className="orbit__spin">
+          {nodes.map((n, i) => {
+            const angle = (360 / nodes.length) * i - 90;
+            return (
+              <div key={n.key} className="orbit__arm" style={{ ['--a' as string]: `${angle}deg`, ['--k' as string]: i }}>
+                <button
+                  type="button"
+                  className={`node ${n.value ? 'node--on' : 'node--off'}`}
+                  onClick={() => jump(n.step)}
+                  onMouseEnter={setSpeed(0)}
+                  onMouseLeave={setSpeed(CRUISE)}
+                  onFocus={setSpeed(0)}
+                  onBlur={setSpeed(CRUISE)}
+                  title={`Edit ${n.label}`}
+                >
+                  <span className="node__upright">
+                    <span className="node__badge">
+                      <img src={n.icon} alt="" draggable={false} />
+                    </span>
+                    <span className="node__label">{n.label}</span>
+                    <span className="node__value">{n.value || 'Skipped'}</span>
+                  </span>
+                </button>
+              </div>
+            );
+          })}
         </div>
-      ))}
-    </dl>
+
+        <button
+          type="submit"
+          className="core"
+          onMouseEnter={setSpeed(CHARGE)}
+          onMouseLeave={setSpeed(CRUISE)}
+          onFocus={setSpeed(CHARGE)}
+          onBlur={setSpeed(CRUISE)}
+        >
+          <span className="core__label">FaZe up</span>
+          <span className="core__arrow">→</span>
+          <span className="core__count">
+            {linked}/{nodes.length} linked
+          </span>
+        </button>
+      </div>
+    </div>
+    </>
   );
 }
