@@ -67,6 +67,16 @@ const players: SeedPlayer[] = [
   { handle: 'pixel', display_name: 'Pixel', region: 'EU', faceit: 'pixel_cs', final: { faceit_level: 5, elo: 1210, kd: 0.91, kr: 0.62, hs_pct: 38, adr: 68.9, win_rate: 47 },
     clips: [{ key: 'pixel-1', title: 'First FACEIT ace', map: 'Ancient', side: 'T', daysAgo: 2 }] },
 ];
+const BIOS: Record<string, string> = {
+  vyper: 'Entry fragger. Watching every FaZe match with the lights synced.',
+  kairo: 'AWPer. Grew up on sniping montages, now chasing them.',
+  nyx: 'Mirage enjoyer. Utility first, questions later.',
+  drift: 'Spray transfers and FaZe history threads.',
+  mochi: 'Watch party regular. Predictions are usually wrong.',
+  tempo: 'Eco-round hero (sometimes).',
+  rook: 'B anchor. Learning the lore one Guessr at a time.',
+  pixel: 'Level 5 and climbing. First ace finally landed.',
+};
 const staff = [
   { handle: 'faze_recruiter', display_name: 'FaZe Recruiter (demo)', role: 'recruiter' },
   { handle: 'faze_admin', display_name: 'FaZe Admin (demo)', role: 'admin' },
@@ -83,8 +93,10 @@ export async function seed(db: Db) {
 
   for (const p of players) {
     const { rows: [u] } = await db.query<{ id: string }>(
-      `INSERT INTO users (handle, display_name, role, avatar_url) VALUES ($1, $2, 'user', $3) RETURNING id`,
-      [p.handle, p.display_name, `https://api.dicebear.com/9.x/identicon/svg?seed=${p.handle}`],
+      `INSERT INTO users (handle, display_name, role, avatar_url, bio, created_at)
+       VALUES ($1, $2, 'user', $3, $4, now() - make_interval(days => $5)) RETURNING id`,
+      [p.handle, p.display_name, `https://api.dicebear.com/9.x/identicon/svg?seed=${p.handle}`,
+       `${p.region} CS2 player · FACEIT L${p.final.faceit_level}. ${BIOS[p.handle] ?? 'Here for the matches and the lore.'}`, 20 + players.indexOf(p) * 23],
     );
     await db.query(
       `INSERT INTO game_accounts (user_id, game, faceit_nickname, region, faceit_level, faceit_elo) VALUES ($1, 'cs2', $2, $3, $4, $5)`,

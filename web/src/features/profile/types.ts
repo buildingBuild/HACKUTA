@@ -37,8 +37,17 @@ export type Profile = {
   clip_count: number;
   karma: number;
   elo_rank: { rank: number; total: number } | null;
+  /** Recruiting data: real values for recruiter/admin viewers only (server-gated). */
   scout: ScoutProgress;
-  dossier: Dossier;
+  dossier: Dossier | null;
+  activity: Activity;
+};
+
+export type Activity = {
+  thread_count: number;
+  comment_count: number;
+  threads: { id: string; title: string; score: number; created_at: string; board: string; board_name: string; comment_count: number }[];
+  comments: { id: string; body: string; score: number; created_at: string; thread_id: string; thread_title: string }[];
 };
 
 export type Dossier = {

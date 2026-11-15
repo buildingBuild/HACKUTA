@@ -6,6 +6,7 @@ import { ApiError, fetchProfile, profileUrl } from "./api";
 import { StateBox, TrendChart } from "./components";
 import { ScoutDossier } from "./ScoutDossier";
 import { ShareCard } from "./ShareCard";
+import { ActivityPanel, BioEditor, FanBadges, joinedLabel } from "./FanSections";
 import { FaceitLink } from "./FaceitLink";
 import { ScoutCelebration, useScoutCelebration } from "./ScoutCelebration";
 import { usePolling } from "./usePolling";
@@ -51,11 +52,14 @@ export function ProfilePage({ handle, clipHref = (c) => c.social_post_url || c.b
 
 function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (clip: Profile["clips"][number]) => string; refresh: () => void }) {
   const [trendKey, setTrendKey] = useState<StatKey>("elo");
+  const [bio, setBio] = useState<string | null>(p.user.bio);
   const trendTile = STAT_TILES.find((t) => t.key === trendKey)!;
   const name = p.user.display_name;
   const { user: viewer } = useSessionUser();
   const isMe = viewer?.id === p.user.id;
-  const hasStats = Object.keys(p.stats).length > 0 || p.clip_count > 0 || p.karma !== 0;
+  const activityDone = p.activity.thread_count + p.activity.comment_count > 0;
+  // Game stats only render when there's real FACEIT data (fan-first profile).
+  const hasStats = Object.keys(p.stats).length > 0;
   const celebration = useScoutCelebration(p.scout);
   const faceitNick = p.game?.faceit_nickname ?? null;
   const isStaff = viewer?.role === "recruiter" || viewer?.role === "admin";
@@ -65,6 +69,7 @@ function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (clip: Pr
     p.game?.region,
     p.elo_rank ? `#${p.elo_rank.rank} of ${p.elo_rank.total} by ELO` : null,
     p.clip_count ? `${p.clip_count} clip${p.clip_count === 1 ? "" : "s"}` : null,
+    joinedLabel(p.user.created_at),
   ].filter(Boolean);
 
   return (
@@ -74,7 +79,7 @@ function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (clip: Pr
       <header className="pf-hero pf-rise">
         <div className="pf-hero__id">
           <p className="pf-kicker">
-            <span className="pf-kicker__bar" />CS2 portfolio
+            <span className="pf-kicker__bar" />Fan profile
             {meta.length > 0 && <span className="pf-kicker__dim">· {meta.join(" · ")}</span>}
           </p>
           <h1 className="pf-display pf-hero__name">
@@ -82,7 +87,7 @@ function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (clip: Pr
             <span className="pf-accent">.</span>
           </h1>
           <p className="pf-hero__handle">@{p.user.handle}</p>
-          {p.user.bio && <p className="pf-bio">{p.user.bio}</p>}
+          <BioEditor handle={p.user.handle} bio={bio} canEdit={isMe} onSaved={setBio} />
           {p.linked_accounts.length > 0 && (
             <ul className="pf-badges">
               {p.linked_accounts.map((a) => (
@@ -116,19 +121,18 @@ function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (clip: Pr
 
       {isMe && p.clip_count === 0 && (
         <section className="pf-panel pf-welcome pf-rise" aria-labelledby="pf-welcome-h">
-          <p className="pf-kicker"><span className="pf-kicker__bar" />You're on the radar</p>
+          <p className="pf-kicker"><span className="pf-kicker__bar" />You're in</p>
           <h2 id="pf-welcome-h" className="pf-display pf-h2">Welcome to FaZe HQ</h2>
           <ol className="pf-welcome__steps">
-            <li className="is-done"><strong>Profile created.</strong> This page is your public CS2 resume. Share it anywhere.</li>
-            <li className={faceitNick ? "is-done" : ""}><strong>Link FACEIT.</strong> Pull in your level, ELO and match stats.</li>
-            <li><strong>Join the conversation.</strong> Post in Community and earn karma.</li>
-            <li><strong>Show up on the boards.</strong> Your stats and karma climb the public leaderboards.</li>
+            <li className="is-done"><span><strong>Profile created.</strong> This is your public FaZe HQ profile. Share it anywhere.</span></li>
+            <li className={activityDone ? "is-done" : ""}><span><strong>Join the conversation.</strong> Post in Community and earn karma.</span></li>
+            <li><span><strong>Play the features.</strong> Guessr streaks, pixels on The Wall and a synced setup show up here as badges.</span></li>
+            <li className={faceitNick ? "is-done" : ""}><span><strong>Link FACEIT (optional).</strong> Add your CS2 level, ELO and match stats to the public leaderboards.</span></li>
           </ol>
           <a className="pf-btn pf-btn--primary" href="/community">Go to Community <span aria-hidden>→</span></a>
         </section>
       )}
 
-      {isMe && !hasStats && <FaceitLink handle={p.user.handle} userId={p.user.id} nickname={faceitNick} onSynced={refresh} />}
 
       {hasStats && (
         <section className="pf-strip pf-rise" aria-label="Key stats">
@@ -174,10 +178,11 @@ function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (clip: Pr
         </section>
       )}
 
-      <ScoutDossier scout={p.scout} dossier={p.dossier} />
+      {isStaff && p.dossier && <ScoutDossier scout={p.scout} dossier={p.dossier} />}
 
       <div className="pf-grid">
         <div className="pf-col">
+          <ActivityPanel activity={p.activity} isMe={isMe} karma={p.karma} />
           <section className="pf-panel pf-rise" aria-labelledby="pf-clips-h">
             <div className="pf-panel__head">
               <p className="pf-kicker"><span className="pf-kicker__bar" />Highlight reel<span className="pf-kicker__dim">· newest first</span></p>
@@ -207,7 +212,8 @@ function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (clip: Pr
         </div>
 
         <aside className="pf-col">
-          {isMe && hasStats && <FaceitLink handle={p.user.handle} userId={p.user.id} nickname={faceitNick} onSynced={refresh} compact />}
+          <FanBadges />
+          {isMe && <FaceitLink handle={p.user.handle} userId={p.user.id} nickname={faceitNick} onSynced={refresh} compact />}
           {p.social.length > 0 && (
             <section className="pf-panel pf-rise" aria-labelledby="pf-social-h">
               <div className="pf-panel__head">
@@ -235,7 +241,7 @@ function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (clip: Pr
           )}
           <ShareCard handle={p.user.handle} displayName={name} />
           <p className="pf-foot">
-            Stats from FACEIT and seeded demo data. AI scores are AI-generated feedback. Fan-made project, not affiliated with FaZe Clan, Valve or FACEIT.{" "}
+            Stats from FACEIT and seeded demo data. Fan-made project, not affiliated with FaZe Clan, Valve or FACEIT.{" "}
             <a href={profileUrl(p.user.handle)}>Permalink</a>
           </p>
         </aside>

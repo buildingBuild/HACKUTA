@@ -8,7 +8,8 @@
 //   POST /api/profiles                   onboarding -> create player (409 if tag taken by someone else)
 //   GET /api/handles/:gamertag           is this tag available?
 //   PUT /api/profiles/:handle/faceit     link your FACEIT nickname (own profile only)
-//   GET /api/profiles/:handle            public gamer resume
+//   GET /api/profiles/:handle            public fan profile (scout/dossier only for recruiter/admin)
+//   PATCH /api/profiles/:handle          { bio?, display_name? } owner only
 //   GET /api/profiles/:handle/card.svg   shareable profile card (1200x630)
 //   GET /api/leaderboards                list of leaderboard types
 //   GET /api/leaderboards/:type          elo | improvement | creator-growth | karma
@@ -184,7 +185,7 @@ type UserRow = { id: string; handle: string; display_name: string | null; avatar
 async function loadUser(db: Db, handle: string): Promise<UserRow | undefined> {
   const [u] = await rows<UserRow>(
     db,
-    `SELECT u.id, u.handle, u.display_name, u.avatar_url, u.role, u.created_at, to_jsonb(u)->>'bio' AS bio
+    `SELECT u.id, u.handle, u.display_name, u.avatar_url, u.role, u.created_at, u.bio
        FROM users u WHERE lower(u.handle) = lower($1) LIMIT 1`,
     [handle],
   );
@@ -605,6 +606,49 @@ async function createOrUpdateProfile(db: Db, body: CreateBody, sessionUserId: st
   return { status: created ? 201 : 200, body: { user, created, profile_url: `/u/${encodeURIComponent(user!.handle)}` } };
 }
 
+// ---------- community activity (fan profile) ----------
+
+async function loadActivity(db: Db, uid: string) {
+  const threads = await rows<Record<string, unknown>>(
+    db,
+    `SELECT t.id, t.title, t.score, t.created_at, c.slug AS board, c.name AS board_name,
+            (SELECT count(*)::int FROM comments x WHERE x.thread_id = t.id) AS comment_count
+       FROM threads t JOIN communities c ON c.id = t.community_id
+      WHERE t.user_id = $1 ORDER BY t.created_at DESC LIMIT 5`,
+    [uid],
+  );
+  const comments = await rows<Record<string, unknown>>(
+    db,
+    `SELECT m.id, left(m.body, 180) AS body, m.score, m.created_at, t.id AS thread_id, t.title AS thread_title
+       FROM comments m JOIN threads t ON t.id = m.thread_id
+      WHERE m.user_id = $1 AND left(m.body, 15) <> '[watch-ballot] '
+      ORDER BY m.created_at DESC LIMIT 5`,
+    [uid],
+  );
+  const [counts] = await rows<{ threads: number; comments: number }>(
+    db,
+    `SELECT (SELECT count(*)::int FROM threads WHERE user_id = $1) AS threads,
+            (SELECT count(*)::int FROM comments WHERE user_id = $1) AS comments`,
+    [uid],
+  );
+  return { thread_count: Number(counts?.threads ?? 0), comment_count: Number(counts?.comments ?? 0), threads, comments };
+}
+
+type Viewer = { id: string; role: string } | null;
+const viewerOf = (req: Request): Viewer => {
+  const u = (req as Request & { user?: { id: string; role: string } }).user;
+  if (u) return u;
+  const sid = req.header("x-user-id");
+  return sid && UUID.test(sid) ? { id: sid, role: "user" } : null;
+};
+const isStaffRole = (role: string | undefined) => role === "recruiter" || role === "admin";
+
+/** Recruiting data (scout progress + dossier) is staff-only since the V3 pivot. */
+function gateForViewer<P extends { scout: ScoutProgress; dossier: unknown }>(p: P, viewer: Viewer): Omit<P, "dossier"> & { dossier: P["dossier"] | null } {
+  if (isStaffRole(viewer?.role)) return p;
+  return { ...p, scout: { status: "unavailable", progress: null, rule_id: null, criteria: [], report: null }, dossier: null };
+}
+
 // ---------- router ----------
 
 export function createProfilesRouter(opts: ProfilesRouterOptions): Router {
@@ -613,8 +657,8 @@ export function createProfilesRouter(opts: ProfilesRouterOptions): Router {
 
   // Onboarding "FaZe up": create the player (or update links if it's already theirs).
   router.post("/profiles", asyncRoute(async (req, res) => {
-    const sid = req.header("x-user-id") ?? null;
-    const out = await createOrUpdateProfile(db, (req.body ?? {}) as CreateBody, sid && UUID.test(sid) ? sid : null);
+    const sid = viewerOf(req)?.id ?? null;
+    const out = await createOrUpdateProfile(db, (req.body ?? {}) as CreateBody, sid);
     res.status(out.status).json(out.body);
   }));
 
@@ -622,7 +666,7 @@ export function createProfilesRouter(opts: ProfilesRouterOptions): Router {
   router.put("/profiles/:handle/faceit", asyncRoute(async (req, res) => {
     const user = await loadUser(db, String(req.params.handle));
     if (!user) return res.status(404).json({ error: "Profile not found" });
-    if (req.header("x-user-id") !== user.id) return res.status(403).json({ error: "You can only link FACEIT on your own profile" });
+    if (viewerOf(req)?.id !== user.id) return res.status(403).json({ error: "You can only link FACEIT on your own profile" });
     const nickname = cleanStr((req.body as { faceit_nickname?: unknown } | undefined)?.faceit_nickname, 40);
     if (!/^[A-Za-z0-9_.-]{2,32}$/.test(nickname)) return res.status(400).json({ error: "That doesn't look like a FACEIT nickname" });
     const upd = await db.query(
@@ -640,20 +684,43 @@ export function createProfilesRouter(opts: ProfilesRouterOptions): Router {
     const handle = toProfileHandle(String(req.params.gamertag));
     if (handle.length < 2) return res.json({ handle, available: false, reason: "too short" });
     const [u] = await rows<{ id: string }>(db, "SELECT id FROM users WHERE lower(handle) = lower($1) LIMIT 1", [handle]);
-    const sid = req.header("x-user-id");
+    const sid = viewerOf(req)?.id;
     res.json({ handle, available: !u || u.id === sid, mine: Boolean(u && u.id === sid) });
   }));
 
   router.get("/profiles/:handle", asyncRoute(async (req, res) => {
     const user = await loadUser(db, String(req.params.handle));
     if (!user) return res.status(404).json({ error: "Profile not found" });
-    res.json(await loadProfile(db, opts, user));
+    const [profile, activity] = await Promise.all([loadProfile(db, opts, user), loadActivity(db, user.id)]);
+    res.json({ ...gateForViewer(profile, viewerOf(req)), activity });
+  }));
+
+  // Edit your own fan profile (bio, display name).
+  router.patch("/profiles/:handle", asyncRoute(async (req, res) => {
+    const user = await loadUser(db, String(req.params.handle));
+    if (!user) return res.status(404).json({ error: "Profile not found" });
+    const viewer = viewerOf(req);
+    if (!viewer) return res.status(401).json({ error: "Sign in to edit your profile" });
+    if (viewer.id !== user.id) return res.status(403).json({ error: "You can only edit your own profile" });
+    const body = (req.body ?? {}) as { bio?: unknown; display_name?: unknown };
+    const bio = body.bio === undefined ? undefined : cleanStr(body.bio, 280);
+    const name = body.display_name === undefined ? undefined : cleanStr(body.display_name, 40);
+    if (name !== undefined && name.length < 2) return res.status(400).json({ error: "Display name needs at least 2 characters" });
+    const [u] = await rows<{ bio: string | null; display_name: string | null }>(
+      db,
+      `UPDATE users SET bio = CASE WHEN $2::boolean THEN NULLIF($3, '') ELSE bio END,
+                        display_name = COALESCE($4, display_name)
+        WHERE id = $1 RETURNING bio, display_name`,
+      [user.id, bio !== undefined, bio ?? null, name ?? null],
+    );
+    res.json(u);
   }));
 
   router.get("/profiles/:handle/card.svg", asyncRoute(async (req, res) => {
     const user = await loadUser(db, String(req.params.handle));
     if (!user) return res.status(404).json({ error: "Profile not found" });
-    res.type("image/svg+xml").set("Cache-Control", "public, max-age=60").send(renderCard(await loadProfile(db, opts, user)));
+    const p = await loadProfile(db, opts, user);
+    res.type("image/svg+xml").set("Cache-Control", "public, max-age=60").send(renderCard({ ...p, scout: gateForViewer(p, null).scout }));
   }));
 
   router.get("/leaderboards", (_req, res) => {

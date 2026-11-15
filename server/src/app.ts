@@ -37,7 +37,7 @@ app.use('/api/clips', createClipsRouter({ db, auth })); // Joe (placeholder)
 app.use('/api/players', createPlayersRouter({ db, auth })); // Yao
 app.use('/api/scouting', createScoutingRouter({ db, auth })); // Yao
 app.use('/api', auth.identify, createCommunityRouter({ db, getUserId: req => req.user?.id })); // Dahiya
-app.use('/api', createProfilesRouter({ db, scoutProgress: profileScoutProgress })); // Omar
+app.use('/api', auth.identify, createProfilesRouter({ db, scoutProgress: profileScoutProgress })); // Omar
 
 // Local demo clips (server/demo-clips/*.mp4) until real blob storage is wired.
 app.use('/demo-clips', express.static(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../demo-clips')));

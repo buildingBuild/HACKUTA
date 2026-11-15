@@ -77,7 +77,7 @@ export async function saveOnboardingProfile(answers: OnboardingAnswers): Promise
 // ---------- FACEIT link ----------
 
 export type FaceitSyncResult = {
-  source: "faceit" | "seed";
+  source: "faceit" | "mock" | "seed";
   nickname: string | null;
   stats: Record<string, number | null | undefined>;
   error?: string;

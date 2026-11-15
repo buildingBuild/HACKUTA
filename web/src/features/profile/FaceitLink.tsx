@@ -14,9 +14,9 @@ type Props = {
 type State = { kind: "idle" } | { kind: "busy"; label: string } | { kind: "done"; result: FaceitSyncResult } | { kind: "error"; message: string };
 
 function describe(r: FaceitSyncResult): { tone: "ok" | "warn"; text: string } {
-  if (r.source === "faceit") {
+  if (r.source === "faceit" || (r.source === "mock" && !r.error)) {
     const n = Object.values(r.stats).filter((v) => v != null).length;
-    return { tone: "ok", text: `Synced ${n} stats from FACEIT.${r.scouting?.created.length ? " You just crossed a scouting bar!" : ""}` };
+    return { tone: "ok", text: `Synced ${n} stats${r.source === "mock" ? " (demo FACEIT data)" : " from FACEIT"}.` };
   }
   const hasAny = Object.values(r.stats).some((v) => v != null);
   return {
@@ -69,7 +69,7 @@ export function FaceitLink({ handle, userId, nickname, onSynced, compact = false
 
       {editing ? (
         <form className="pf-faceit__form" onSubmit={submit}>
-          {!nickname && <p className="pf-muted pf-faceit__lede">Your level, ELO, K/D, HS% and ADR power your portfolio, the leaderboards and your scouting bars.</p>}
+          {!nickname && <p className="pf-muted pf-faceit__lede">Optional: show your CS2 level, ELO, K/D, HS% and ADR on your profile and the public leaderboards.</p>}
           <div className="pf-faceit__row">
             <label className="pf-visually-hidden" htmlFor="pf-faceit-input">FACEIT nickname</label>
             <input
