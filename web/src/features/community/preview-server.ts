@@ -1,7 +1,7 @@
 /** Explicit memory-only preview adapter. Uses the shared login/clip API response shapes.
  * Does not replace production auth, upload, or storage. Run with npx tsx .../preview-server.ts.
  */
-import express from 'express';
+import express, { type Request } from 'express';
 import { createCommunityRouter } from '../../../../server/src/routes/community';
 const users = [
   { id: 'demo-fan', handle: 'smokecheck', display_name: 'SmokeCheck', role: 'user', avatar_url: null },
@@ -11,10 +11,21 @@ const users = [
 const app = express();
 app.use(express.json({ limit: '64kb' }));
 app.get('/api/auth/demo-users', (_req, res) => res.json({ users, mode: 'demo' }));
-app.get('/api/auth/me', (req, res) => res.json({ user: users.find(u => u.id === req.get('x-user-id')) ?? null, mode: 'demo' }));
+const viewer = (req: Request) => {
+  const cookie = req.headers.cookie?.split(';').map(v => v.trim()).find(v => v.startsWith('fazehq_user='))?.slice(12);
+  return users.find(u => u.id === (cookie ? decodeURIComponent(cookie) : req.get('x-user-id')));
+};
+app.post('/api/auth/login', (req, res) => {
+  const user = users.find(u => u.id === req.body.userId);
+  if (!user) return res.status(404).json({ error: 'Unknown demo account' });
+  res.cookie('fazehq_user', user.id, { httpOnly: true, sameSite: 'lax', path: '/' });
+  return res.json({ user, mode: 'demo' });
+});
+app.post('/api/auth/logout', (_req, res) => { res.clearCookie('fazehq_user', { path: '/' }); res.json({ ok: true }); });
+app.get('/api/auth/me', (req, res) => res.json({ user: viewer(req) ?? null, mode: 'demo' }));
 // No invented CS2 videos. The real shared clip service supplies uploaded records in normal mode.
 app.get('/api/clips', (_req, res) => res.json({ clips: [], mode: 'demo' }));
-app.use('/api', createCommunityRouter({ demoUsers: users }));
+app.use('/api', createCommunityRouter({ demoUsers: users, getUserId: req => viewer(req)?.id }));
 app.use('/api', (_req, res) => res.status(404).json({ error: 'This service is not connected in the memory-only Community preview' }));
 const server = app.listen(Number(process.env.PORT || 3001), '127.0.0.1', () => console.log('Community DEMO API: http://127.0.0.1:3001 · memory only · no video fixtures'));
 process.on('SIGTERM', () => server.close());

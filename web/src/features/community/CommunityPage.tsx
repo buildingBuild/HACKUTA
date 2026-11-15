@@ -3,9 +3,11 @@ import { createCommunityApi } from './api';
 import type { Clip, Comment, Community, Sort, Thread, User } from './types';
 import './community.css';
 import { WatchTogether } from './WatchTogether';
-import { PulseView } from './PulseView';
-import { TOPICS, TOPIC_BOARD, threadTopic, sortThreads, type Topic } from './discussions';
-import { SECTIONS, ClipsSection, EventsSection, AroundSection, type Section } from './CommunitySections';
+import { PulseView, PulsePreview } from './PulseView';
+import { ClipFeed } from './ClipFeed';
+import { ClipPlayer } from './ClipPlayer';
+import { TOPICS, TOPIC_BOARD, threadTopic, sortThreads, discussionText, type Topic } from './discussions';
+import { SECTIONS, EventsSection, AroundSection, type Section } from './CommunitySections';
 
 export interface CommunityPageProps {
   currentUser?: User;
@@ -17,13 +19,7 @@ export interface CommunityPageProps {
   initialClipId?: string;
 }
 function time(value: string) { return new Date(value).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); }
-function Video({ clip }: { clip?: Clip | null }) {
-  const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [clip?.blob_url]);
-  const safe = clip && /^https?:\/\//i.test(clip.blob_url);
-  if (!clip) return null;
-  return <div className="cq-clip">{safe && !failed ? <video controls preload="metadata" src={clip.blob_url} aria-label={clip.title} onError={() => setFailed(true)} /> : <p>Clip playback unavailable. Open this clip in the clip feed.</p>}<small>{clip.title}</small></div>;
-}
+function Video({ clip }: { clip?: Clip | null }) { return clip ? <ClipPlayer clip={clip}/> : null; }
 function Avatar({ user }: { user: User }) {
   return <span className="cq-avatar" aria-hidden="true">{(user.display_name || user.handle).slice(0, 2).toUpperCase()}</span>;
 }
@@ -33,7 +29,7 @@ function Votes({ score, value, disabled, onVote }: { score: number; value: numbe
 export default function CommunityPage({ currentUser, clips = [], apiBase = '/api', initialBoard = 'faze-cs2', initialClipId = '', uploadUrl }: CommunityPageProps) {
   const api = useMemo(() => createCommunityApi(currentUser?.id, apiBase), [currentUser?.id, apiBase]);
   const [boards, setBoards] = useState<Community[]>([]);
-  const [section, setSection] = useState<Section>(new URLSearchParams(location.search).has('watch') || new URLSearchParams(location.search).get('view') === 'watch' ? 'Watch Together' : 'Discussions');
+  const [section, setSection] = useState<Section>(new URLSearchParams(location.search).has('watch') || new URLSearchParams(location.search).get('view') === 'watch' ? 'Watch Together' : new URLSearchParams(location.search).get('view') === 'clips' ? 'Clips' : 'Discussions');
   const [filter, setFilter] = useState<Topic | 'All'>(new URLSearchParams(location.search).get('topic') === 'Challenges' ? 'Challenges' : 'All');
   const [topic, setTopic] = useState<Topic>(TOPICS.find(t => TOPIC_BOARD[t] === initialBoard) ?? 'General');
   const [sort, setSort] = useState<Sort>('hot');
@@ -47,7 +43,7 @@ export default function CommunityPage({ currentUser, clips = [], apiBase = '/api
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [revision, setRevision] = useState(0);
-  const [composer, setComposer] = useState(Boolean(initialClipId));
+  const [composer, setComposer] = useState(Boolean(initialClipId) && new URLSearchParams(location.search).get('view') !== 'clips');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [clipId, setClipId] = useState(initialClipId);
@@ -136,24 +132,24 @@ export default function CommunityPage({ currentUser, clips = [], apiBase = '/api
     <main className="cq-main">
       {error && <div role="alert" className="cq-error">{error} <button onClick={() => setRevision(v => v + 1)}>Reload feed</button></div>}
       {notice && <div role="status" className="cq-banner">{notice}</div>}
-      {section === 'Watch Together' ? <WatchTogether api={api} user={currentUser} roomId={roomId} /> : pulseOpen ? <PulseView api={api}/> : section === 'Clips' ? <ClipsSection clips={clips} user={currentUser} uploadUrl={uploadUrl} video={clip => <Video clip={clip} />} share={id => { setClipId(id); setTopic('Trickshots'); setSection('Discussions'); setActive(null); setComposer(true); }} /> : section === 'Events & Drops' ? <EventsSection discuss={challenge => { setSection('Discussions'); setPulseOpen(false); window.history.replaceState(null,'','/community'); setFilter(challenge ? 'Challenges' : 'All'); setActive(null); }} /> : !active ? <>
-        <div className="cq-pulse-entry"><div><strong>FaZe Pulse</strong><span>Catch up on the conversation.</span></div><button onClick={()=>{setPulseOpen(true);window.history.replaceState(null,'','/community?pulse=1');}}>Read the briefing ↗</button></div>
+      {section === 'Watch Together' ? <WatchTogether api={api} user={currentUser} roomId={roomId} /> : pulseOpen ? <PulseView api={api}/> : section === 'Clips' ? <ClipFeed clips={clips} user={currentUser} api={api} uploadUrl={uploadUrl} onThreadChanged={thread => { setThreads(old => old.some(t => t.id === thread.id) ? old.map(t => t.id === thread.id ? thread : t) : [thread,...old]); }} /> : section === 'Events & Drops' ? <EventsSection discuss={challenge => { setSection('Discussions'); setPulseOpen(false); window.history.replaceState(null,'','/community'); setFilter(challenge ? 'Challenges' : 'All'); setActive(null); }} /> : !active ? <>
+        <PulsePreview api={api} open={()=>{setPulseOpen(true);window.history.replaceState(null,'','/community?pulse=1');}}/>
         <div className="cq-filter-bar"><div className="cq-filter-heading"><div className="cq-topic-filters" aria-label="Filter discussions by topic">{(['All', ...TOPICS] as const).map(t => <button key={t} aria-pressed={filter === t} onClick={() => setFilter(t)}>{t === 'All' ? 'All topics' : `#${t}`}</button>)}</div><button className="cq-primary cq-create-thread" disabled={!currentUser || busy} aria-expanded={composer} onClick={() => setComposer(!composer)}>+ Create thread</button></div><div className="cq-tabs" aria-label="Sort discussions">{(['hot','new','top'] as Sort[]).map(s => <button key={s} aria-pressed={sort === s} onClick={() => setSort(s)}>{s === 'hot' ? '↗ ' : ''}{s[0].toUpperCase() + s.slice(1)}</button>)}<span>{visibleThreads.length} discussions</span></div></div>
         {composer && <form className="cq-panel cq-form" onSubmit={e => { e.preventDefault(); void perform(async () => { const r = await api.create(TOPIC_BOARD[topic], { title, body: `#${topic}\n\n${body}`, type: topic === 'Challenges' ? 'challenge' : kind, clip_id: clipId || null }); setThreads(old => [r.data, ...old]); setFilter(threadTopic(r.data, boards)); setComposer(false); setTitle(''); setBody(''); setClipId(''); setActive(r.data); }); }}>
           <h3>Start a conversation</h3><label>Topic<select disabled={busy} value={topic} onChange={e => { const next = e.target.value as Topic; setTopic(next); setKind(next === 'Challenges' ? 'challenge' : 'post'); }}>{TOPICS.map(t => <option key={t}>{t}</option>)}</select></label><label>Title<input required maxLength={180} value={title} onChange={e => setTitle(e.target.value)} placeholder="What’s on your mind?" /></label><label>Body<textarea required maxLength={10000} rows={5} value={body} onChange={e => setBody(e.target.value)} placeholder="Give the community something to talk about." /></label>
           <label>Thread type<select disabled={busy} value={kind} onChange={e => { const next = e.target.value as typeof kind; setKind(next); if (next === 'challenge') setTopic('Challenges'); else if (topic === 'Challenges') setTopic('General'); }}><option value="post">Discussion</option><option value="challenge">Challenge · include instructions in your post</option></select></label>{clipSelect(clipId, setClipId, 'Existing CS2 clip')}
           <div className="cq-actions"><button className="cq-primary" disabled={busy}> {busy ? 'Publishing…' : 'Publish thread'}</button><button type="button" onClick={() => setComposer(false)}>Cancel</button></div>
         </form>}
-        {loading ? <div className="cq-panel" role="status">Loading the conversation…</div> : visibleThreads.length === 0 ? <div className="cq-panel">No threads yet. Start the first conversation.</div> : visibleThreads.map(t => <article className="cq-post cq-clickable" key={t.id} onClick={event => { if (!(event.target as HTMLElement).closest('button,a,input,select,textarea,video,.cq-votes,.cq-clip')) setActive(t); }}><Votes score={t.score} value={t.viewer_vote} disabled={busy || !currentUser} onVote={v => { void vote('thread', t.id, v); }} /><div className="cq-post-content"><div className="cq-meta"><Avatar user={t.author} /><strong>{t.author.display_name}</strong><time dateTime={t.created_at}>{time(t.created_at)}</time><button className="cq-topic" onClick={() => setFilter(threadTopic(t, boards))}>#{threadTopic(t, boards)}</button>{t.type === 'challenge' && <span className="cq-badge">CHALLENGE</span>}</div><h3><button className="cq-title" onClick={() => setActive(t)}>{t.title}</button></h3><p className="cq-excerpt">{t.body}</p><Video clip={t.clip} /><div className="cq-actions"><button onClick={() => setActive(t)}>◯ {t.comment_count} comments</button><button disabled={!currentUser || busy} onClick={() => setReport({ type: 'thread', id: t.id })}>Report</button></div></div></article>)}
+        {loading ? <div className="cq-panel" role="status">Loading the conversation…</div> : visibleThreads.length === 0 ? <div className="cq-panel">No threads yet. Start the first conversation.</div> : visibleThreads.map(t => <article className="cq-post cq-clickable" key={t.id} onClick={event => { if (!(event.target as HTMLElement).closest('button,a,input,select,textarea,video,.cq-votes,.cq-clip,.cq-social-player')) setActive(t); }}><Votes score={t.score} value={t.viewer_vote} disabled={busy || !currentUser} onVote={v => { void vote('thread', t.id, v); }} /><div className="cq-post-content"><div className="cq-meta"><Avatar user={t.author} /><strong>{t.author.display_name}</strong><time dateTime={t.created_at}>{time(t.created_at)}</time><button className="cq-topic" onClick={() => setFilter(threadTopic(t, boards))}>#{threadTopic(t, boards)}</button>{t.body.startsWith('DEMO ') && <span className="cq-badge">Sample</span>}</div><h3><button className="cq-title" onClick={() => setActive(t)}>{t.title}</button></h3><p className="cq-excerpt">{discussionText(t.body)}</p><Video clip={t.clip} /><div className="cq-actions"><button onClick={() => setActive(t)}>◯ {t.comment_count} comments</button><button disabled={!currentUser || busy} onClick={() => setReport({ type: 'thread', id: t.id })}>Report</button></div></div></article>)}
       </> : <>
         <button className="cq-back" disabled={busy} onClick={() => setActive(null)}>← Back to Discussions</button>
-        <article className="cq-detail"><h2>{active.title}</h2><div className="cq-meta"><Avatar user={active.author} /><strong>{active.author.display_name}</strong><time dateTime={active.created_at}>{time(active.created_at)}</time><button className="cq-topic" onClick={() => { setFilter(threadTopic(active, boards)); setActive(null); }}>#{threadTopic(active, boards)}</button></div>{active.id.startsWith('faae0001-') && <a className="cq-room-backlink" href={`/community?watch=${['sydney-replay','question-time','legacy-club','community-screening'][Number(active.id.slice(-1))-1]}`}>Open Watch Together room →</a>}<p className="cq-body">{active.body}</p><Video clip={active.clip} /><div className="cq-actions"><Votes score={active.score} value={active.viewer_vote} disabled={busy || !currentUser} onVote={v => { void vote('thread', active.id, v); }} /><button disabled={!currentUser || busy} onClick={() => setReport({ type: 'thread', id: active.id })}>Report</button></div></article>
+        <article className="cq-detail"><h2>{active.title}</h2><div className="cq-meta"><Avatar user={active.author} /><strong>{active.author.display_name}</strong><time dateTime={active.created_at}>{time(active.created_at)}</time><button className="cq-topic" onClick={() => { setFilter(threadTopic(active, boards)); setActive(null); }}>#{threadTopic(active, boards)}</button></div>{active.id.startsWith('faae0001-') && <a className="cq-room-backlink" href={`/community?watch=${['sydney-replay','question-time','legacy-club','community-screening'][Number(active.id.slice(-1))-1]}`}>Open Watch Together room →</a>}<p className="cq-body">{discussionText(active.body)}</p><Video clip={active.clip} /><div className="cq-actions"><Votes score={active.score} value={active.viewer_vote} disabled={busy || !currentUser} onVote={v => { void vote('thread', active.id, v); }} /><button disabled={!currentUser || busy} onClick={() => setReport({ type: 'thread', id: active.id })}>Report</button></div></article>
         <div className="cq-comment-entry">{editorOpen && parent === null ? commentEditor(null) : <button className="cq-add-comment" disabled={!currentUser || busy || commentsLoading} onClick={() => openEditor(null)}>{active.type === 'challenge' ? 'Add a submission…' : 'Add a comment…'}</button>}</div>
         {active.type === 'challenge' && <aside className="cq-feature"><h3>Challenge standings</h3><ol>{comments.filter(c => !c.parent_id && c.clip_id).sort((a,b) => b.score-a.score || Date.parse(a.created_at)-Date.parse(b.created_at)).map(c => <li key={c.id}>{c.author.display_name} — {c.score} points · {c.clip?.title ?? 'CS2 submission'}</li>)}</ol>{!comments.some(c => !c.parent_id && c.clip_id) && <p>No submissions yet. Set the first score.</p>}</aside>}
         <h3 className="cq-comments-heading">{comments.length} comments</h3>{commentsLoading ? <p role="status">Loading replies…</p> : comments.filter(c => !c.parent_id).map(c => renderComment(c))}
 
       </>}
-    </main><aside className="cq-sidebar"><AroundSection /><section className="cq-feature cq-featured-challenge"><span className="cq-eyebrow">FEATURED CHALLENGE</span><h3>Recreate the Classic</h3><p>Your one-tap. The community’s vote.</p><button onClick={() => { setSection('Discussions'); setPulseOpen(false); window.history.replaceState(null,'','/community'); setFilter('Challenges'); setActive(null); }}>View challenge →</button></section></aside></div>
+    </main><aside className="cq-sidebar"><AroundSection /><section className="cq-feature cq-featured-challenge"><span className="cq-eyebrow">FEATURED CHALLENGE</span><h3>Recreate the Classic</h3><button onClick={() => { setSection('Discussions'); setPulseOpen(false); window.history.replaceState(null,'','/community'); setFilter('Challenges'); setActive(null); }}>View challenge →</button></section></aside></div>
     {report && <div className="cq-modal"><form role="dialog" aria-modal="true" aria-labelledby="cq-report-title" className="cq-panel cq-form" onSubmit={e => { e.preventDefault(); void perform(async () => { const r = await api.report(report.type, report.id, reason); setNotice(r.data.message); setReport(null); setReason(''); }); }}><h3 id="cq-report-title">Report content</h3><label>Reason<textarea autoFocus required maxLength={500} value={reason} onChange={e => setReason(e.target.value)} /></label><div className="cq-actions"><button className="cq-primary" disabled={busy}>Submit report</button><button type="button" onClick={() => { setReport(null); setReason(''); }}>Cancel</button></div></form></div>}
   </section>;
 }

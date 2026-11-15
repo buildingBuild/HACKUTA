@@ -1,3 +1,9 @@
+## V3 integration (current)
+
+Community preserves the latest local Discussions, social Clips, Pulse, Watch Together, events and challenge UI on the V3 shell. Pulse supports injected curated summaries with a deterministic fallback; it does not import removed coaching or voice modules. Clip links point to creator profiles. Upload stays unavailable until the shared uploader is connected.
+
+For a full memory-only visual preview, run `npx tsx web/src/features/community/full-preview-server.ts` and the existing Vite dev server. This adapter supports V3 cookie login, Home live samples, fan profiles and Recruiting samples. It does not persist to PostgreSQL or provide uploaded video footage. Production verification still requires the team's database configuration. Older notes below describe previous milestones; the pre-V3 onboarding patch is archived and must not be applied.
+
 # Community module
 
 ## Unified community experience
@@ -169,3 +175,30 @@ All seven Community tests, both workspace type checks, build, and existing scout
 Live browser verification passed for Pulse-to-source navigation, category filtering, shared thread navigation, deep-link reloads, room message/question posting, question upvotes, changing a poll choice, source-player fallback, copying a room link, and a second user's message appearing through the 12-second poll. Desktop room columns and 390px stacked layout were checked without overflow. PostgreSQL execution, live Gemini requests, audiovisual playback, and Joe's missing clip upload integration remain unverified. The existing large-bundle build warning remains.
 
 Injected-generator tests also verify that invalid AI source IDs are rejected, valid existing IDs are accepted, and provider fallback is cached. These do not represent live Gemini API verification.
+
+## Optional full-application mock preview (local only)
+
+To inspect teammate screens without PostgreSQL, stop the Community-only preview API and run:
+
+```sh
+npx --no-install tsx web/src/features/community/full-preview-server.ts
+npm run dev -w web -- --host 127.0.0.1
+```
+
+Open `/coaching`, `/u/nextup`, `/leaderboards`, `/recruiting`, `/timeline`, or `/community` on port 5173. Choose an account marked MOCK in the shared login picker. The adapter supplies sample profiles, trends, scores, clip metadata and recruiter prospects, with the real Community and mentorship routers running in memory. It is a visual/API-shape preview, not verification of PostgreSQL or external services. All writes reset on server restart. Sample gameplay footage is intentionally unavailable; the shared storage uploader is not connected. No removed AI coaching or voice modules are imported. Profile-card export is not supplied by this adapter.
+
+## Watch Together viewing polish
+
+Discovery uses one featured thumbnail and a responsive grid of the remaining rooms. Room views pair a 16:9 player with an aligned, scrollable fan-chat panel. Secondary Polls, Discussion and podcast Fan questions are progressively disclosed through keyboard-accessible tabs. Share links, original-source links, player fallback, linked discussion, legacy challenge link, room polling and existing mutations remain unchanged. Styling is isolated in `watch-together.css`; backend/data contracts and other feature components are untouched.
+
+Verified in the local mock preview: desktop 74/26 player/chat split, 820px tablet and 390px mobile without horizontal overflow, chat posting, question submission/upvotes, poll selection, arrow-key tab navigation, copied room URL, refresh, player fallback/retry, discovery categories, legacy placeholder, related discussion, and Events/Pulse navigation. Type checks, build, seven Community tests and scouting test passed. External audiovisual playback and real database execution remain unverified. No commits or pushes were made for this polish.
+
+## Social clip feed and Pulse refinement
+
+Clips uses shared clip records in a vertical feed, with lazy native/official embedded playback, offscreen pause/unmount, no automatic playback and real creator/profile links. An injected `uploadUrl` connects Joe's shared uploader when available; otherwise Upload Clip stays disabled with an integration notice. There is no duplicate uploader or media storage. The shared library refreshes on focus and every 20 seconds while visible.
+
+Social state reuses existing `threads`, `comments`, and `votes`. `GET /api/community/clip-threads?ids=...` returns one existing discussion per clip, regardless of how many discussions explicitly reference that clip. `POST /api/community/clips/:clipId/discussion` returns an existing discussion or lets the clip owner create the first one. A database clip-row lock serializes concurrent first-publication requests; no schema changes are required. Other users cannot publish on the owner's behalf; once published, everyone with a demo account can participate. Unpublished clips do not display invented scores or comment counts. Native comment/reply controls stay inline, and sharing uses `/community?view=clips&clip=<id>`.
+
+Discussions features a compact, two-highlight Pulse preview. The full recap uses a lead story, additional conversations, attributed comment excerpts, original sources, and a collapsible explanation. The deterministic V3 recap, source validation, caching and optional injected curation remain intact. Stored topic markers display as tags rather than repeating in bodies; sample starter posts retain small labels.
+
+Historical onboarding proposals are excluded from this release. The V3 shell supplies the global navigation; no onboarding implementation is changed here.

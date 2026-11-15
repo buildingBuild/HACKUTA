@@ -27,6 +27,7 @@ import { OnboardingFlow } from './features/onboarding/OnboardingFlow';
 import { LeaderboardsPage, ProfilePage } from './features/profile';
 import { RecruitingPage } from './features/recruiting/RecruitingPage';
 import { TimelinePage } from './features/timeline';
+import { MentorshipPage } from './features/mentorship/MentorshipPage';
 
 const match = (path: string, pattern: RegExp) => path.match(pattern)?.[1];
 
@@ -54,6 +55,7 @@ export function App() {
     page = <Page><Loading /></Page>;
   } else if (path === '/community' || path.startsWith('/community/')) page = loading ? null : <CommunityRoute user={user} />;
   else if (path === '/feed') page = loading ? null : <FeedPage user={user} />;
+  else if (path === '/coaching') page = loading ? null : <MentorshipPage user={user} />;
   else if (path === '/leaderboards') page = <LeaderboardsPage highlightHandle={user?.handle} />;
   else if (path === '/timeline') page = <TimelinePage />;
   else if (feature) page = <ComingSoon feature={feature} />;

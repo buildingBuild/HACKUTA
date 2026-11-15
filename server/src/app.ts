@@ -2,6 +2,7 @@
 // SHARED FILE: add your router below, additive only.
 import express from 'express';
 import { createCommunityRouter } from './routes/community.js';
+import { createMentorshipRouter } from './routes/mentorship.js';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -37,6 +38,7 @@ app.use('/api/live', createLiveRouter({ db })); // Yao (FaZe Live: mock now, eve
 app.use('/api/clips', createClipsRouter({ db, auth })); // Joe (placeholder)
 app.use('/api/players', createPlayersRouter({ db, auth })); // Yao
 app.use('/api/scouting', createScoutingRouter({ db, auth })); // Yao
+app.use('/api/mentorship', auth.identify, createMentorshipRouter({ db, getUserId: req => req.user?.id }));
 app.use('/api', auth.identify, createCommunityRouter({ db, getUserId: req => req.user?.id })); // Dahiya
 app.use('/api', auth.identify, createProfilesRouter({ db, scoutProgress: profileScoutProgress })); // Omar
 

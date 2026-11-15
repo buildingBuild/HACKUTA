@@ -1,15 +1,7 @@
-import type { ReactNode } from 'react';
 import arenaImage from './assets/arena.svg';
 import jerseyImage from './assets/jersey.svg';
-import type { Clip, User } from './types';
 export type Section = 'Discussions' | 'Clips' | 'Events & Drops' | 'Watch Together';
 export const SECTIONS: Section[] = ['Discussions', 'Clips', 'Events & Drops', 'Watch Together'];
-export function ClipsSection({ clips, user, video, share, uploadUrl }: { clips: Clip[]; user?: User; video: (clip: Clip) => ReactNode; share: (id: string) => void; uploadUrl?: string }) {
-  return <><div className="cq-heading"><div><h2>Clips</h2></div>{uploadUrl ? <a className="cq-primary cq-link" href={uploadUrl}>Upload a clip →</a> : <button className="cq-primary" disabled title="The shared uploader is not available in this checkout">Upload clip →</button>}</div>
-    {!uploadUrl && <div className="cq-banner">The shared uploader is not connected yet. Existing clips can still be browsed and shared; no separate upload service is used here.</div>}
-    <div className="cq-clip-grid">{clips.filter(c => c.game === 'cs2').length === 0 ? <div className="cq-panel">No CS2 clips are available yet.</div> : clips.filter(c => c.game === 'cs2').map(clip => <article className="cq-panel cq-clip-card" key={clip.id}>{video(clip)}<h3>{clip.title || 'Untitled CS2 clip'}</h3><div className="cq-actions">{clip.handle && <a href={`/u/${encodeURIComponent(clip.handle)}`}>@{clip.handle} →</a>}<button className="cq-primary" disabled={clip.user_id !== user?.id} onClick={() => share(clip.id)}>Share to discussion</button></div>{clip.user_id !== user?.id && <small>You can attach clips from your own portfolio.</small>}</article>)}</div>
-  </>;
-}
 const events = [
   { title: 'The next round, together.', type: 'CS2 watch party', date: '2026-11-21T19:00:00Z', description: 'Watch the rounds and join the conversation.', challenge: false },
   { title: 'Recreate the Classic.', type: 'Community showcase', date: '2026-11-23T20:00:00Z', description: 'Share your one-tap. Let the community vote.', challenge: true },

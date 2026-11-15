@@ -11,6 +11,8 @@ export function createCommunityApi(userId: string | undefined, base = '/api') {
     return result as Envelope<T>;
   }
   return {
+    clipThreads: (ids: string[]) => request<Thread[]>(`/community/clip-threads?ids=${encodeURIComponent(ids.join(','))}`),
+    clipDiscussion: (id: string) => request<Thread>(`/community/clips/${encodeURIComponent(id)}/discussion`, {}),
     pulse: () => request<Pulse>('/community/pulse'),
     rooms: () => request<WatchRoom[]>('/community/watch/rooms'),
     room: (id: string) => request<WatchRoom>(`/community/watch/rooms/${encodeURIComponent(id)}`),
