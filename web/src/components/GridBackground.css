@@ -1,0 +1,60 @@
+.grid-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(rgba(10, 10, 10, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(10, 10, 10, 0.07) 1px, transparent 1px),
+    linear-gradient(rgba(10, 10, 10, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(10, 10, 10, 0.035) 1px, transparent 1px);
+  background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
+  background-position: center center;
+}
+
+/* Soft white fade toward the edges so the grid feels like light, not paper */
+.grid-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 60% at 50% 45%, transparent 0%, rgba(255, 255, 255, 0.85) 100%);
+}
+
+/* Slow red scan line */
+.grid-bg::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  top: 0;
+  background: linear-gradient(90deg, transparent, rgba(228, 0, 43, 0.35), transparent);
+  animation: grid-scan 9s linear infinite;
+}
+
+@keyframes grid-scan {
+  from { transform: translateY(-10vh); }
+  to { transform: translateY(110vh); }
+}
+
+/* HUD corner brackets */
+.grid-bg__corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-color: var(--ink);
+  border-style: solid;
+  border-width: 0;
+  opacity: 0.55;
+}
+.grid-bg__corner--tl { top: 20px; left: 20px; border-top-width: 1.5px; border-left-width: 1.5px; }
+.grid-bg__corner--tr { top: 20px; right: 20px; border-top-width: 1.5px; border-right-width: 1.5px; }
+.grid-bg__corner--bl { bottom: 20px; left: 20px; border-bottom-width: 1.5px; border-left-width: 1.5px; }
+.grid-bg__corner--br { bottom: 20px; right: 20px; border-bottom-width: 1.5px; border-right-width: 1.5px; }
+
+.grid-bg__content {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
