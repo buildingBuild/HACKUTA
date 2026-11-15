@@ -11,6 +11,6 @@ if (!clip) {
 }
 const t0 = Date.now();
 console.log(`analyzing ${clip} with ${geminiModel()}…`);
-const report = await analyzeClip(clip, { handle: 'smoke-test', faceit_level: 10, faceit_elo: 2500, map, side });
+const { report, model } = await analyzeClip(clip, { handle: 'smoke-test', faceit_level: 10, faceit_elo: 2500, map, side });
 console.log(JSON.stringify(report, null, 2));
-console.log(`OK in ${((Date.now() - t0) / 1000).toFixed(1)}s, overall ${report.overall_score}`);
+console.log(`OK via ${model} in ${((Date.now() - t0) / 1000).toFixed(1)}s, overall ${report.overall_score}`);

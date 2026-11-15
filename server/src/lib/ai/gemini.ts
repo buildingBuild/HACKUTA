@@ -7,7 +7,17 @@ import { buildCoachingPrompt, buildRepairPrompt, type PlayerContext } from './pr
 
 const INLINE_LIMIT_BYTES = 18 * 1024 * 1024; // Gemini inline request cap is ~20MB total
 
-export const geminiModel = () => process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+export const geminiModel = () => process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+
+/** Primary model, then fallbacks tried on overload (503/429/5xx) or a slow attempt. */
+export const modelChain = (): string[] => {
+  const fallbacks = (process.env.GEMINI_FALLBACK_MODELS ?? 'gemini-3.5-flash,gemini-3.5-flash-lite')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return [...new Set([geminiModel(), ...fallbacks])];
+};
+const ATTEMPT_TIMEOUT_MS = Number(process.env.GEMINI_ATTEMPT_TIMEOUT_MS || 20_000);
 
 let client: GoogleGenAI | null = null;
 function ai(): GoogleGenAI {
@@ -15,6 +25,29 @@ function ai(): GoogleGenAI {
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set');
   client ??= new GoogleGenAI({ apiKey });
   return client;
+}
+
+const retryable = (e: unknown) => {
+  const status = (e as { status?: number }).status;
+  return status === 429 || (status != null && status >= 500) || /timed out/i.test((e as Error).message ?? '');
+};
+
+type GenParams = Omit<Parameters<GoogleGenAI['models']['generateContent']>[0], 'model'>;
+
+/** generateContent across the model chain. Returns the text and which model produced it. */
+async function generate(params: GenParams, models = modelChain()): Promise<{ text: string; model: string }> {
+  let lastErr: unknown;
+  for (const model of models) {
+    try {
+      const res = await withTimeout(ai().models.generateContent({ ...params, model }), ATTEMPT_TIMEOUT_MS, `Gemini ${model}`);
+      return { text: res.text ?? '', model };
+    } catch (e) {
+      lastErr = e;
+      if (!retryable(e)) throw e;
+      console.warn(`[gemini] ${model} unavailable (${(e as { status?: number }).status ?? (e as Error).message}), trying next model`);
+    }
+  }
+  throw lastErr;
 }
 
 function guessMime(url: string, header?: string | null): string {
@@ -80,8 +113,7 @@ function parseReport(text: string): { ok: true; report: CoachingReport } | { ok:
  * Analyze a clip with Gemini. Validates with zod and retries once with a repair
  * prompt. Throws on failure; callers fall back to the cache (see coachingService).
  */
-export async function analyzeClip(clipUrl: string, ctx: PlayerContext): Promise<CoachingReport> {
-  const model = geminiModel();
+export async function analyzeClip(clipUrl: string, ctx: PlayerContext): Promise<{ report: CoachingReport; model: string }> {
   const video = await videoPart(clipUrl);
   const config = {
     responseMimeType: 'application/json',
@@ -89,35 +121,32 @@ export async function analyzeClip(clipUrl: string, ctx: PlayerContext): Promise<
     temperature: 0.4,
   };
 
-  const first = await ai().models.generateContent({
-    model,
+  const first = await generate({
     contents: [{ role: 'user', parts: [video, { text: buildCoachingPrompt(ctx) }] }],
     config,
   });
-  const firstText = first.text ?? '';
-  const r1 = parseReport(firstText);
-  if (r1.ok) return r1.report;
+  const r1 = parseReport(first.text);
+  if (r1.ok) return { report: r1.report, model: first.model };
 
-  const second = await ai().models.generateContent({
-    model,
-    contents: [{ role: 'user', parts: [{ text: buildRepairPrompt(firstText, r1.error) }] }],
-    config,
-  });
-  const r2 = parseReport(second.text ?? '');
-  if (r2.ok) return r2.report;
+  // Repair on the model that just answered (it's up), then the rest of the chain.
+  const chain = modelChain();
+  const second = await generate(
+    { contents: [{ role: 'user', parts: [{ text: buildRepairPrompt(first.text, r1.error) }] }], config },
+    [first.model, ...chain.filter((m) => m !== first.model)],
+  );
+  const r2 = parseReport(second.text);
+  if (r2.ok) return { report: r2.report, model: second.model };
   throw new Error(`Gemini output failed validation twice: ${r2.error}`);
 }
 
 /** Plain text generation (scout report summaries). */
 export async function generateText(prompt: string): Promise<string> {
-  const res = await ai().models.generateContent({
-    model: geminiModel(),
+  const { text } = await generate({
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: { temperature: 0.6 },
   });
-  const text = res.text?.trim();
-  if (!text) throw new Error('Gemini returned empty text');
-  return text;
+  if (!text.trim()) throw new Error('Gemini returned empty text');
+  return text.trim();
 }
 
 export function withTimeout<T>(p: Promise<T>, ms: number, label = 'operation'): Promise<T> {

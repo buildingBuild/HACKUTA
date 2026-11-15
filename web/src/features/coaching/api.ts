@@ -68,7 +68,7 @@ export const getAccount = (userId: string) => api<{ account: GameAccount | null 
 export const linkFaceit = (userId: string, nickname: string) =>
   api<{ account: GameAccount }>(`/api/players/${userId}/faceit`, { method: 'PUT', body: JSON.stringify({ nickname }) });
 export const syncFaceit = (userId: string) =>
-  api<{ source: 'faceit' | 'seed'; nickname: string | null; error?: string; scouting: AnalyzeResponse['scouting'] }>(
+  api<{ source: 'faceit' | 'mock' | 'seed'; nickname: string | null; new_matches?: number; error?: string; scouting: AnalyzeResponse['scouting'] }>(
     `/api/players/${userId}/sync`,
     { method: 'POST' },
   );

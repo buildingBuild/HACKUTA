@@ -284,9 +284,12 @@ function FaceitCard({ user, onSynced }: { user: SessionUser; onSynced: () => voi
       setMsg(
         r.source === 'faceit'
           ? { tone: 'ok', text: `Pulled fresh FACEIT stats for ${r.nickname}.` }
-          : { tone: 'warn', text: `FACEIT unavailable (${r.error ?? 'offline'}). Showing saved stats.` },
+          : r.source === 'mock'
+            ? { tone: 'ok', text: `Synced ${r.new_matches ?? 'new'} matches for ${r.nickname} · demo FACEIT data` }
+            : { tone: 'warn', text: `Couldn't sync (${r.error ?? 'offline'}). Showing saved stats.` },
       );
       if (r.scouting?.created.length) setMsg({ tone: 'ok', text: 'New stats crossed the scouting bar. Report sent to FaZe.' });
+      getAccount(user.id).then((a) => setAccount(a.account), () => {});
       onSynced();
     } catch (err) {
       setMsg({ tone: 'warn', text: (err as Error).message });

@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Smoke tests + dev helpers (not a workspace)"
+}
