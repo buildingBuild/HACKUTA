@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { FazeLogo } from '../../components/FazeLogo';
+import { BuildingHQ } from './BuildingHQ';
+import { ProfilePreview } from './ProfilePreview';
 import { STEP_LINES } from './quotes';
 import { saveOnboarding } from './storage';
 import { AccountsStep, GamertagStep, GameStep, IntroStep, ReviewStep } from './Steps';
@@ -35,6 +37,7 @@ export function OnboardingFlow() {
   const [data, setData] = useState<OnboardingData>(() => ({ ...EMPTY_DATA })); // fresh each visit
   const [index, setIndex] = useState(0); // STEPS.length means finished
   const [leaving, setLeaving] = useState(false);
+  const [building, setBuilding] = useState(false);
   const timer = useRef<number | undefined>(undefined);
 
   useEffect(() => saveOnboarding(data), [data]);
@@ -64,8 +67,16 @@ export function OnboardingFlow() {
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (canContinue) goTo(index + 1);
+    if (!canContinue) return;
+    if (step.id === 'review') setBuilding(true); // play the "building your HQ" sequence first
+    else goTo(index + 1);
   };
+
+  const finishBuilding = useCallback(() => {
+    setBuilding(false);
+    setIndex(STEPS.length);
+    window.scrollTo({ top: 0 });
+  }, []);
 
   const optionalEmpty = !step.required && !filled && step.id !== 'intro' && step.id !== 'review';
   const primaryLabel =
@@ -73,6 +84,7 @@ export function OnboardingFlow() {
 
   return (
     <div className="onb">
+      {building && <BuildingHQ data={data} onDone={finishBuilding} />}
       <FazeLogo className={`watermark ${finished ? 'watermark--done' : ''}`} />
       <header className="onb__top">
         <span className="brand">
@@ -86,28 +98,22 @@ export function OnboardingFlow() {
       </header>
 
       <main className="onb__stage">
-        <div key={index} className={`panel ${leaving ? 'panel--leave' : 'panel--enter'} ${step.id === 'game' && !finished ? 'panel--wide' : ''}`}>
+        <div key={index} className={`panel ${leaving ? 'panel--leave' : 'panel--enter'} ${step.id === 'game' && !finished ? 'panel--wide' : ''} ${finished ? 'panel--profile' : ''}`}>
           <span className="panel__bloom" aria-hidden="true" />
           {finished ? (
-            <DoneScreen data={data} onEdit={() => goTo(STEPS.length - 1)} />
+            <ProfilePreview data={data} onEdit={() => goTo(STEPS.length - 1)} />
           ) : (
             <form onSubmit={onSubmit} className="panel__form" noValidate>
               {step.id === 'intro' ? (
                 <IntroStep />
               ) : (
                 <>
-                  {step.id !== 'accounts' && (
+                  {step.required && (
                   <p className="kicker rise" style={{ ['--i' as string]: 0 }}>
                     <span className="kicker__bar" />
-                    {step.required ? (
-                      <span className="badge badge--req">
-                        <span className="badge__dot" /> Required
-                      </span>
-                    ) : step.id === 'review' ? (
-                      <span className="badge">Final check</span>
-                    ) : (
-                      <span className="badge badge--opt">Optional · skip anytime</span>
-                    )}
+                    <span className="badge badge--req">
+                      <span className="badge__dot" /> Required
+                    </span>
                     <span className="kicker__line">{STEP_LINES[step.id]}</span>
                   </p>
                   )}
@@ -140,13 +146,15 @@ export function OnboardingFlow() {
                       ←
                     </button>
                   )}
-                  <button
-                    type="submit"
-                    className={`btn ${optionalEmpty ? 'btn--outline' : ''} ${step.id === 'intro' ? 'btn--xl' : ''}`}
-                    disabled={!canContinue}
-                  >
-                    {primaryLabel} <span className="btn__arrow">→</span>
-                  </button>
+                  {step.id !== 'review' && (
+                    <button
+                      type="submit"
+                      className={`btn ${optionalEmpty ? 'btn--outline' : ''} ${step.id === 'intro' ? 'btn--xl' : ''}`}
+                      disabled={!canContinue}
+                    >
+                      {primaryLabel} <span className="btn__arrow">→</span>
+                    </button>
+                  )}
                 </div>
                 {!canContinue && (
                   <span className="actions__hint actions__hint--warn">
@@ -162,37 +170,6 @@ export function OnboardingFlow() {
       <footer className="onb__foot">
         <Ticker />
       </footer>
-    </div>
-  );
-}
-
-function DoneScreen({ data, onEdit }: { data: OnboardingData; onEdit: () => void }) {
-  return (
-    <div className="done">
-      <p className="kicker rise" style={{ ['--i' as string]: 0 }}>
-        <span className="kicker__bar" /> Welcome to HQ
-      </p>
-      <h1 className="done__title rise" style={{ ['--i' as string]: 1 }}>
-        FaZe up,
-        <br />
-        <span className="done__tag">{data.gamertag}.</span>
-      </h1>
-      <p className="lede rise" style={{ ['--i' as string]: 2 }}>
-        You're in<span className="intro__star">*</span>
-      </p>
-      <p className="footnote rise" style={{ ['--i' as string]: 3 }}>
-        * Threads, clips, coaching. Start with your first clip.
-      </p>
-      <div className="actions rise" style={{ ['--i' as string]: 4 }}>
-        <div className="btn-group">
-          <button type="button" className="btn-square" onClick={onEdit} aria-label="Edit answers" title="Edit answers">
-            ←
-          </button>
-          <button type="button" className="btn" title="Clip upload is the next screen we build">
-            Upload your first clip <span className="btn__arrow">→</span>
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

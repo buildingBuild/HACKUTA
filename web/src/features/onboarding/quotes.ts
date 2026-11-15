@@ -16,5 +16,4 @@ export const TICKER_LINES = [
 export const STEP_LINES: Record<string, string> = {
   game: 'Pick your battlefield.',
   gamertag: 'The name the scouts will remember.',
-  review: 'Last look before you FaZe up.',
 };
