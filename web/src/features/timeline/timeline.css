@@ -1360,3 +1360,8 @@
 .tl-roots__spiral .tone-1 { stroke: #b06a1a; opacity: 0.95; }
 .tl-roots__mid path { fill: url(#tl-rootwood); opacity: 0.85; }
 .tl-roots__back path { fill: #8a5216; opacity: 0.5; }
+
+/* the crown overlaps the header: keep the path buttons and stars clickable */
+.tl-hero { z-index: 3; }
+.tl-canopy { pointer-events: none; }
+.tl-canopy .tl-tip { pointer-events: auto; }
