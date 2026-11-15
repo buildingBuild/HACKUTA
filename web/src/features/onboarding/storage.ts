@@ -1,6 +1,6 @@
 import { EMPTY_DATA, type OnboardingData } from './types';
 
-// Browser-only for now. Saving to the DB comes later with profile (Omar) and FACEIT link (Yao).
+// Browser copy of the answers. The real save is saveOnboardingProfile (POST /api/profiles) at FaZe Up.
 const KEY = 'fazehq.onboarding.v1';
 
 export function loadOnboarding(): OnboardingData {

@@ -62,16 +62,16 @@ export function GameStep({ data, update }: StepProps) {
 }
 
 export function GamertagStep({ data, update }: StepProps) {
-  const cs2 = data.game === 'cs2';
+  const game = GAMES.find((g) => g.id === data.game);
   return (
     <div className="rise" style={{ ['--i' as string]: 2 }}>
       <Field
-        label={cs2 ? 'FACEIT nickname' : 'Gamertag'}
-        icon={cs2 ? '/brand/social/faceit.svg' : undefined}
+        label="Gamertag"
+        icon={data.game === 'cs2' ? '/brand/social/counterstrike.svg' : game?.logo}
         value={data.gamertag}
         onChange={(v) => update({ gamertag: v.replace(/\s/g, '') })}
         placeholder="your_tag"
-        hint={cs2 ? 'We use it to pull your FACEIT level, ELO and match stats.' : undefined}
+        hint="Your in-game name. It's your handle on HQ and how we tag your clips."
         autoFocus
         maxLength={32}
       />
@@ -152,7 +152,7 @@ export function ReviewStep({ data, jump }: ReviewProps) {
   const game = GAMES.find((g) => g.id === data.game);
   const nodes: OrbitNode[] = [
     { key: 'game', label: 'Game', value: game?.code ?? '', icon: data.game === 'cs2' ? '/brand/social/counterstrike.svg' : game?.logo ?? '', step: 'game' },
-    { key: 'faceit', label: data.game === 'cs2' ? 'FACEIT' : 'Gamertag', value: data.gamertag, icon: '/brand/social/faceit.svg', step: 'gamertag' },
+    { key: 'gamertag', label: 'Gamertag', value: data.gamertag, icon: '/brand/faze-logo.svg', step: 'gamertag' },
     { key: 'twitch', label: 'Twitch', value: data.twitch, icon: '/brand/social/twitch.svg', step: 'accounts' },
     { key: 'youtube', label: 'YouTube', value: data.youtube && `@${data.youtube}`, icon: '/brand/social/youtube.svg', step: 'accounts' },
     { key: 'psn', label: 'PSN', value: data.psn, icon: '/brand/social/playstation.svg', step: 'accounts' },

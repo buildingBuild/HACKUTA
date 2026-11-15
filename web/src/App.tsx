@@ -1,6 +1,7 @@
 // App shell + tiny path router (no dependency; links are plain <a href>). SHARED.
 // Route table (REQUIREMENTS.md §5.1):
-//   /                       Home (Lionsgate-style showcase)          public
+//   /                       Home = your profile (signed out -> /join) public
+//   /old-home               archived showcase home (not in nav)      public
 //   /join                   onboarding flow (creates an account)     public
 //   /community/*            Community (Dahiya)                       public, writes need sign-in
 //   /feed                   FaZe Feed, experimental masonry (Joe)    public
@@ -16,7 +17,7 @@ import { featureByPath } from './components/features';
 import { GridBackground } from './components/GridBackground';
 import { NotFound } from './components/NotFound';
 import { RequireRole } from './components/RequireRole';
-import { useSessionUser } from './components/session';
+import { homeFor, useSessionUser } from './components/session';
 import { Loading, Page } from './components/ui';
 import { AdminPage } from './features/admin/AdminPage';
 import { CommunityRoute } from './features/community/CommunityRoute';
@@ -45,7 +46,15 @@ export function App() {
   const handle = match(path, /^\/u\/([^/]+)$/);
   const feature = featureByPath(path);
 
-  if (path === '/') page = <HomePage user={user} />;
+  if (path === '/') {
+    // Home is your own profile. Signed out -> onboarding; staff -> their workspace.
+    if (loading) page = <Page><Loading /></Page>;
+    else if (user && user.role === 'user') page = <ProfilePage handle={user.handle} />;
+    else {
+      window.location.replace(user ? homeFor(user) : '/join');
+      page = null;
+    }
+  } else if (path === '/old-home') page = <HomePage user={user} />; // archived showcase home, not in the nav
   else if (handle) page = <ProfilePage handle={decodeURIComponent(handle)} />;
   else if (path === '/me') {
     if (!loading) window.location.replace(user ? `/u/${encodeURIComponent(user.handle)}` : '/join');

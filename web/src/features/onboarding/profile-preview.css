@@ -217,3 +217,28 @@
   color: var(--ink-2);
 }
 .pf__notice-dot { width: 6px; height: 6px; flex: none; background: var(--faze-red); }
+
+/* clip activity (contribution graph) */
+.act {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, 1fr);
+  gap: 3px;
+  margin: 8px 0 6px;
+  width: max-content;
+  max-width: 100%;
+}
+.act__cell {
+  width: 12px;
+  height: 12px;
+  background: rgba(10, 10, 10, 0.07);
+  animation: act-in 0.4s var(--ease-out) both;
+  animation-delay: calc(500ms + var(--i) * 4ms);
+}
+.act__cell--1 { background: rgba(228, 0, 43, 0.25); }
+.act__cell--2 { background: rgba(228, 0, 43, 0.5); }
+.act__cell--3 { background: rgba(228, 0, 43, 0.75); }
+.act__cell--4 { background: var(--faze-red); }
+.act__cell:last-child { outline: 1.5px solid var(--ink); outline-offset: 1px; }
+@keyframes act-in { from { opacity: 0; transform: scale(0.4); } }
+@media (prefers-reduced-motion: reduce) { .act__cell { animation: none; } }

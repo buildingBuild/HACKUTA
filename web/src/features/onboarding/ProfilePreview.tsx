@@ -12,6 +12,40 @@ import './profile-preview.css';
 
 type Tab = 'all' | ClipCategory;
 
+const WEEKS = 20;
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/**
+ * Contribution-style grid of when their imported clips happened (column = week, row = weekday).
+ * Mocked from the gamertag like the rest of the preview: busier on weekends, ramping up lately,
+ * and today is always lit (they just joined). Replace with real clip dates once ingestion lands.
+ */
+function activityGrid(seed: string) {
+  let s = [...seed].reduce((a, c) => a + c.charCodeAt(0), 11) || 1;
+  const r = () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646;
+  const n = WEEKS * 7;
+  const counts = Array.from({ length: n }, (_, i) => {
+    const day = i % 7;
+    const week = Math.floor(i / 7);
+    const weekend = day === 0 || day === 5 || day === 6 ? 0.35 : 0;
+    const recency = (week / WEEKS) * 0.3;
+    const p = 0.18 + weekend + recency;
+    return r() < p ? 1 + Math.floor(r() * (weekend ? 5 : 3)) : 0;
+  });
+  counts[n - 1] = Math.max(counts[n - 1], 2); // joined today
+  const active = counts.filter(Boolean).length;
+  let streak = 0;
+  let run = 0;
+  for (const c of counts) {
+    run = c ? run + 1 : 0;
+    streak = Math.max(streak, run);
+  }
+  const byDay = DAYS.map((_, d) => counts.filter((_, i) => i % 7 === d).reduce((a, b) => a + b, 0));
+  const topDay = DAYS[byDay.indexOf(Math.max(...byDay))];
+  const cells = counts.map((c) => (c === 0 ? 0 : c === 1 ? 1 : c <= 2 ? 2 : c <= 4 ? 3 : 4));
+  return { cells, active, streak, topDay };
+}
+
 interface Props {
   data: OnboardingData;
   onEdit: () => void;
@@ -31,8 +65,7 @@ export function ProfilePreview({ data, onEdit, profileUrl, saveError }: Props) {
   const avg = Math.round(plays.reduce((a, c) => a + c.score, 0) / Math.max(1, plays.length));
   const bestClip = plays.reduce((b, c) => (c.score > b.score ? c : b), plays[0] ?? clips[0]);
   const best = bestClip.score;
-  // mocked HQ progress for the preview
-  const scout = Math.min(96, Math.round(avg * 0.82));
+  const activity = useMemo(() => activityGrid(data.gamertag), [data.gamertag]);
 
   const tabs: { id: Tab; label: string; count: number }[] = [
     { id: 'all', label: 'All clips', count: clips.length },
@@ -44,7 +77,7 @@ export function ProfilePreview({ data, onEdit, profileUrl, saveError }: Props) {
       <section className="pf__head">
         <div className="pf__avatar rise" style={{ ['--i' as string]: 0 }}>
           {(data.gamertag[0] ?? '?').toUpperCase()}
-          <span className="pf__level" title="FACEIT level (synced after linking)">
+          <span className="pf__level" title="HQ level">
             10
           </span>
         </div>
@@ -113,16 +146,15 @@ export function ProfilePreview({ data, onEdit, profileUrl, saveError }: Props) {
           </span>
         </div>
         <div className="stat stat--wide">
-          <span className="stat__label">HQ progress</span>
-          <span className="stat__value">
-            {scout}
-            <small>%</small>
+          <span className="stat__label">Clip activity</span>
+          <div className="act" role="img" aria-label={`Active on ${activity.active} days over the last ${WEEKS} weeks`}>
+            {activity.cells.map((lvl, i) => (
+              <span key={i} className={`act__cell act__cell--${lvl}`} style={{ ['--i' as string]: i }} />
+            ))}
+          </div>
+          <span className="stat__sub">
+            {activity.active} active days in {WEEKS} weeks · best streak {activity.streak} · most active on {activity.topDay}s
           </span>
-          <span className="scout">
-            <span className="scout__fill" style={{ ['--w' as string]: `${scout}%` }} />
-            <span className="scout__mark" title="Next unlock" />
-          </span>
-          <span className="stat__sub">Play Guessr, paint The Wall and sync your setup to level up.</span>
         </div>
       </section>
 

@@ -9,3 +9,7 @@ dist/
 server/.cache/
 server/demo-clips/*
 !server/demo-clips/README.md
+
+# clip pipeline (Joe): local yt-dlp binary + rendered clips/work files
+server/bin/
+server/media/
