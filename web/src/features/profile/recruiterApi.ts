@@ -1,5 +1,5 @@
 // Recruiter data for Omar's pipeline board + recruiter lens. Reads Yao's existing routes
-// (server/src/routes/scouting.ts, voice.ts); no server changes.
+// (server/src/routes/scouting.ts); no server changes.
 import { authHeaders } from "../../components/session";
 
 export type ProspectStatus = "new" | "reviewing" | "contacted" | "passed";
@@ -24,7 +24,6 @@ export type ProspectRow = {
 
 export type ProspectReport = ProspectRow & {
   rule_id: string;
-  audio_url: string | null;
   evidence: { score?: number; rule_label?: string; summary_source?: string } | null;
 };
 
@@ -48,7 +47,3 @@ export const getProspectReport = (id: string) => call<{ report: ProspectReport }
 
 export const setProspectStatus = (id: string, status: ProspectStatus) =>
   call<{ id: string; status: ProspectStatus }>(`/api/scouting/prospects/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ status }) });
-
-/** ElevenLabs briefing (cached server-side). On failure the error body may carry `text` for browser TTS. */
-export const getBriefing = (reportId: string) =>
-  call<{ audio_url: string; text: string; cached: boolean }>(`/api/voice/briefing/${encodeURIComponent(reportId)}`, { method: "POST" });

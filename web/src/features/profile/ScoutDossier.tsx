@@ -30,10 +30,10 @@ const CONSISTENCY_COPY: Record<string, string> = {
 };
 
 export function ScoutDossier({ scout, dossier }: { scout: ScoutProgress; dossier: Dossier }) {
-  if (scout.status === "unavailable" && !dossier.percentiles.length && !dossier.skills.categories.length) return null;
+  if (scout.status === "unavailable" && !dossier.percentiles.length) return null;
   const v = verdict(scout);
   const pct = Math.round((scout.progress ?? 0) * 100);
-  const { form, skills } = dossier;
+  const { form } = dossier;
 
   return (
     <section className={`pf-dossier pf-rise is-${v.tone}`} aria-labelledby="pf-dossier-h">
@@ -105,25 +105,6 @@ export function ScoutDossier({ scout, dossier }: { scout: ScoutProgress; dossier
           </div>
         )}
 
-        {skills.categories.length > 0 && (
-          <div className="pf-dcol">
-            <h3 className="pf-dcol__h">AI skill profile</h3>
-            <ul className="pf-skills">
-              {skills.categories.map((s) => (
-                <li key={s.key} className={s.key === skills.strongest ? "is-strong" : s.key === skills.weakest ? "is-weak" : ""}>
-                  <span className="pf-skills__label">
-                    {s.label}
-                    {s.key === skills.strongest && <em>Strength</em>}
-                    {s.key === skills.weakest && <em>Work on</em>}
-                  </span>
-                  <span className="pf-skills__bar" aria-hidden><span style={{ width: `${s.avg}%` }} /></span>
-                  <span className="pf-skills__val">{fmtNum(s.avg, 0)}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="pf-dcol__foot">Avg of {skills.clips_analyzed} AI-coached clip{skills.clips_analyzed === 1 ? "" : "s"} · AI-generated feedback</p>
-          </div>
-        )}
       </div>
     </section>
   );

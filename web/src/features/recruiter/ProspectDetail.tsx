@@ -1,9 +1,8 @@
-// Prospect detail: AI scout report + voice briefing, status workflow, scouting
-// criteria, 30-day trends and top clips (linking to the coach page).
-import { useEffect, useRef, useState } from 'react';
-import { getBriefing, getProspect, setProspectStatus, STATUSES, type ProspectDetailData, type ProspectStatus } from './api';
+// Prospect detail: scout report (template from real stats), status workflow, scouting
+// criteria, 30-day trends and recent clips.
+import { useEffect, useState } from 'react';
+import { getProspect, setProspectStatus, STATUSES, type ProspectDetailData, type ProspectStatus } from './api';
 import { TrendChart } from './TrendChart';
-import { CATEGORY_LABELS } from '../coaching/types';
 
 interface Props {
   id: string;
@@ -13,51 +12,11 @@ interface Props {
 export function ProspectDetail({ id, onBack }: Props) {
   const [data, setData] = useState<ProspectDetailData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [briefing, setBriefing] = useState<'idle' | 'loading' | 'playing'>('idle');
-  const [briefingNote, setBriefingNote] = useState<string | null>(null);
   const [saving, setSaving] = useState<ProspectStatus | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     getProspect(id).then(setData, (e) => setError((e as Error).message));
-    return () => {
-      audioRef.current?.pause();
-      if ('speechSynthesis' in window) speechSynthesis.cancel();
-    };
   }, [id]);
-
-  async function playBriefing() {
-    if (briefing === 'playing') {
-      audioRef.current?.pause();
-      if ('speechSynthesis' in window) speechSynthesis.cancel();
-      setBriefing('idle');
-      return;
-    }
-    setBriefing('loading');
-    setBriefingNote(null);
-    try {
-      const b = await getBriefing(id);
-      const audio = new Audio(b.audio_url);
-      audioRef.current = audio;
-      audio.onended = () => setBriefing('idle');
-      await audio.play();
-      setBriefing('playing');
-      setBriefingNote('ElevenLabs voice');
-    } catch (e) {
-      // ElevenLabs down: read it with the browser voice so the moment still lands.
-      const text = (e as { body?: { text?: string } }).body?.text ?? data?.report.summary;
-      if (text && 'speechSynthesis' in window) {
-        const u = new SpeechSynthesisUtterance(text);
-        u.onend = () => setBriefing('idle');
-        speechSynthesis.speak(u);
-        setBriefing('playing');
-        setBriefingNote('Browser voice · ElevenLabs offline');
-      } else {
-        setBriefing('idle');
-        setBriefingNote('Voice unavailable');
-      }
-    }
-  }
 
   async function changeStatus(status: ProspectStatus) {
     if (!data || status === data.report.status) return;
@@ -81,7 +40,7 @@ export function ProspectDetail({ id, onBack }: Props) {
     );
   if (!data) return <p className="yao-label">Loading prospect…</p>;
 
-  const { report: r, trend, topClips, progress } = data;
+  const { report: r, trend, recentClips, progress } = data;
   const criteria = progress.primary?.criteria ?? r.evidence.criteria ?? [];
   const bar = (m: string) => criteria.find((c) => c.metric === m)?.value;
 
@@ -115,18 +74,10 @@ export function ProspectDetail({ id, onBack }: Props) {
       <div className="yao-pd__grid">
         <section className="yao-card">
           <div className="yao-card__head">
-            <h2 className="yao-h">AI scout report</h2>
-            <span className="yao-chip">{r.evidence.summary_source === 'llm' ? 'Gemini' : 'auto summary'}</span>
+            <h2 className="yao-h">Scout report</h2>
+            <span className="yao-chip">from FACEIT stats</span>
           </div>
           <p className="yao-pd__summary">{r.summary}</p>
-          <div className="yao-form__foot">
-            <button className="yao-btn yao-btn--primary" onClick={playBriefing} disabled={briefing === 'loading'}>
-              {briefing === 'loading' ? 'Generating…' : briefing === 'playing' ? '■ Stop briefing' : 'Play voice briefing'}
-              {briefing === 'idle' && <span className="yao-btn__arrow">→</span>}
-            </button>
-            {briefing === 'playing' && <span className="yao-dot yao-dot--pulse" />}
-            {briefingNote && <span className="yao-label">{briefingNote}</span>}
-          </div>
 
           <h4 className="yao-sub">Status</h4>
           <div className="yao-seg yao-seg--wide" role="group" aria-label="Prospect status">
@@ -166,33 +117,26 @@ export function ProspectDetail({ id, onBack }: Props) {
         <TrendChart data={trend} metric="adr" label="ADR" threshold={bar('adr')} format={(v) => v.toFixed(1)} />
       </div>
 
-      <h4 className="yao-sub">Top clips · AI coached</h4>
-      <ul className="yao-pclips">
-        {topClips.map((c) => (
-          <li key={c.id}>
-            <a className="yao-pclip" href={`/clips/${c.id}`}>
-              <div className="yao-pclip__head">
-                <span className="yao-cliprow__map">{(c.map ?? 'cs2').slice(0, 4)}</span>
-                <span className="yao-cliprow__title">
-                  <strong>{c.title ?? 'Untitled clip'}</strong>
-                  <span className="yao-label">{c.map ?? '—'} · {c.side ?? '—'}</span>
-                </span>
-                <span className="yao-cliprow__score">{c.overall_score}</span>
-              </div>
-              {c.summary && <p className="yao-pclip__summary">{c.summary}</p>}
-              <ul className="yao-pclip__notes">
-                {c.notes.slice(0, 3).map((n, i) => (
-                  <li key={i}>
-                    <code>{n.t}</code>
-                    <span className="yao-label">{CATEGORY_LABELS[n.category] ?? n.category}</span>
-                    <span>{n.note}</span>
-                  </li>
-                ))}
-              </ul>
-            </a>
-          </li>
-        ))}
-      </ul>
+      {recentClips.length > 0 && (
+        <>
+          <h4 className="yao-sub">Recent clips</h4>
+          <ul className="yao-pclips">
+            {recentClips.map((c) => (
+              <li key={c.id}>
+                <a className="yao-pclip" href={c.social_post_url || c.blob_url} target="_blank" rel="noreferrer">
+                  <div className="yao-pclip__head">
+                    <span className="yao-cliprow__map">{(c.map ?? 'cs2').slice(0, 4)}</span>
+                    <span className="yao-cliprow__title">
+                      <strong>{c.title ?? 'Untitled clip'}</strong>
+                      <span className="yao-label">{c.map ?? '—'} · {c.side ?? '—'} · {new Date(c.created_at).toLocaleDateString()}</span>
+                    </span>
+                  </div>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   );
 }

@@ -1,10 +1,10 @@
 // Scouting engine: evaluates threshold rules (config/scouting-rules.json) against
-// a player's latest stats + AI clip scores, and creates scout reports.
+// a player's latest FACEIT/player_stats metrics, and creates scout reports.
 // Profile/leaderboards read getProgress(); they should not recompute it.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { Db } from '../yao-deps.js';
-import { writeScoutReport } from '../ai/scoutReport.js';
+import { templateSummary } from './summary.js';
 
 export type Op = '>=' | '>' | '<=' | '<' | '==';
 export interface Criterion { metric: string; op: Op; value: number; label?: string }
@@ -28,7 +28,7 @@ export const OPEN_STATUSES = ['new', 'reviewing', 'contacted'] as const;
 export type Metrics = Record<string, number | null>;
 
 export async function collectMetrics(db: Db, userId: string): Promise<Metrics> {
-  const [stats, account, clips] = await Promise.all([
+  const [stats, account] = await Promise.all([
     db.query<{ metric: string; value: string | number }>(
       `SELECT DISTINCT ON (metric) metric, value
          FROM player_stats WHERE user_id = $1 AND game = 'cs2'
@@ -37,12 +37,6 @@ export async function collectMetrics(db: Db, userId: string): Promise<Metrics> {
     ),
     db.query<{ faceit_level: number | null; faceit_elo: number | null }>(
       `SELECT faceit_level, faceit_elo FROM game_accounts WHERE user_id = $1 AND game = 'cs2' LIMIT 1`,
-      [userId],
-    ),
-    db.query<{ n: string }>(
-      `SELECT COUNT(DISTINCT c.id) AS n
-         FROM clips c JOIN coaching_reports r ON r.clip_id = c.id
-        WHERE c.user_id = $1`,
       [userId],
     ),
   ]);
@@ -54,30 +48,8 @@ export async function collectMetrics(db: Db, userId: string): Promise<Metrics> {
     m.faceit_level ??= acc.faceit_level;
     m.elo ??= acc.faceit_elo;
   }
-  m.avg_clip_score = await avgLastClipScores(db, userId, 5);
-  m.clips_analyzed = Number(clips.rows[0]?.n ?? 0);
   Object.assign(m, await collectCreatorMetrics(db, userId));
   return m;
-}
-
-/** Average overall_score of the user's N most recent analyzed clips. */
-async function avgLastClipScores(db: Db, userId: string, n: number): Promise<number | null> {
-  const r = await db.query<{ avg: string | null }>(
-    `SELECT AVG(overall_score) AS avg FROM (
-       SELECT DISTINCT ON (c.id) c.id, c.created_at, r.overall_score
-         FROM coaching_reports r JOIN clips c ON c.id = r.clip_id
-        WHERE c.user_id = $1
-        ORDER BY c.id, r.created_at DESC
-     ) x
-     WHERE x.id IN (
-       SELECT c2.id FROM clips c2
-        WHERE c2.user_id = $1 AND EXISTS (SELECT 1 FROM coaching_reports r2 WHERE r2.clip_id = c2.id)
-        ORDER BY c2.created_at DESC LIMIT $2
-     )`,
-    [userId, n],
-  );
-  const v = r.rows[0]?.avg;
-  return v == null ? null : Math.round(Number(v) * 10) / 10;
 }
 
 /** Creator-track metrics from social_stats. Table may not exist yet: return nothing. */
@@ -173,39 +145,23 @@ export async function evaluate(db: Db, userId: string): Promise<EvaluateResult> 
     );
     if (open.rows.length) continue;
 
-    const [user, topClips] = await Promise.all([
-      db.query<{ handle: string; display_name: string | null; region: string | null }>(
-        `SELECT u.handle, u.display_name, g.region
-           FROM users u LEFT JOIN game_accounts g ON g.user_id = u.id AND g.game = 'cs2'
-          WHERE u.id = $1`,
-        [userId],
-      ),
-      db.query<{ clip_id: string; title: string | null; map: string | null; overall_score: number; summary: string | null }>(
-        `SELECT c.id AS clip_id, c.title, c.map, r.overall_score, r.summary
-           FROM clips c JOIN coaching_reports r ON r.clip_id = c.id
-          WHERE c.user_id = $1
-          ORDER BY r.overall_score DESC, r.created_at DESC LIMIT 3`,
-        [userId],
-      ),
-    ]);
+    const user = await db.query<{ handle: string; display_name: string | null; region: string | null }>(
+      `SELECT u.handle, u.display_name, g.region
+         FROM users u LEFT JOIN game_accounts g ON g.user_id = u.id AND g.game = 'cs2'
+        WHERE u.id = $1`,
+      [userId],
+    );
     const u = user.rows[0];
     if (!u) continue;
 
-    const { summary, source } = await writeScoutReport({
-      handle: u.handle,
-      displayName: u.display_name,
-      region: u.region,
-      metrics: progress.metrics,
-      topClips: topClips.rows.map(({ clip_id, ...c }) => c),
-    });
+    const summary = templateSummary({ handle: u.handle, displayName: u.display_name, region: u.region, metrics: progress.metrics });
 
     const evidence = {
       score: result.score,
       rule_label: result.label,
       criteria: result.criteria,
       metrics: progress.metrics,
-      top_clip_ids: topClips.rows.map((c) => c.clip_id),
-      summary_source: source,
+      summary_source: 'template',
       evaluated_at: new Date().toISOString(),
     };
     const ins = await db.query<{ id: string }>(

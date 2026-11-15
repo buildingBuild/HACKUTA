@@ -8,8 +8,7 @@ import { Router } from 'express';
 import type { YaoDeps } from '../lib/yao-deps.js';
 
 const COLS = `c.id, c.user_id, c.blob_url, c.thumbnail_url, c.game, c.map, c.side, c.title, c.social_post_url,
-              c.status, c.created_at, u.handle, u.display_name,
-              (SELECT overall_score FROM coaching_reports r WHERE r.clip_id = c.id ORDER BY r.created_at DESC LIMIT 1) AS overall_score`;
+              c.status, c.created_at, u.handle, u.display_name`;
 
 export function createClipsRouter({ db, auth }: YaoDeps): Router {
   const r = Router();

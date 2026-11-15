@@ -1,4 +1,4 @@
-/* Recruiter dashboard (owner: Yao). Builds on coaching.css primitives (.yao-page tokens). */
+/* Recruiter dashboard (owner: Yao). Builds on hud.css primitives (.yao-page tokens). */
 
 /* ---------- status counters ---------- */
 .yao-counters { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid var(--y-line); background: var(--y-glass); margin: 0 0 20px; }

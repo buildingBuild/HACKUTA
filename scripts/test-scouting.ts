@@ -1,29 +1,26 @@
-// Pure checks for the scouting engine + cache + schema (no DB/network needed).
-// Usage: npm run test:engine
+// Pure checks for the scouting engine, template summary, mock FACEIT and FACEIT normalization (no DB/network).
+// Usage: npm test
 import assert from 'node:assert/strict';
 import { evaluateRule, getRules } from '../server/src/lib/scouting/engine.js';
-import { getCachedReport, getFallbackReport, cacheKeyFor, listCachedKeys } from '../server/src/lib/ai/cache/index.js';
-import { CoachingReportSchema } from '../server/src/lib/ai/coachingSchema.js';
+import { templateSummary } from '../server/src/lib/scouting/summary.js';
+import { levelForElo } from '../server/src/lib/faceit/mock.js';
 import { normalize } from '../server/src/lib/faceit/metrics.js';
 
 const rule = getRules().rules.find((r) => r.id === 'player_v1')!;
-const vyper = { faceit_level: 10, elo: 2610, kd: 1.31, hs_pct: 54, adr: 88.4 };
+assert.ok(rule.enabled, 'player_v1 must be enabled');
+assert.ok(!rule.all.some((c) => c.metric === 'avg_clip_score'), 'no AI clip score criterion since the V3 pivot');
 
-// Prospect is just under: seeded last-5 avg = (77 + 79 + 76 + 78) / 4 = 77.5
-const before = evaluateRule(rule, { ...vyper, avg_clip_score: 77.5 });
+// Seeded demo prospect (server/src/db/seed-yao.ts): every stat passes, but only 18 of 20 recent matches.
+const vyper = { faceit_level: 10, elo: 2610, kd: 1.31, kr: 0.86, hs_pct: 54, adr: 88.4, win_rate: 62 };
+
+const before = evaluateRule(rule, { ...vyper, matches: 18 });
 assert.equal(before.pass, false, 'prospect must start below the bar');
-assert.deepEqual(before.criteria.filter((c) => !c.pass).map((c) => c.metric), ['avg_clip_score']);
+assert.deepEqual(before.criteria.filter((c) => !c.pass).map((c) => c.metric), ['matches'], 'only the sample size is missing');
 assert.ok(before.progress > 0.95 && before.progress < 1, `progress ${before.progress}`);
 
-// After the live clip (cached 92): (77 + 79 + 76 + 78 + 92) / 5 = 80.4
-const great = getCachedReport('http://localhost:3001/demo-clips/prospect-great-clip.mp4');
-assert.ok(great, 'great clip must be cached');
-const seeded = ['prospect-nuke-ramp', 'prospect-ancient-awp', 'prospect-inferno-entry', 'prospect-mirage-retake'].map((k) => getCachedReport(`${k}.mp4`)!.overall_score);
-const avgAfter = [...seeded, great.overall_score].reduce((a, b) => a + b, 0) / 5;
-const avgBefore = seeded.reduce((a, b) => a + b, 0) / 4;
-assert.ok(avgBefore < 80, `seeded avg ${avgBefore} must be < 80`);
-const after = evaluateRule(rule, { ...vyper, avg_clip_score: avgAfter });
-assert.equal(after.pass, true, `prospect must pass after the great clip (avg ${avgAfter})`);
+// A FACEIT sync (mock or live) reports a full 20-match sample -> crosses the bar.
+const after = evaluateRule(rule, { ...vyper, matches: 20 });
+assert.equal(after.pass, true, 'prospect must pass after a sync');
 assert.equal(after.progress, 1);
 assert.ok(after.score >= 80 && after.score <= 100, `score ${after.score}`);
 
@@ -32,12 +29,16 @@ const empty = evaluateRule(rule, {});
 assert.equal(empty.pass, false);
 assert.equal(empty.progress, 0);
 
-// Cache + schema
-assert.equal(cacheKeyFor('https://x.public.blob.vercel-storage.com/clips/prospect-great-clip.mp4?token=1'), 'prospect-great-clip');
-for (const k of listCachedKeys()) CoachingReportSchema.parse(getCachedReport(k + '.mp4'));
-CoachingReportSchema.parse(getFallbackReport());
-assert.equal(CoachingReportSchema.safeParse({ ...great, overall_score: 140 }).success, false, 'out-of-range score rejected');
-assert.equal(CoachingReportSchema.safeParse({ ...great, notes: [{ ...great.notes[0], t: '7s' }] }).success, false, 'bad timestamp rejected');
+// Template summary uses real numbers only
+const summary = templateSummary({ handle: 'vyper', displayName: 'Vyper', region: 'NA', metrics: { ...vyper, matches: 20 } });
+assert.match(summary, /2610 ELO/);
+assert.match(summary, /1\.31 K\/D/);
+assert.doesNotMatch(summary, /AI|clip score/i);
+
+// Mock FACEIT levels follow ELO bands
+assert.equal(levelForElo(400), 1);
+assert.equal(levelForElo(1000), 4);
+assert.equal(levelForElo(2001), 10);
 
 // FACEIT normalization (shape of /games/cs2/stats items)
 const n = normalize(
@@ -52,6 +53,7 @@ assert.equal(n.last20.kd, 1.14); // 40 / 35
 assert.equal(n.last20.hs_pct, 45);
 assert.equal(n.last20.adr, 80.5);
 assert.equal(n.last20.win_rate, 50);
+assert.equal(n.last20.matches, 2);
 assert.equal(n.lifetime.lifetime_matches, 900);
 
-console.log(`engine OK: before ${before.progress} progress / after avg ${avgAfter} -> pass, score ${after.score}`);
+console.log(`scouting OK: before ${before.progress} (needs ${before.criteria.find((c) => !c.pass)?.label}) -> after sync pass, score ${after.score}`);

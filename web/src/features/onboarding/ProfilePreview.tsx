@@ -7,7 +7,7 @@ import './profile-preview.css';
 /**
  * First look at the player's profile right after onboarding.
  * NOTE: the real public profile (/u/:handle) is Omar's feature in features/profile/.
- * This preview uses demo clips + mocked stats until clips, coaching and scouting are wired.
+ * This preview uses demo clips + mocked stats (onboarding eye candy, not real data).
  */
 
 type Tab = 'all' | ClipCategory;
@@ -31,7 +31,7 @@ export function ProfilePreview({ data, onEdit, profileUrl, saveError }: Props) {
   const avg = Math.round(plays.reduce((a, c) => a + c.score, 0) / Math.max(1, plays.length));
   const bestClip = plays.reduce((b, c) => (c.score > b.score ? c : b), plays[0] ?? clips[0]);
   const best = bestClip.score;
-  // mocked until Yao's scouting score is available (reads, doesn't recompute)
+  // mocked HQ progress for the preview
   const scout = Math.min(96, Math.round(avg * 0.82));
 
   const tabs: { id: Tab; label: string; count: number }[] = [
@@ -101,7 +101,7 @@ export function ProfilePreview({ data, onEdit, profileUrl, saveError }: Props) {
           <span className="stat__sub">across {sources.length} sources</span>
         </div>
         <div className="stat">
-          <span className="stat__label">Avg AI score</span>
+          <span className="stat__label">Avg hype</span>
           <span className="stat__value">{avg}</span>
           <span className="stat__sub">highlights + clutches</span>
         </div>
@@ -113,16 +113,16 @@ export function ProfilePreview({ data, onEdit, profileUrl, saveError }: Props) {
           </span>
         </div>
         <div className="stat stat--wide">
-          <span className="stat__label">Scout progress</span>
+          <span className="stat__label">HQ progress</span>
           <span className="stat__value">
             {scout}
             <small>%</small>
           </span>
           <span className="scout">
             <span className="scout__fill" style={{ ['--w' as string]: `${scout}%` }} />
-            <span className="scout__mark" title="Scouting threshold" />
+            <span className="scout__mark" title="Next unlock" />
           </span>
-          <span className="stat__sub">Keep posting. Cross the line and FaZe gets your report.</span>
+          <span className="stat__sub">Play Guessr, paint The Wall and sync your setup to level up.</span>
         </div>
       </section>
 

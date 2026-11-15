@@ -3,10 +3,10 @@ export const TICKER_LINES = [
   'FaZe up.',
   'FaZe the f*ck up.',
   '#FaZe5 pulled 211,000+ applicants. The door never closed.',
-  'Every clip is a tryout.',
+  'When FaZe wins a round, the lights go red.',
   'Aim small. Miss small.',
   'Crosshair at head level. Always.',
-  'The scouts are watching*',
+  'One pixel at a time.',
   'Counter-strafe. Then shoot.',
   'From montage kids to Major contenders.',
   'Day one or day zero. Welcome home.',
@@ -15,5 +15,5 @@ export const TICKER_LINES = [
 
 export const STEP_LINES: Record<string, string> = {
   game: 'Pick your battlefield.',
-  gamertag: 'The name the scouts will remember.',
+  gamertag: 'The name on The Wall.',
 };

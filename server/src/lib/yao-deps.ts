@@ -1,7 +1,6 @@
-// Dependency types for Yao's routers (coaching, players, scouting, voice).
-// Routers receive these as arguments so they plug into whatever app.ts / db
-// client / auth the shared scaffold ships with:
-//   app.use('/api/coaching', createCoachingRouter({ db, auth }))
+// Dependency types for routers that take { db, auth } (auth, players, scouting, clips, live, admin).
+// Routers receive these as arguments so app.ts wires them up in one line:
+//   app.use('/api/scouting', createScoutingRouter({ db, auth }))
 import type { RequestHandler } from 'express';
 
 export interface QueryResult<R> {

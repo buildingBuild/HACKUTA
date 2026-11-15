@@ -15,7 +15,6 @@ export const fmtSigned = (v: number | null | undefined, digits = 0) =>
 export function fmtLeaderboardValue(type: LeaderboardType, v: number): string {
   switch (type) {
     case "elo": return fmtNum(v);
-    case "clip-score": return fmtNum(v, 1);
     case "improvement": return fmtSigned(v);
     case "creator-growth": return `${v >= 0 ? "+" : ""}${(v * 100).toFixed(1)}%`;
     case "karma": return fmtNum(v);

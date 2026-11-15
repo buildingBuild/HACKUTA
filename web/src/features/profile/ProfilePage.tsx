@@ -1,7 +1,6 @@
 import { useState } from "react";
 import "./profile.css";
 import { getDemoUserId, useSessionUser } from "../../components/session";
-import { ClipReview } from "./ClipReview";
 import { RecruiterLens } from "./RecruiterLens";
 import { ApiError, fetchProfile, profileUrl } from "./api";
 import { StateBox, TrendChart } from "./components";
@@ -28,11 +27,11 @@ const levelTier = (level: number) => (level >= 10 ? "top" : level >= 8 ? "high" 
 export type ProfilePageProps = {
   handle: string;
   /** Where a clip card links to. Defaults to /clips/:id (Joe's clip detail page). */
-  clipHref?: (clipId: string) => string;
+  clipHref?: (clip: Profile["clips"][number]) => string;
 };
 
 /** Public gamer resume at /u/:handle (REQUIREMENTS.md §5.4). */
-export function ProfilePage({ handle, clipHref = (id) => `/clips/${id}` }: ProfilePageProps) {
+export function ProfilePage({ handle, clipHref = (c) => c.social_post_url || c.blob_url || "#" }: ProfilePageProps) {
   // 5s so the live "clip pushes them over the bar" moment shows up fast on stage.
   const { data, error, loading, refresh } = usePolling(() => fetchProfile(handle), [handle], 5000);
 
@@ -50,7 +49,7 @@ export function ProfilePage({ handle, clipHref = (id) => `/clips/${id}` }: Profi
   return <ProfileView p={data} clipHref={clipHref} refresh={() => void refresh(true)} />;
 }
 
-function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (id: string) => string; refresh: () => void }) {
+function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (clip: Profile["clips"][number]) => string; refresh: () => void }) {
   const [trendKey, setTrendKey] = useState<StatKey>("elo");
   const trendTile = STAT_TILES.find((t) => t.key === trendKey)!;
   const name = p.user.display_name;
@@ -60,13 +59,12 @@ function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (id: stri
   const faceitNick = p.game?.faceit_nickname ?? null;
   const { user: viewer } = useSessionUser();
   const isStaff = viewer?.role === "recruiter" || viewer?.role === "admin";
-  const showReview = (isStaff || isMe) && p.clips.some((c) => c.blob_url && c.notes.length > 0);
   const level = p.game?.faceit_level ?? null;
   const elo = p.game?.faceit_elo ?? null;
   const meta = [
     p.game?.region,
     p.elo_rank ? `#${p.elo_rank.rank} of ${p.elo_rank.total} by ELO` : null,
-    p.clip_count ? `${p.clip_count} clip${p.clip_count === 1 ? "" : "s"} coached` : null,
+    p.clip_count ? `${p.clip_count} clip${p.clip_count === 1 ? "" : "s"}` : null,
   ].filter(Boolean);
 
   return (
@@ -123,10 +121,10 @@ function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (id: stri
           <ol className="pf-welcome__steps">
             <li className="is-done"><strong>Profile created.</strong> This page is your public CS2 resume. Share it anywhere.</li>
             <li className={faceitNick ? "is-done" : ""}><strong>Link FACEIT.</strong> Pull in your level, ELO and match stats.</li>
-            <li><strong>Upload your first clip.</strong> Get AI coaching and a score that counts toward scouting.</li>
-            <li><strong>Climb the bars.</strong> Clear every scouting threshold and FaZe recruiters get your report.</li>
+            <li><strong>Join the conversation.</strong> Post in Community and earn karma.</li>
+            <li><strong>Show up on the boards.</strong> Your stats and karma climb the public leaderboards.</li>
           </ol>
-          <a className="pf-btn pf-btn--primary" href="/coach">Upload your first clip <span aria-hidden>→</span></a>
+          <a className="pf-btn pf-btn--primary" href="/community">Go to Community <span aria-hidden>→</span></a>
         </section>
       )}
 
@@ -159,11 +157,6 @@ function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (id: stri
             );
           })}
           <div className="pf-stat pf-stat--static">
-            <span className="pf-label">AI clip score</span>
-            <span className="pf-display pf-stat__value">{fmtNum(p.avg_clip_score, 0)}</span>
-            <span className="pf-stat__delta">{p.clip_count} clip{p.clip_count === 1 ? "" : "s"}</span>
-          </div>
-          <div className="pf-stat pf-stat--static">
             <span className="pf-label">Karma</span>
             <span className="pf-display pf-stat__value">{fmtCompact(p.karma)}</span>
             <span className="pf-stat__delta">community</span>
@@ -183,31 +176,27 @@ function ProfileView({ p, clipHref, refresh }: { p: Profile; clipHref: (id: stri
 
       <ScoutDossier scout={p.scout} dossier={p.dossier} />
 
-      {showReview && <ClipReview clips={p.clips} title={isStaff ? "Review the plays" : "Your flagged moments"} />}
-
       <div className="pf-grid">
         <div className="pf-col">
           <section className="pf-panel pf-rise" aria-labelledby="pf-clips-h">
             <div className="pf-panel__head">
-              <p className="pf-kicker"><span className="pf-kicker__bar" />Highlight reel<span className="pf-kicker__dim">· ranked by AI coaching score</span></p>
-              <h2 id="pf-clips-h" className="pf-display pf-h2">Top clips</h2>
+              <p className="pf-kicker"><span className="pf-kicker__bar" />Highlight reel<span className="pf-kicker__dim">· newest first</span></p>
+              <h2 id="pf-clips-h" className="pf-display pf-h2">Clips</h2>
             </div>
             {p.clips.length === 0 ? (
-              <p className="pf-muted">No clips yet. Upload one to get coached and climb the leaderboard.</p>
+              <p className="pf-muted">No clips yet. Share one in Community.</p>
             ) : (
               <ul className="pf-clips">
                 {p.clips.map((c, i) => (
                   <li key={c.id}>
-                    <a className="pf-clip" href={clipHref(c.id)}>
+                    <a className="pf-clip" href={clipHref(c)} target="_blank" rel="noreferrer">
                       <div className="pf-clip__thumb">
                         {c.thumbnail_url ? <img src={c.thumbnail_url} alt="" loading="lazy" /> : <span className="pf-clip__map">{(c.map ?? "cs2").replace(/^de_/, "")}</span>}
                         <span className="pf-clip__idx">{String(i + 1).padStart(2, "0")}</span>
-                        {c.overall_score !== null && <span className="pf-clip__score">{c.overall_score}</span>}
                       </div>
                       <div className="pf-clip__meta">
                         <strong>{c.title ?? "Untitled clip"}</strong>
                         <span className="pf-label">{[c.map, c.side].filter(Boolean).join(" · ")}</span>
-                        {c.summary && <span className="pf-clip__summary">{c.summary}</span>}
                       </div>
                     </a>
                   </li>

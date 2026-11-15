@@ -1,6 +1,6 @@
 // Scouting routes (Yao). Contract: REQUIREMENTS.md §7.4 (+ additive progress/rules routes)
 //   GET   /api/scouting/prospects            recruiter/admin: ranked prospects (filters: track, minLevel, region, status)
-//   GET   /api/scouting/prospects/:id        recruiter/admin: report + stats trend + top clips
+//   GET   /api/scouting/prospects/:id        recruiter/admin: report + stats trend + recent clips
 //   PATCH /api/scouting/prospects/:id        recruiter/admin: { status }
 //   GET   /api/scouting/progress/:userId     public: scout progress bar data (for profiles)
 //   GET   /api/scouting/rules, PUT /api/scouting/rules   admin: threshold config (P2)
@@ -10,6 +10,7 @@ import { getProgress, getRules, saveRules, type RulesFile } from '../lib/scoutin
 import { getStatTrend } from '../lib/faceit/stats.js';
 
 const STATUSES = ['new', 'reviewing', 'contacted', 'passed'] as const;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function createScoutingRouter({ db, auth }: YaoDeps): Router {
   const r = Router();
@@ -17,6 +18,7 @@ export function createScoutingRouter({ db, auth }: YaoDeps): Router {
   const staff = auth.requireRole('recruiter', 'admin');
 
   r.get('/progress/:userId', async (req, res) => {
+    if (!UUID.test(req.params.userId)) return res.status(400).json({ error: 'invalid user id' });
     try {
       res.json(await getProgress(db, req.params.userId));
     } catch (e) {
@@ -38,7 +40,7 @@ export function createScoutingRouter({ db, auth }: YaoDeps): Router {
     if (req.query.minLevel) add('g.faceit_level >= ?', Number(req.query.minLevel));
     try {
       const rows = await db.query(
-        `SELECT s.id, s.user_id, s.track, s.rule_id, s.summary, s.status, s.audio_url, s.created_at,
+        `SELECT s.id, s.user_id, s.track, s.rule_id, s.summary, s.status, s.created_at,
                 (s.evidence->>'score')::int AS score, s.evidence->'metrics' AS metrics,
                 u.handle, u.display_name, u.avatar_url,
                 g.region, g.faceit_level, g.faceit_elo, g.faceit_nickname
@@ -57,6 +59,7 @@ export function createScoutingRouter({ db, auth }: YaoDeps): Router {
   });
 
   r.get('/prospects/:id', staff, async (req, res) => {
+    if (!UUID.test(req.params.id)) return res.status(404).json({ error: 'prospect not found' });
     try {
       const rep = await db.query(
         `SELECT s.*, u.handle, u.display_name, u.avatar_url,
@@ -72,17 +75,14 @@ export function createScoutingRouter({ db, auth }: YaoDeps): Router {
       const [trend, clips, progress] = await Promise.all([
         getStatTrend(db, report.user_id, 30),
         db.query(
-          `SELECT DISTINCT ON (c.id) c.id, c.title, c.map, c.side, c.blob_url, c.thumbnail_url, c.created_at,
-                  r.overall_score, r.category_scores, r.notes, r.summary
-             FROM clips c JOIN coaching_reports r ON r.clip_id = c.id
-            WHERE c.user_id = $1
-            ORDER BY c.id, r.created_at DESC`,
+          `SELECT c.id, c.title, c.map, c.side, c.blob_url, c.thumbnail_url, c.social_post_url, c.created_at
+             FROM clips c WHERE c.user_id = $1
+            ORDER BY c.created_at DESC LIMIT 5`,
           [report.user_id],
         ),
         getProgress(db, report.user_id),
       ]);
-      const topClips = clips.rows.sort((a, b) => b.overall_score - a.overall_score).slice(0, 5);
-      res.json({ report, trend, topClips, progress });
+      res.json({ report, trend, recentClips: clips.rows, progress });
     } catch (e) {
       console.error(e);
       res.status(500).json({ error: 'failed to load prospect' });
@@ -90,6 +90,7 @@ export function createScoutingRouter({ db, auth }: YaoDeps): Router {
   });
 
   r.patch('/prospects/:id', staff, async (req, res) => {
+    if (!UUID.test(req.params.id)) return res.status(404).json({ error: 'prospect not found' });
     const status = req.body?.status;
     if (!STATUSES.includes(status)) return res.status(400).json({ error: `status must be one of ${STATUSES.join(', ')}` });
     try {

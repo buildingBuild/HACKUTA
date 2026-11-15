@@ -5,7 +5,7 @@ import { listProspects, STATUSES, type Prospect, type ProspectFilters, type Pros
 import { ProspectDetail } from './ProspectDetail';
 import { RulesEditor } from './RulesEditor';
 import type { SessionUser } from '../../components/session';
-import '../coaching/coaching.css';
+import './hud.css';
 import './recruiter.css';
 
 const POLL_MS = 5000;

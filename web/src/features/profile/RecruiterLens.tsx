@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
-import { getBriefing, getProspectReport, PROSPECT_STATUSES, setProspectStatus, type ProspectReport, type ProspectStatus } from "./recruiterApi";
+import { useEffect, useState } from "react";
+import { getProspectReport, PROSPECT_STATUSES, setProspectStatus, type ProspectReport, type ProspectStatus } from "./recruiterApi";
 import type { ScoutProgress } from "./types";
 
 /** Where the pipeline board lives (App.tsx routes it). */
-export const PIPELINE_URL = "/recruiter";
+export const PIPELINE_URL = "/recruiting";
 
 const STATUS_COPY: Record<ProspectStatus, string> = {
   new: "New",
@@ -13,24 +13,18 @@ const STATUS_COPY: Record<ProspectStatus, string> = {
 };
 
 /**
- * Staff-only bar on top of a player's portfolio: the AI scout report, prospect score,
- * status workflow and the ElevenLabs voice briefing. Reads/writes Yao's scouting routes.
+ * Staff-only bar on top of a player's profile: the scout report, prospect score and
+ * status workflow. Reads/writes Yao's scouting routes.
  */
 export function RecruiterLens({ scout, displayName }: { scout: ScoutProgress; displayName: string }) {
   const reportId = scout.report?.id ?? null;
   const [report, setReport] = useState<ProspectReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [briefing, setBriefing] = useState<"idle" | "loading" | "playing">("idle");
-  const audio = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (!reportId) return;
     getProspectReport(reportId).then((r) => setReport(r.report), (e: Error) => setError(e.message));
-    return () => {
-      audio.current?.pause();
-      if ("speechSynthesis" in window) speechSynthesis.cancel();
-    };
   }, [reportId]);
 
   async function changeStatus(status: ProspectStatus) {
@@ -45,34 +39,6 @@ export function RecruiterLens({ scout, displayName }: { scout: ScoutProgress; di
       setError((e as Error).message);
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function toggleBriefing() {
-    if (!report) return;
-    if (briefing === "playing") {
-      audio.current?.pause();
-      if ("speechSynthesis" in window) speechSynthesis.cancel();
-      setBriefing("idle");
-      return;
-    }
-    setBriefing("loading");
-    try {
-      const b = await getBriefing(report.id);
-      const a = new Audio(b.audio_url);
-      audio.current = a;
-      a.onended = () => setBriefing("idle");
-      await a.play();
-      setBriefing("playing");
-    } catch (e) {
-      // ElevenLabs unavailable: browser voice reads the same text so the moment still lands.
-      const text = (e as { body?: { text?: string } }).body?.text ?? report.summary;
-      if (text && "speechSynthesis" in window) {
-        const u = new SpeechSynthesisUtterance(text);
-        u.onend = () => setBriefing("idle");
-        speechSynthesis.speak(u);
-        setBriefing("playing");
-      } else setBriefing("idle");
     }
   }
 
@@ -108,11 +74,8 @@ export function RecruiterLens({ scout, displayName }: { scout: ScoutProgress; di
         </div>
 
         <blockquote className="pf-lens__report">
-          <p className="pf-kicker"><span className="pf-kicker__bar" />AI scout report{report?.evidence?.rule_label ? <span className="pf-kicker__dim">· {report.evidence.rule_label}</span> : null}</p>
+          <p className="pf-kicker"><span className="pf-kicker__bar" />Scout report{report?.evidence?.rule_label ? <span className="pf-kicker__dim">· {report.evidence.rule_label}</span> : null}</p>
           <p className="pf-lens__summary">{report ? report.summary : error ? `Couldn't load the report: ${error}` : "Loading report…"}</p>
-          <button type="button" className="pf-btn pf-btn--primary" onClick={toggleBriefing} disabled={!report || briefing === "loading"}>
-            {briefing === "loading" ? "Generating briefing…" : briefing === "playing" ? "■ Stop briefing" : "▶ Play voice briefing"}
-          </button>
         </blockquote>
 
         <div className="pf-lens__status">

@@ -13,8 +13,8 @@ interface StepProps {
 
 const ROADMAP = [
   { title: 'Join the fam', desc: 'Old heads and new fans.' },
-  { title: 'Post your plays', desc: 'Share clips. Get AI coaching.' },
-  { title: 'Get connected', desc: 'Squad up. Get seen by recruiters.' },
+  { title: 'Play every day', desc: 'Daily FaZe Guessr. Paint The Wall.' },
+  { title: 'Sync your setup', desc: 'Your HUD and lights react when FaZe plays.' },
 ];
 
 export function IntroStep() {

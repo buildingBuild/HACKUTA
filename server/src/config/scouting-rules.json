@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "rules": [
     {
       "id": "player_v1",
@@ -13,7 +13,8 @@
         { "metric": "kd", "op": ">=", "value": 1.25, "label": "K/D (last 20)" },
         { "metric": "hs_pct", "op": ">=", "value": 50, "label": "HS% (last 20)" },
         { "metric": "adr", "op": ">=", "value": 85, "label": "ADR (last 20)" },
-        { "metric": "avg_clip_score", "op": ">=", "value": 80, "label": "Avg AI clip score (last 5)" }
+        { "metric": "win_rate", "op": ">=", "value": 55, "label": "Win rate % (last 20)" },
+        { "metric": "matches", "op": ">=", "value": 20, "label": "Recent matches (sample size)" }
       ]
     },
     {

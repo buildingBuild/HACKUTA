@@ -9,12 +9,9 @@
     "lint": "tsc --noEmit",
     "db:migrate": "tsx --env-file-if-exists=../.env src/db/migrate.ts",
     "db:seed": "tsx --env-file-if-exists=../.env src/db/seed.ts",
-    "test": "tsx ../scripts/test-scouting.ts",
-    "smoke:gemini": "tsx --env-file-if-exists=../.env ../scripts/smoke-gemini.ts",
-    "smoke:elevenlabs": "tsx --env-file-if-exists=../.env ../scripts/smoke-elevenlabs.ts"
+    "test": "tsx ../scripts/test-scouting.ts"
   },
   "dependencies": {
-    "@google/genai": "^1.52.0",
     "express": "^4.22.3",
     "pg": "^8.23.1",
     "zod": "^3.25.76"

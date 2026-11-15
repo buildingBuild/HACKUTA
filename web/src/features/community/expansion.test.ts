@@ -48,7 +48,7 @@ test('Pulse fallback, room isolation, persistent conversation, questions and exc
   } finally {server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });
 
-test('Pulse accepts only existing AI-selected source IDs and caches failed-provider fallback',async()=>{
+test('Pulse accepts only existing curator-selected source IDs and caches failed-provider fallback',async()=>{
   for(const valid of [true,false]) {
     let calls=0;
     const app=express();app.use(express.json());app.use('/api',createCommunityRouter({pulseGenerate:async prompt=>{
@@ -61,7 +61,7 @@ test('Pulse accepts only existing AI-selected source IDs and caches failed-provi
     try {
       const url=`http://127.0.0.1:${address.port}/api/community/pulse`;
       const first=(await (await fetch(url)).json()).data;
-      assert.equal(first.provider,valid?'gemini':'deterministic');
+      assert.equal(first.provider,valid?'curated':'deterministic');
       assert.ok(first.highlights.every((h:{thread_id:string})=>h.thread_id!=='fabricated-source'));
       assert.equal((await (await fetch(url)).json()).data.generated_at,first.generated_at);
       assert.equal(calls,1);

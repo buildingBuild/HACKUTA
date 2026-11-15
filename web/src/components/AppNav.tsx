@@ -24,16 +24,15 @@ export function AppNav({ user, path }: Props) {
     setDemoUserId(id);
     const next = users.find((u) => u.id === id);
     // Land each role on its home screen.
-    window.location.href = path === '/community' ? '/community' : !next ? '/' : next.role === 'user' ? '/coach' : '/recruiter';
+    window.location.href = path === '/community' ? '/community' : !next ? '/' : next.role === 'user' ? `/u/${next.handle}` : '/recruiting';
   };
 
   const staff = user?.role === 'recruiter' || user?.role === 'admin';
   const links = [
     { href: '/community', label: 'Community', show: true },
-    { href: '/coach', label: 'Coach', show: !!user && !staff },
     { href: user ? `/u/${user.handle}` : '', label: 'My profile', show: !!user && !staff },
     { href: '/leaderboards', label: 'Leaderboards', show: true },
-    { href: '/recruiter', label: 'Recruiter', show: staff },
+    { href: '/recruiting', label: 'Recruiting', show: staff },
   ];
 
   return (

@@ -1,5 +1,5 @@
-import { api } from '../coaching/api';
-import type { CoachingNote, ScoutProgress } from '../coaching/types';
+import { api } from '../../components/api';
+import type { ScoutProgress } from './types';
 
 export type ProspectStatus = 'new' | 'reviewing' | 'contacted' | 'passed';
 export const STATUSES: ProspectStatus[] = ['new', 'reviewing', 'contacted', 'passed'];
@@ -11,7 +11,6 @@ export interface Prospect {
   rule_id: string;
   summary: string;
   status: ProspectStatus;
-  audio_url: string | null;
   created_at: string;
   score: number | null;
   metrics: Record<string, number | null> | null;
@@ -27,9 +26,9 @@ export interface Prospect {
 export interface ProspectDetailData {
   report: Prospect & { evidence: { score?: number; criteria?: ScoutProgress['rules'][number]['criteria']; summary_source?: string } };
   trend: ({ day: string } & Record<string, number | string>)[];
-  topClips: {
+  recentClips: {
     id: string; title: string | null; map: string | null; side: string | null; blob_url: string;
-    overall_score: number; notes: CoachingNote[]; summary: string | null; created_at: string;
+    social_post_url: string | null; created_at: string;
   }[];
   progress: ScoutProgress;
 }
@@ -53,7 +52,3 @@ export interface RulesFile { version: number; rules: Rule[] }
 
 export const getRules = () => api<RulesFile>('/api/scouting/rules');
 export const saveRules = (rules: Rule[]) => api<RulesFile>('/api/scouting/rules', { method: 'PUT', body: JSON.stringify({ rules }) });
-
-/** Generates (or returns cached) ElevenLabs briefing audio. On 503 the error body carries `text` for browser TTS. */
-export const getBriefing = (reportId: string) =>
-  api<{ audio_url: string; text: string; cached: boolean }>(`/api/voice/briefing/${reportId}`, { method: 'POST' });

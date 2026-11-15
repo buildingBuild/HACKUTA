@@ -57,7 +57,7 @@ export function BuildingHQ({ data, onDone }: { data: OnboardingData; onDone: () 
     phase === 'scan'
       ? `Scanning ${scanning.label}`
       : phase === 'analyze'
-        ? 'AI coach breaking down your plays'
+        ? 'Building your FaZe HQ'
         : 'HQ online';
 
   return (
@@ -100,7 +100,7 @@ export function BuildingHQ({ data, onDone }: { data: OnboardingData; onDone: () 
         <FazeLogo className="hq__logo" />
         <p className="hq__headline">You're on the radar.</p>
         <p className="hq__sub">
-          {total} clips · {sources.length} sources · coaching ready
+          {total} clips · {sources.length} sources · HQ ready
         </p>
       </div>
 

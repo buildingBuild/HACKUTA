@@ -11,10 +11,10 @@
 //   GET /api/profiles/:handle            public gamer resume
 //   GET /api/profiles/:handle/card.svg   shareable profile card (1200x630)
 //   GET /api/leaderboards                list of leaderboard types
-//   GET /api/leaderboards/:type          elo | clip-score | improvement | creator-growth | karma
+//   GET /api/leaderboards/:type          elo | improvement | creator-growth | karma
 //
 // Read-only: this file never writes. Stats come from player_stats/social_stats
-// (Yao), clip scores from coaching_reports (Yao), karma from threads/comments
+// (Yao), karma from threads/comments
 // (Dahiya), scout status from scout_reports (Yao).
 
 import { Router, type Request, type Response, type NextFunction } from "express";
@@ -45,7 +45,6 @@ const STAT_METRICS = ["elo", "kd", "hs_pct", "adr", "win_rate"] as const;
 
 const LEADERBOARDS = {
   elo: { label: "FACEIT ELO", unit: "ELO" },
-  "clip-score": { label: "AI clip score", unit: "avg score" },
   improvement: { label: "Most improved", unit: "ELO gained" },
   "creator-growth": { label: "Creator growth", unit: "follower growth" },
   karma: { label: "Community karma", unit: "karma" },
@@ -81,7 +80,7 @@ type Rule = { id: string; track: string; criteria: RuleCriterion[] };
 
 const METRIC_LABELS: Record<string, string> = {
   faceit_level: "FACEIT level", elo: "ELO", faceit_elo: "ELO", kd: "K/D", kr: "K/R", hs_pct: "HS%",
-  adr: "ADR", win_rate: "Win rate", avg_clip_score: "Avg AI clip score", clip_score: "Avg AI clip score",
+  adr: "ADR", win_rate: "Win rate", matches: "Recent matches",
 };
 
 /** Accepts a few likely shapes of scouting-rules.json so we don't break when Yao finalizes it. */
@@ -261,23 +260,13 @@ async function loadProfile(db: Db, opts: ProfilesRouterOptions, user: UserRow) {
     [uid],
   );
 
-  // Clips with their latest coaching report.
+  // Fan clips, newest first (shared in Community).
   const clips = await rows<Record<string, unknown>>(
     db,
-    `SELECT c.id, c.title, c.map, c.side, c.thumbnail_url, c.blob_url, c.social_post_url, c.status, c.created_at,
-            r.overall_score, r.category_scores, r.summary, r.notes
-       FROM clips c
-       LEFT JOIN LATERAL (
-         SELECT cr.overall_score, cr.category_scores, cr.notes,
-                COALESCE(to_jsonb(cr)->>'summary', cr.category_scores->>'summary') AS summary
-           FROM coaching_reports cr WHERE cr.clip_id = c.id ORDER BY cr.created_at DESC LIMIT 1
-       ) r ON true
-      WHERE c.user_id = $1
-      ORDER BY r.overall_score DESC NULLS LAST, c.created_at DESC`,
+    `SELECT c.id, c.title, c.map, c.side, c.thumbnail_url, c.blob_url, c.social_post_url, c.status, c.created_at
+       FROM clips c WHERE c.user_id = $1 ORDER BY c.created_at DESC`,
     [uid],
   );
-  const scored = clips.map((c) => num(c.overall_score)).filter((s): s is number => s !== null);
-  const avgClipScore = scored.length ? Math.round((scored.reduce((a, b) => a + b, 0) / scored.length) * 10) / 10 : null;
 
   const [k] = await rows<{ karma: number }>(
     db,
@@ -300,8 +289,6 @@ async function loadProfile(db: Db, opts: ProfilesRouterOptions, user: UserRow) {
     faceit_level: num(game?.faceit_level),
     faceit_elo: elo,
     elo,
-    avg_clip_score: avgClipScore,
-    clip_score: avgClipScore,
   };
   for (const m of STAT_METRICS) if (m !== "elo") metricsForScout[m] = stats[m]?.value ?? null;
 
@@ -335,12 +322,8 @@ async function loadProfile(db: Db, opts: ProfilesRouterOptions, user: UserRow) {
     clips: clips.slice(0, 6).map((c) => ({
       id: c.id, title: c.title, map: c.map, side: c.side, thumbnail_url: c.thumbnail_url, blob_url: c.blob_url,
       social_post_url: c.social_post_url, status: c.status, created_at: c.created_at,
-      overall_score: num(c.overall_score), summary: c.summary ?? null,
-      // Timestamped AI coaching moments (REQUIREMENTS §7.3 notes) for the clip review player.
-      notes: Array.isArray(c.notes) ? c.notes : [],
     })),
     clip_count: clips.length,
-    avg_clip_score: avgClipScore,
     karma: Number(k?.karma ?? 0),
     elo_rank: rank ? { rank: Number(rank.rank), total: Number(rank.total) } : null,
     scout,
@@ -358,15 +341,6 @@ const DOSSIER_METRICS = [
   { metric: "kr", label: "K/R", digits: 2 },
   { metric: "win_rate", label: "Win rate", digits: 0 },
 ] as const;
-
-const SKILL_LABELS: Record<string, string> = {
-  crosshair_placement: "Crosshair placement",
-  movement: "Movement",
-  spray_control: "Spray control",
-  utility: "Utility",
-  positioning: "Positioning & trades",
-  decision_making: "Decision making",
-};
 
 async function loadDossier(db: Db, uid: string) {
   const metricNames = DOSSIER_METRICS.map((m) => m.metric);
@@ -427,33 +401,9 @@ async function loadDossier(db: Db, uid: string) {
     consistency_cv: cv,
   };
 
-  // AI skill profile: mean of each coaching category over the latest report per clip.
-  const skillRows = await rows<{ key: string; avg: number; n: number }>(
-    db,
-    `WITH latest AS (
-       SELECT DISTINCT ON (c.id) r.category_scores
-         FROM clips c JOIN coaching_reports r ON r.clip_id = c.id
-        WHERE c.user_id = $1 ORDER BY c.id, r.created_at DESC)
-     SELECT kv.key, avg((kv.value)::numeric)::float AS avg, count(*)::int AS n
-       FROM latest, jsonb_each_text(latest.category_scores) kv
-      WHERE kv.value ~ '^[0-9.]+$'
-      GROUP BY kv.key`,
-    [uid],
-  );
-  const categories = skillRows
-    .filter((s) => s.key in SKILL_LABELS)
-    .map((s) => ({ key: s.key, label: SKILL_LABELS[s.key]!, avg: Math.round(Number(s.avg) * 10) / 10, clips: Number(s.n) }))
-    .sort((a, b) => b.avg - a.avg);
-
   return {
     percentiles,
     form,
-    skills: {
-      categories,
-      strongest: categories[0]?.key ?? null,
-      weakest: categories.length > 1 ? categories[categories.length - 1]!.key : null,
-      clips_analyzed: Math.max(0, ...categories.map((c) => c.clips)),
-    },
   };
 }
 
@@ -471,13 +421,6 @@ async function loadLeaderboard(db: Db, type: LeaderboardType, limit: number, win
     case "elo":
       sql = `SELECT ${cols}, ga.faceit_elo::float AS value ${base} AND ga.faceit_elo IS NOT NULL
               AND $2::int > 0 ORDER BY value DESC LIMIT $1`;
-      break;
-    case "clip-score":
-      sql = `SELECT ${cols}, round(avg(r.overall_score)::numeric, 1)::float AS value, count(*)::int AS sample
-               ${base.replace("WHERE", `JOIN clips c ON c.user_id = u.id
-               JOIN LATERAL (SELECT overall_score FROM coaching_reports cr WHERE cr.clip_id = c.id ORDER BY cr.created_at DESC LIMIT 1) r ON true
-               WHERE`)} AND r.overall_score IS NOT NULL AND $2::int > 0
-             GROUP BY u.id, ga.faceit_level ORDER BY value DESC LIMIT $1`;
       break;
     case "improvement": {
       const src = useDaily
@@ -539,7 +482,7 @@ function renderCard(p: Awaited<ReturnType<typeof loadProfile>>): string {
     ["K/D", fmt(s.kd?.value, 2)],
     ["HS%", fmt(s.hs_pct?.value, 0)],
     ["ADR", fmt(s.adr?.value, 0)],
-    ["AI SCORE", fmt(p.avg_clip_score, 0)],
+    ["WIN %", fmt(s.win_rate?.value, 0)],
   ];
   const pct = Math.round((p.scout.progress ?? 0) * 100);
   const level = p.game?.faceit_level ?? "–";

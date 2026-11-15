@@ -20,7 +20,6 @@ import type { LeaderboardType } from "./types";
 
 const TABS: { type: LeaderboardType; label: string; blurb: string }[] = [
   { type: "elo", label: "ELO", blurb: "Highest FACEIT ELO right now." },
-  { type: "clip-score", label: "AI clip score", blurb: "Average AI coaching score across uploaded clips." },
   { type: "improvement", label: "Most improved", blurb: "Biggest ELO gain over the window." },
   { type: "creator-growth", label: "Creator growth", blurb: "Follower growth across linked socials." },
   { type: "karma", label: "Karma", blurb: "Upvotes earned in the community." },
@@ -101,7 +100,7 @@ export function LeaderboardsPage({ initialType = "elo", highlightHandle, limit =
                   {fmtLeaderboardValue(type, e.value)}
                   {e.sample !== undefined && (
                     <span className="pf-muted pf-lb__sample">
-                      {type === "clip-score" ? `${e.sample} clip${e.sample === 1 ? "" : "s"}` : `${fmtCompact(e.sample)} followers`}
+                      {`${fmtCompact(e.sample)} followers`}
                     </span>
                   )}
                 </span>
