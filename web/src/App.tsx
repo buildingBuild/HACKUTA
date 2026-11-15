@@ -19,6 +19,7 @@ import { useSessionUser } from './components/session';
 import { Loading, Page } from './components/ui';
 import { AdminPage } from './features/admin/AdminPage';
 import { CommunityRoute } from './features/community/CommunityRoute';
+import { HomePage } from './features/home/HomePage';
 import { OnboardingFlow } from './features/onboarding/OnboardingFlow';
 import { LeaderboardsPage, ProfilePage } from './features/profile';
 import { RecruiterDashboard } from './features/recruiter/RecruiterDashboard';
@@ -29,11 +30,10 @@ export function App() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
   const { user, loading } = useSessionUser();
 
-  // Full-bleed onboarding (its own chrome). TODO(S3): '/' becomes the Home showcase.
-  if (path === '/' || path === '/join') {
+  // Full-bleed onboarding: it draws its own top bar (and AppNav once finished).
+  if (path === '/join') {
     return (
       <GridBackground>
-        <AppNav user={user} path={path} />
         <OnboardingFlow />
       </GridBackground>
     );
@@ -43,7 +43,8 @@ export function App() {
   const handle = match(path, /^\/u\/([^/]+)$/);
   const feature = featureByPath(path);
 
-  if (handle) page = <ProfilePage handle={decodeURIComponent(handle)} />;
+  if (path === '/') page = <HomePage user={user} />;
+  else if (handle) page = <ProfilePage handle={decodeURIComponent(handle)} />;
   else if (path === '/me') {
     if (!loading) window.location.replace(user ? `/u/${encodeURIComponent(user.handle)}` : '/join');
     page = <Page><Loading /></Page>;

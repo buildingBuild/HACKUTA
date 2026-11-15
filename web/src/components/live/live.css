@@ -1,0 +1,44 @@
+/* FaZe Live banner + counters. SHARED. */
+.live {
+  display: flex; align-items: center; gap: 14px; min-height: 48px; padding: 8px 24px;
+  background: var(--ink); color: var(--paper); overflow: hidden; position: relative;
+}
+.live--loading { opacity: 0.9; }
+.live--idle { background: color-mix(in srgb, var(--ink) 92%, var(--faze-red)); }
+.live__tag {
+  flex: none; padding: 4px 10px; border: 1px solid rgba(255, 255, 255, 0.35);
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+}
+.live__tag--on { display: inline-flex; align-items: center; gap: 8px; background: var(--faze-red); border-color: var(--faze-red); }
+.live__tag--on::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--paper); animation: live-pulse 1.2s infinite; }
+.live__text {
+  flex: 1; min-width: 0; font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: 0.04em;
+  text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.live__score { font-weight: 900; font-size: 24px; margin: 0 6px; font-variant-numeric: tabular-nums; }
+.live__score i { font-style: normal; color: var(--faze-red); margin: 0 2px; }
+.live__event { color: rgba(255, 255, 255, 0.7); }
+.live__event.is-good { color: #ff5a76; }
+.live__meta { color: rgba(255, 255, 255, 0.65); font-weight: 500; }
+.live__src { flex: none; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255, 255, 255, 0.45); }
+.live--flash-good { animation: live-flash-good 2.4s var(--ease-out); }
+.live--flash-bad { animation: live-flash-bad 2.4s var(--ease-out); }
+
+.live-counts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1.5px solid var(--ink); border-bottom: 1px solid var(--line); }
+.live-count { display: grid; gap: 4px; padding: 18px 20px; }
+.live-count + .live-count { border-left: 1px solid var(--line); }
+.live-count__n { font-family: var(--font-display); font-weight: 900; font-size: clamp(30px, 4vw, 46px); line-height: 1; font-variant-numeric: tabular-nums; }
+.live-count__label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+
+@keyframes live-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+@keyframes live-flash-good { 0% { background: var(--faze-red); } 100% { background: var(--ink); } }
+@keyframes live-flash-bad { 0% { background: #2a2a2a; } 100% { background: var(--ink); } }
+
+@media (max-width: 640px) {
+  .live { gap: 10px; padding: 8px 16px; }
+  .live__text { font-size: 16px; white-space: normal; }
+  .live__src { display: none; }
+  .live-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .live-count:nth-child(3) { border-left: 0; }
+  .live-count:nth-child(n + 3) { border-top: 1px solid var(--line); }
+}
