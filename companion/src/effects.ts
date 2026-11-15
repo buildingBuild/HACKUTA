@@ -23,7 +23,7 @@ export const EFFECTS: Record<EffectName, Step[]> = {
   ],
 };
 
-const isEffect = (name: string): name is EffectName => Object.hasOwn(EFFECTS, name);
+export const isEffect = (name: string): name is EffectName => Object.hasOwn(EFFECTS, name);
 const realSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export class Player {
